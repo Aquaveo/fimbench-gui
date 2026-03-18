@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { type Filters } from './FilterSidebar';
 
 type MapProps = {
@@ -5,30 +8,45 @@ type MapProps = {
 };
 
 export default function Map({ filters }: MapProps) {
-  return (
-    <div style={{ flex: 1, backgroundColor: '#e5e5e5', padding: 16 }}>
-      <h2>Flood Map Viewer</h2>
-      <p>Current Filters:</p>
-      <ul>
-        <li>FIM Tier: {filters.tier}</li>
-        <li>Return Period: {filters.returnPeriod} years</li>
-      </ul>
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
 
-      {/* MapLibre / Deck.gl map to be rendered here later */}
+  useEffect(() => {
+    if (mapRef.current || !mapContainer.current) return;
+
+    mapRef.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: 'https://demotiles.maplibre.org/style.json', // Simple raster basemap
+      center: [-90, 38], // USA center
+      zoom: 4,
+    });
+
+    // Navigation controls
+    mapRef.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    return () => {
+      mapRef.current?.remove();
+    };
+  }, []);
+
+  return (
+    <div style={{ flex: 1, position: 'relative' }}>
       <div
-        style={{
-          marginTop: 16,
-          width: '100%',
-          height: '80%',
-          backgroundColor: '#c0c0c0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontStyle: 'italic',
-          color: '#444',
-        }}
-      >
-        Map Placeholder
+        ref={mapContainer}
+        style={{ width: '100%', height: '100%' }}
+      />
+      {/* Overlay filters summary */}
+      <div style={{
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        padding: 8,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        borderRadius: 4,
+      }}>
+        <strong>Filters (not live yet):</strong>
+        <div>Tier: {filters.tier}</div>
+        <div>Return Period: {filters.returnPeriod}</div>
       </div>
     </div>
   );
