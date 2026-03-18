@@ -1,0 +1,33 @@
+{% load static tethys %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ tethys_app.name }}</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon"
+          type="image/x-icon"
+          href="{% static 'fimbench_gui/favicon.ico' %}">
+
+    <!-- React CSS bundle -->
+    <link rel="stylesheet"
+          href="{% static tethys_app|public:'frontend/main.css' %}">
+  </head>
+
+  <body style="margin: 0;">
+    <div id="root"></div>
+
+    <!-- React JS bundle -->
+    <script type="module"
+            src="{% static tethys_app|public:'frontend/main.js' %}">
+    </script>
+  </body>
+</html>
