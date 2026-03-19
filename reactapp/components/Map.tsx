@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import maplibregl, { type RasterSourceSpecification, type StyleSpecification } from 'maplibre-gl';
+import maplibregl, {   type RasterSourceSpecification, type VectorSourceSpecification, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { type Filters } from './FilterSidebar';
+import { VIZ_TILES_LOCATION } from '../src/config';
 
 type MapProps = {
   filters: Filters;
@@ -19,24 +20,55 @@ export default function Map({ filters }: MapProps) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>("Topographic");
 
-  // Function to create a MapLibre style object with proper TypeScript typing
   const createStyle = (tileUrl: string): StyleSpecification => {
-    const rasterSource: RasterSourceSpecification = {
+    const basemapSource: RasterSourceSpecification = {
       type: "raster",
       tiles: [tileUrl],
       tileSize: 256,
     };
 
+    const vectorSource: VectorSourceSpecification = {
+      type: "vector",
+      tiles: [VIZ_TILES_LOCATION],
+      minzoom: 0,
+      maxzoom: 14,
+    };
+
     return {
-      version: 8,
+      version: 8 as 8,
       sources: {
-        basemap: rasterSource,
+        basemap: basemapSource,
+        fimTiles: vectorSource,
       },
       layers: [
         {
           id: "basemap-layer",
           type: "raster",
           source: "basemap",
+        },
+
+        // Flood polygons
+        {
+          id: "fim-fill",
+          type: "fill",
+          source: "fimTiles",
+          "source-layer": "default",
+          paint: {
+            "fill-color": "#2687C8",
+            "fill-opacity": 0.5,
+          },
+        },
+
+        // Outline
+        {
+          id: "fim-outline",
+          type: "line",
+          source: "fimTiles",
+          "source-layer": "default",
+          paint: {
+            "line-color": "#000000",
+            "line-width": 1,
+          },
         },
       ],
     };
@@ -49,16 +81,13 @@ export default function Map({ filters }: MapProps) {
     mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
       style: createStyle(BASEMAPS[basemap]),
-      center: [-96, 39], // Home view: middle of U.S.
-      zoom: 4,           // Initial zoom
-      minZoom: 2,        // Zoom out limit
-      maxZoom: 20,       // Zoom in limit
+      center: [-98, 39], // U.S. center
+      zoom: 4,
+      minZoom: 2,
+      maxZoom: 20,
     });
 
-    // Navigation controls
     mapRef.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-    // Attribution
     mapRef.current.addControl(
       new maplibregl.AttributionControl({
         compact: true,
@@ -72,25 +101,20 @@ export default function Map({ filters }: MapProps) {
     };
   }, []);
 
-  // Update basemap when dropdown changes
+  // Switch basemap
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const currentCenter = mapRef.current.getCenter();
-    const currentZoom = mapRef.current.getZoom();
-
-    // Replace style with new basemap while keeping center & zoom
+    const center = mapRef.current.getCenter();
+    const zoom = mapRef.current.getZoom();
     mapRef.current.setStyle(createStyle(BASEMAPS[basemap]));
-    mapRef.current.setCenter(currentCenter);
-    mapRef.current.setZoom(currentZoom);
+    mapRef.current.setCenter(center);
+    mapRef.current.setZoom(zoom);
   }, [basemap]);
 
   return (
     <div style={{ flex: 1, position: 'relative' }}>
-      <div
-        ref={mapContainer}
-        style={{ width: '100%', height: '100%' }}
-      />
+      <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
 
       {/* Basemap dropdown */}
       <div style={{
@@ -112,7 +136,7 @@ export default function Map({ filters }: MapProps) {
         </label>
       </div>
 
-      {/* Overlay filters summary */}
+      {/* Filters overlay */}
       <div style={{
         position: 'absolute',
         top: 50,

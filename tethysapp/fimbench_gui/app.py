@@ -1,4 +1,6 @@
 from tethys_sdk.base import TethysAppBase
+from tethys_sdk.app_settings import CustomSetting
+import os
 
 class App(TethysAppBase):
     """
@@ -24,9 +26,46 @@ class App(TethysAppBase):
     icon = f'{package}/images/android-chrome-512x512.png'
     description = 'FIMBench app with Tethys backend'
     color = '#007bff'
-    tags = 'FIM, Benchmark data, GIS'
+    tags = 'FIM, Flood Mapping, Flood Inundation Mapping, Hydrology, Benchmark data, GIS'
     enable_feedback = False
     feedback_emails = []
 
-    # No need to override register_url_maps since controllers are decorated
-    # The SPA React frontend uses catch_all=True on the home controller
+    def custom_settings(self):
+        return (
+            CustomSetting(
+                name="s3_allowed_host",
+                type=CustomSetting.TYPE_STRING,
+                description="Allowed S3 host for proxy",
+                required=True,
+            ),
+            CustomSetting(
+                name="s3_bucket_url",
+                type=CustomSetting.TYPE_STRING,
+                description="Base S3 bucket URL",
+                required=True,
+            ),
+            CustomSetting(
+                name="s3_catalog_key",
+                type=CustomSetting.TYPE_STRING,
+                description="Path to catalog JSON",
+                required=True,
+            ),
+            CustomSetting(
+                name="s3_viz_tiles",
+                type=CustomSetting.TYPE_STRING,
+                description="Tile URL template",
+                required=True,
+            ),
+        )
+
+    @staticmethod
+    def get_settings():
+        """
+        Helper to fetch settings safely.
+        """
+        return {
+            "ALLOWED_HOST": os.environ.get("S3_ALLOWED_HOST"),
+            "BUCKET_URL": os.environ.get("S3_BUCKET_URL"),
+            "CATALOG_KEY": os.environ.get("S3_CATALOG_KEY"),
+            "VIZ_TILES": os.environ.get("S3_VIZ_TILES"),
+        }
