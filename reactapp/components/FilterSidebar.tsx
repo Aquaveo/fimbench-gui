@@ -3,6 +3,8 @@ import React from 'react';
 export type Filters = {
   tier: string;
   returnPeriod: string;
+  startDate: string; // ISO format YYYY-MM-DD
+  endDate: string;
 };
 
 type FilterSidebarProps = {
@@ -17,6 +19,14 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
   const handleReturnPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ ...filters, returnPeriod: e.target.value });
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, startDate: e.target.value });
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, endDate: e.target.value });
   };
 
   return (
@@ -34,11 +44,29 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
         </select>
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <label htmlFor="startDate">Start Date:</label>
+        <input
+          id="startDate"
+          type="date"
+          value={filters.startDate}
+          onChange={handleStartDateChange}
+        />
+      </div>
+
       <div>
+        <label htmlFor="endDate">End Date:</label>
+        <input
+          id="endDate"
+          type="date"
+          value={filters.endDate}
+          onChange={handleEndDateChange}
+        />
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
         <label htmlFor="returnPeriod">Return Period:</label>
         <select id="returnPeriod" value={filters.returnPeriod} onChange={handleReturnPeriodChange}>
-          <option value="10">10-year</option>
-          <option value="50">50-year</option>
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>

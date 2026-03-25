@@ -1,0 +1,25 @@
+<VRTDataset rasterXSize="4252" rasterYSize="3774">
+  <SRS dataAxisToSRSAxisMapping="1,2">PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +wktext +no_defs"],AUTHORITY["EPSG","3857"]]</SRS>
+  <GeoTransform> -1.0620645683531888e+07,  4.1314459605988914e+00,  0.0000000000000000e+00,  5.3046184439575234e+06,  0.0000000000000000e+00, -4.1314459605988914e+00</GeoTransform>
+  <Metadata>
+    <MDI key="AREA_OR_POINT">Area</MDI>
+  </Metadata>
+  <Metadata domain="IMAGE_STRUCTURE">
+    <MDI key="INTERLEAVE">BAND</MDI>
+    <MDI key="COMPRESSION">DEFLATE</MDI>
+  </Metadata>
+  <VRTRasterBand dataType="Byte" band="1" blockXSize="256" blockYSize="256">
+    <NoDataValue>-9999</NoDataValue>
+    <ColorInterp>Gray</ColorInterp>
+    <ComplexSource>
+      <SourceFilename relativeToVRT="0">/home/rragh/tethysdev/tethysapp-fimbench_gui/fimbench-gui/tethysapp/fimbench_gui/workspaces/user_workspaces/admin/test_case/processed/Tier_2_cog.tif</SourceFilename>
+      <SourceBand>1</SourceBand>
+      <SourceProperties RasterXSize="4252" RasterYSize="3774" DataType="Int32" BlockXSize="256" BlockYSize="256" />
+      <SrcRect xOff="0" yOff="0" xSize="4252" ySize="3774" />
+      <DstRect xOff="0" yOff="0" xSize="4252" ySize="3774" />
+      <NODATA>-9999</NODATA>
+      <ScaleOffset>0</ScaleOffset>
+      <ScaleRatio>127.5</ScaleRatio>
+    </ComplexSource>
+  </VRTRasterBand>
+</VRTDataset>
