@@ -53,8 +53,8 @@ pnpm-debug.log*
 # =====================================================
 # Tethys Runtime / Generated Assets
 # =====================================================
-tethysapp/fimbench_gui/public/frontend/
-tethysapp/fimbench_gui/public/workspaces/user_workspaces/
+tethysapp/fimbench_gui/public/frontend/*
+tethysapp/fimbench_gui/public/workspaces/user_workspaces/*
 
 # =====================================================
 # Geospatial Data (fully ignored)
