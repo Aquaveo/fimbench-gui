@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     proxy: {
       '/apps': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8501',
         changeOrigin: true,
       },
     },
