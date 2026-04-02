@@ -40,6 +40,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           <option value="tier2">Tier 2</option>
           <option value="tier3">Tier 3</option>
           <option value="tier4">Tier 4</option>
+          {/* <option value="tierX">Tier X</option> */}
           <option value="hwm">High Water Mark</option>
         </select>
       </div>

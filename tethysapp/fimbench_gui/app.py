@@ -61,11 +61,12 @@ class App(TethysAppBase):
     @staticmethod
     def get_settings():
         """
-        Helper to fetch settings safely.
+        Helper to fetch settings safely from Tethys CustomSettings.
         """
+        app = App.get_app()  # gets the singleton app instance
         return {
-            "ALLOWED_HOST": os.environ.get("S3_ALLOWED_HOST"),
-            "BUCKET_URL": os.environ.get("S3_BUCKET_URL"),
-            "CATALOG_KEY": os.environ.get("S3_CATALOG_KEY"),
-            "VIZ_TILES": os.environ.get("S3_VIZ_TILES"),
+            "ALLOWED_HOST": app.get_custom_setting("s3_allowed_host"),
+            "BUCKET_URL":   app.get_custom_setting("s3_bucket_url"),
+            "CATALOG_KEY":  app.get_custom_setting("s3_catalog_key"),
+            "VIZ_TILES":    app.get_custom_setting("s3_viz_tiles"),
         }
