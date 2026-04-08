@@ -21,23 +21,3 @@ function App() {
 }
 
 export default App;
-
-// import { useState } from 'react';
-// import Map from '../components/Map';
-// import FilterSidebar, { type Filters } from '../components/FilterSidebar';
-
-// export default function App() {
-//   const [filters, setFilters] = useState<Filters>({
-//     tier: 'tier1',
-//     returnPeriod: '10',
-//   });
-
-//   return (
-//     <div style={{ display: 'flex', height: '100vh' }}>
-//       <FilterSidebar filters={filters} setFilters={setFilters} />
-//       <div style={{ flex: 1 }}>
-//         <Map tier={filters.tier} returnPeriod={filters.returnPeriod} />
-//       </div>
-//     </div>
-//   );
-// }

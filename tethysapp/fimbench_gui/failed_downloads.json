@@ -1,0 +1,18 @@
+[
+  {
+    "url": "https://sdmlab.s3.amazonaws.com/FIM_Database/Tier_1/AI_20160104_902358W395729N/AI_0_4m_20160104T1_902358W395729N_BM.tif",
+    "path": "/home/rragh/tethysdev/tethysapp-fimbench_gui/fimbench-gui/tethysapp/fimbench_gui/resources/Tier_1/AI_20160104_902358W395729N/AI_0_4m_20160104T1_902358W395729N_BM.tif"
+  },
+  {
+    "url": "https://sdmlab.s3.amazonaws.com/FIM_Database/Tier_1/AI_20160103_923809W350109N/AI_0_4m_20160103_923809W350109N_AOI.gpkg",
+    "path": "/home/rragh/tethysdev/tethysapp-fimbench_gui/fimbench-gui/tethysapp/fimbench_gui/resources/Tier_1/AI_20160103_923809W350109N/AI_0_4m_20160103_923809W350109N_AOI.gpkg"
+  },
+  {
+    "url": "https://sdmlab.s3.amazonaws.com/FIM_Database/Tier_1/AI_20160103_923809W350109N/AI_0_4m_20160103_923809W350109N_BM.tif",
+    "path": "/home/rragh/tethysdev/tethysapp-fimbench_gui/fimbench-gui/tethysapp/fimbench_gui/resources/Tier_1/AI_20160103_923809W350109N/AI_0_4m_20160103_923809W350109N_BM.tif"
+  },
+  {
+    "url": "https://sdmlab.s3.amazonaws.com/FIM_Database/Tier_1/AI_20160104_902358W395729N/AI_0_4m_20160104T1_902358W395729N_AOI.gpkg",
+    "path": "/home/rragh/tethysdev/tethysapp-fimbench_gui/fimbench-gui/tethysapp/fimbench_gui/resources/Tier_1/AI_20160104_902358W395729N/AI_0_4m_20160104T1_902358W395729N_AOI.gpkg"
+  }
+]
