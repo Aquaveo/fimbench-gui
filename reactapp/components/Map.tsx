@@ -19,6 +19,19 @@ const BASEMAPS = {
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
 
+const CATALOG_URL = 'http://127.0.0.1:9000/fimbench/FIM_Viz/catalog_core.json';
+const ZOOM_CROSSFADE_START = 7;
+const ZOOM_CROSSFADE_END   = 8;
+
+// Color per tier — distinct from the dark blue used for extents
+const TIER_CENTROID_COLORS: Record<string, string> = {
+  Tier_1: '#E74C3C',  // red
+  Tier_2: '#F39C12',  // orange
+  Tier_3: '#2ECC71',  // green
+  Tier_4: '#9B59B6',  // purple
+  HWM:    '#EC6FA3',  // pink
+};
+
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
@@ -67,6 +80,29 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
   const [basemap, setBasemap] =
     useState<keyof typeof BASEMAPS>('Topographic');
+  
+  const catalogRef = useRef<any[]>([]);   // all catalog records, loaded once
+
+  const buildCentroidGeoJSON = (tiers: string[]) => ({
+    type: 'FeatureCollection' as const,
+    features: catalogRef.current
+      .filter(r => tiers.includes(r.tier))
+      .map(r => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: r.centroid },
+        properties: {
+          site_id:      r.site_id,
+          tier:         r.tier,
+          s3_prefix:    r.s3_prefix,
+          file_name:    r.file_name,
+          state:        r.state,
+          basin:        Array.isArray(r.basin) ? r.basin.join(', ') : (r.basin ?? '—'),
+          resolution_m: r.resolution_m,
+          huc8:         Array.isArray(r.huc8)  ? r.huc8.join(', ')  : (r.huc8  ?? '—'),
+          quality:      r.quality,
+        },
+      })),
+  });
 
   // -----------------------------
   // Create map
@@ -93,7 +129,7 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
       zoom: viewStateRef.current.zoom,
       bearing: viewStateRef.current.bearing,
       pitch: viewStateRef.current.pitch,
-      minZoom: 4,
+      minZoom: 3,
       maxZoom: 20,
     });
 
@@ -109,72 +145,102 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
       console.error('MapLibre error:', e.error);
     });
 
-    const BASE = window.location.origin;
-
-    console.log("BASE=", BASE)
+    const emitFeatures = () => {
+      if (!onFeaturesChange) return;
+      const extents   = map.queryRenderedFeatures({ layers: ['fim-layer'] });
+      const centroids = map.queryRenderedFeatures({ layers: ['centroids-layer'] });
+      const raw = [...extents, ...centroids];
+      const seen = new Set<string>();
+      const unique = raw.filter(f => {
+        const key = f.properties?.site_id ?? f.properties?.id ?? JSON.stringify(f.properties);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      onFeaturesChange(unique.map(f => f.properties));
+    };
 
     map.on('load', () => {
-      // -----------------------------
-      // ADD VECTOR SOURCE (ONLY ONCE)
-      // -----------------------------
+      // ── Centroid source (GeoJSON, updated client-side) ──
+      map.addSource('centroids', {
+        type: 'geojson',
+        data: buildCentroidGeoJSON(filters.tiers),
+      });
+
+      // ── Centroid circle layer (visible below crossfade zone) ──
+      map.addLayer({
+        id: 'centroids-layer',
+        type: 'circle',
+        source: 'centroids',
+        paint: {
+          'circle-radius': 7,
+          // Color by tier using a match expression
+          'circle-color': [
+            'match', ['get', 'tier'],
+            'Tier_1', TIER_CENTROID_COLORS.Tier_1,
+            'Tier_2', TIER_CENTROID_COLORS.Tier_2,
+            'Tier_3', TIER_CENTROID_COLORS.Tier_3,
+            'Tier_4', TIER_CENTROID_COLORS.Tier_4,
+            'HWM',    TIER_CENTROID_COLORS.HWM,
+            '#aaaaaa',
+          ],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5,
+          // Fade OUT as zoom increases through crossfade zone
+          'circle-opacity': [
+            'interpolate', ['linear'], ['zoom'],
+            ZOOM_CROSSFADE_START, 1,
+            ZOOM_CROSSFADE_END,   0,
+          ],
+          'circle-stroke-opacity': [
+            'interpolate', ['linear'], ['zoom'],
+            ZOOM_CROSSFADE_START, 1,
+            ZOOM_CROSSFADE_END,   0,
+          ],
+        },
+      });
+
+      // ── FIM extent vector tile source ──
       if (!map.getSource('fim-tiles')) {
         map.addSource('fim-tiles', {
           type: 'vector',
-          tiles: [
-            'http://127.0.0.1:8000/apps/fimbench-gui/tile-proxy/{z}/{x}/{y}.pbf'
-          ],
-          minzoom: 2,
+          tiles: ['http://127.0.0.1:8000/apps/fimbench-gui/tile-proxy/{z}/{x}/{y}.pbf'],
+          minzoom: 3,
           maxzoom: 14,
         });
       }
 
-      // -----------------------------
-      // ADD LAYER (ONLY ONCE)
-      // -----------------------------
+      // ── FIM extent fill layer (fades IN as zoom increases) ──
       if (!map.getLayer('fim-layer')) {
         map.addLayer({
           id: 'fim-layer',
           type: 'fill',
           source: 'fim-tiles',
           'source-layer': 'fim_extents',
-          // filter commented out — show everything
+          filter: ['in', ['get', 'tier'], ['literal', filters.tiers]],
           paint: {
-            'fill-color': '#1E90FF',   // brighter, more "electric"
-            'fill-opacity': 0.45,      // less muddy overlap
-            'fill-outline-color': '#0B3D91'
-          }
+            'fill-color': '#0067E1',
+            'fill-opacity': [
+              'interpolate', ['linear'], ['zoom'],
+              ZOOM_CROSSFADE_START, 0,
+              ZOOM_CROSSFADE_END,   0.6,
+            ],
+            'fill-outline-color': '#003B8E',
+          },
         });
       }
 
+      // Click handler to log properties (keep for debugging)
+      map.on('click', 'fim-layer', (e) => {
+        if (e.features?.length) console.log('extent props:', e.features[0].properties);
+      });
+      map.on('click', 'centroids-layer', (e) => {
+        if (e.features?.length) console.log('centroid props:', e.features[0].properties);
+      });
 
-
-      // Helper — deduplicates by site_id so the table doesn't show
-      // the same FIM extent twice (tiles overlap at boundaries)
-      const emitFeatures = () => {
-        if (!onFeaturesChange) return;
-        const raw = map.queryRenderedFeatures({ layers: ['fim-layer'] });
-        const seen = new Set<string>();
-        const unique = raw.filter(f => {
-          const key = f.properties?.site_id ?? f.properties?.id ?? JSON.stringify(f.properties);
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        onFeaturesChange(unique.map(f => f.properties));
-      };
-
-      // Emit once on load
-      emitFeatures();
-
-      // Re-emit whenever the user pans or zooms
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
-    });
-
-    map.on('click', 'fim-layer', (e) => {
-      if (e.features && e.features.length > 0) {
-        console.log('properties:', e.features[0].properties);
-      }
+      emitFeatures(); // emit once immediately after load
     });
 
     return () => {
@@ -183,13 +249,36 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
   }, [basemap]);
 
   useEffect(() => {
+    fetch(CATALOG_URL)
+      .then(r => r.json())
+      .then(data => {
+        catalogRef.current = data.records ?? [];
+        // If map is already loaded, populate the centroid source immediately
+        const map = mapRef.current;
+        if (map?.isStyleLoaded()) {
+          const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
+          src?.setData(buildCentroidGeoJSON(filters.tiers));
+        }
+      })
+      .catch(err => console.error('Failed to load catalog:', err));
+  }, []); // runs once
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
-    if (!map.getLayer('fim-layer')) return;
 
-    map.setFilter('fim-layer', [
-      'in', ['get', 'tier'], ['literal', filters.tiers]
-    ]);
+    // Update extent filter
+    if (map.getLayer('fim-layer')) {
+      map.setFilter('fim-layer', [
+        'in', ['get', 'tier'], ['literal', filters.tiers]
+      ]);
+    }
+
+    // Update centroid GeoJSON data
+    if (map.getSource('centroids')) {
+      (map.getSource('centroids') as maplibregl.GeoJSONSource)
+        .setData(buildCentroidGeoJSON(filters.tiers));
+    }
   }, [filters.tiers]);
 
   // -----------------------------
@@ -290,7 +379,7 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
 //       id: 'fim-layer',
 //       data: 'https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/tiles/{z}/{x}/{y}.pbf',
 //       binary: true,
-//       minZoom: 2,
+//       minZoom: 3,
 //       maxZoom: 14,
 //       filled: true,
 //       getFillColor: [255, 0, 0, 128],
