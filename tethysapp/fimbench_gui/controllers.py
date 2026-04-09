@@ -5,7 +5,7 @@ import requests
 # -----------------------------
 # Home Page (React SPA)
 # -----------------------------
-@controller
+@controller(login_required=False)
 def home(request):
     """Controller for the app home page."""
     from tethysapp.fimbench_gui.app import App  # lazy import

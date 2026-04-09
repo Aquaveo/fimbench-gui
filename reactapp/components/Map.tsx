@@ -21,6 +21,7 @@ const BASEMAPS = {
 
 type MapProps = {
   filters: Filters;
+  onFeaturesChange?: (features: any[]) => void;
 };
 
 type ViewState = {
@@ -59,7 +60,8 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // -----------------------------
 // Main Component
 // -----------------------------
-export default function Map({ filters }: MapProps) {
+
+export default function Map({ filters , onFeaturesChange }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
@@ -137,11 +139,36 @@ export default function Map({ filters }: MapProps) {
           'source-layer': 'fim_extents',
           // filter commented out — show everything
           paint: {
-            'fill-color': '#0067E1',
-            'fill-opacity': 0.6,
-          },
+            'fill-color': '#1E90FF',   // brighter, more "electric"
+            'fill-opacity': 0.45,      // less muddy overlap
+            'fill-outline-color': '#0B3D91'
+          }
         });
       }
+
+
+
+      // Helper — deduplicates by site_id so the table doesn't show
+      // the same FIM extent twice (tiles overlap at boundaries)
+      const emitFeatures = () => {
+        if (!onFeaturesChange) return;
+        const raw = map.queryRenderedFeatures({ layers: ['fim-layer'] });
+        const seen = new Set<string>();
+        const unique = raw.filter(f => {
+          const key = f.properties?.site_id ?? f.properties?.id ?? JSON.stringify(f.properties);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        onFeaturesChange(unique.map(f => f.properties));
+      };
+
+      // Emit once on load
+      emitFeatures();
+
+      // Re-emit whenever the user pans or zooms
+      map.on('moveend', emitFeatures);
+      map.on('zoomend', emitFeatures);
     });
 
     map.on('click', 'fim-layer', (e) => {

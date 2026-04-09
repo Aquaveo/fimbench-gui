@@ -12,6 +12,8 @@ function App() {
     endDate: '2025-07-04',
   });
 
+  const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
@@ -21,14 +23,15 @@ function App() {
       {/* Right: map on top, table on bottom */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Map takes up ~60% of height */}
         <div style={{ flex: '0 0 60%', minHeight: 0 }}>
-          <Map filters={filters} />
+          <Map
+            filters={filters}
+            onFeaturesChange={setVisibleFeatures}
+          />
         </div>
 
-        {/* Table takes the remaining ~40% */}
         <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
-          <FIMTable filters={filters} />
+          <FIMTable features={visibleFeatures} />
         </div>
 
       </div>
