@@ -18,11 +18,11 @@ def home(request):
 def tile_proxy(request, z, x, tile):
     y = tile[:-4] if tile.endswith(".pbf") else tile
     
-    print("request:", request)
+    # print("request:", request)
     
     upstream_url = f"http://127.0.0.1:9000/fimbench/FIM_Viz/tiles/{z}/{x}/{y}.pbf"
     
-    print("upstream_url:", upstream_url)
+    # print("upstream_url:", upstream_url)
 
     try:
         upstream = requests.get(upstream_url, stream=True, timeout=30)
@@ -42,7 +42,7 @@ def tile_proxy(request, z, x, tile):
             content_type="application/vnd.mapbox-vector-tile",
         )
         
-        print("HttpResponse:", response)
+        # print("HttpResponse:", response)
 
         # IMPORTANT: body is gzipped, so tell the browser
         response["Content-Encoding"] = "gzip"

@@ -5,12 +5,14 @@ import { type Filters } from './FilterSidebar';
 const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
 
 const TIER_PATH: Record<string, string> = {
-  tier1: 'Tier_1',
-  tier2: 'Tier_2',
-  tier3: 'Tier_3',
-  tier4: 'Tier_4',
-  hwm:   'HWM',
+  Tier_1: 'Tier_1',
+  Tier_2: 'Tier_2',
+  Tier_3: 'Tier_3',
+  Tier_4: 'Tier_4',
+  HWM:   'HWM',
 };
+
+
 
 // ── Types ─────────────────────────────────────────────────────
 type FIMRecord = {

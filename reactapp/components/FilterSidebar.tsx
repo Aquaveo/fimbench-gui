@@ -13,11 +13,11 @@ type FilterSidebarProps = {
 };
 
 const TIER_OPTIONS = [
-  { value: 'tier1', label: 'Tier 1' },
-  { value: 'tier2', label: 'Tier 2' },
-  { value: 'tier3', label: 'Tier 3' },
-  { value: 'tier4', label: 'Tier 4' },
-  { value: 'hwm',   label: 'High Water Mark' },
+  { value: 'Tier_1', label: 'Tier 1' },
+  { value: 'Tier_2', label: 'Tier 2' },
+  { value: 'Tier_3', label: 'Tier 3' },
+  { value: 'Tier_4', label: 'Tier 4' },
+  { value: 'HWM',    label: 'High Water Mark' },
 ];
 
 export default function FilterSidebar({ filters, setFilters }: FilterSidebarProps) {

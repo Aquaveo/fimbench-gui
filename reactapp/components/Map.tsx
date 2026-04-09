@@ -59,7 +59,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // -----------------------------
 // Main Component
 // -----------------------------
-export default function Map(_ : MapProps) {
+export default function Map({ filters }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
@@ -135,11 +135,18 @@ export default function Map(_ : MapProps) {
           type: 'fill',
           source: 'fim-tiles',
           'source-layer': 'fim_extents',
+          // filter commented out — show everything
           paint: {
-            'fill-color': '#ff0000',
-            'fill-opacity': 0.5,
+            'fill-color': '#0067E1',
+            'fill-opacity': 0.6,
           },
         });
+      }
+    });
+
+    map.on('click', 'fim-layer', (e) => {
+      if (e.features && e.features.length > 0) {
+        console.log('properties:', e.features[0].properties);
       }
     });
 
@@ -147,6 +154,16 @@ export default function Map(_ : MapProps) {
       map.remove();
     };
   }, [basemap]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    if (!map.getLayer('fim-layer')) return;
+
+    map.setFilter('fim-layer', [
+      'in', ['get', 'tier'], ['literal', filters.tiers]
+    ]);
+  }, [filters.tiers]);
 
   // -----------------------------
   // UI
