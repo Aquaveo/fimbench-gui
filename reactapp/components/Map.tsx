@@ -32,6 +32,14 @@ const TIER_CENTROID_COLORS: Record<string, string> = {
   HWM:    '#EC6FA3',  // pink
 };
 
+const TIER_LABELS: Record<string, string> = {
+  Tier_1: 'Tier 1',
+  Tier_2: 'Tier 2',
+  Tier_3: 'Tier 3',
+  Tier_4: 'Tier 4',
+  HWM:    'High Water Mark',
+};
+
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
@@ -315,6 +323,36 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
           </select>
         </label>
       </div>
+      {/* Map legend — bottom right */}
+      {filters.tiers.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 28,
+          right: 10,
+          padding: '8px 12px',
+          backgroundColor: 'rgba(255,255,255,0.88)',
+          borderRadius: 4,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+          fontSize: 12,
+          lineHeight: 1.6,
+          pointerEvents: 'none', // don't block map interaction
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>FIM Tiers</div>
+          {filters.tiers.map(tier => (
+            <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                display: 'inline-block',
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: TIER_CENTROID_COLORS[tier] ?? '#aaa',
+                flexShrink: 0,
+              }} />
+              <span>{TIER_LABELS[tier] ?? tier}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
