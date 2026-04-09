@@ -1,9 +1,9 @@
 import React from 'react';
 
 export type Filters = {
-  tier: string;
+  tiers: string[];
   returnPeriod: string;
-  startDate: string; // ISO format YYYY-MM-DD
+  startDate: string;
   endDate: string;
 };
 
@@ -12,9 +12,22 @@ type FilterSidebarProps = {
   setFilters: (filters: Filters) => void;
 };
 
+const TIER_OPTIONS = [
+  { value: 'tier1', label: 'Tier 1' },
+  { value: 'tier2', label: 'Tier 2' },
+  { value: 'tier3', label: 'Tier 3' },
+  { value: 'tier4', label: 'Tier 4' },
+  { value: 'hwm',   label: 'High Water Mark' },
+];
+
 export default function FilterSidebar({ filters, setFilters }: FilterSidebarProps) {
-  const handleTierChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, tier: e.target.value });
+
+  const handleTierToggle = (value: string) => {
+    const already = filters.tiers.includes(value);
+    const updated = already
+      ? filters.tiers.filter(t => t !== value)
+      : [...filters.tiers, value];
+    setFilters({ ...filters, tiers: updated });
   };
 
   const handleReturnPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -30,21 +43,27 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
   };
 
   return (
-    <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2' }}>
+    <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto' }}>
       <h2>Filters</h2>
 
+      {/* ── Tier (multi-select checkboxes) ── */}
       <div style={{ marginBottom: 12 }}>
-        <label htmlFor="tier">FIM Tier:</label>
-        <select id="tier" value={filters.tier} onChange={handleTierChange}>
-          <option value="tier1">Tier 1</option>
-          <option value="tier2">Tier 2</option>
-          <option value="tier3">Tier 3</option>
-          <option value="tier4">Tier 4</option>
-          {/* <option value="tierX">Tier X</option> */}
-          <option value="hwm">High Water Mark</option>
-        </select>
+        <label style={{ fontWeight: 600 }}>FIM Tier:</label>
+        <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {TIER_OPTIONS.map(({ value, label }) => (
+            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={filters.tiers.includes(value)}
+                onChange={() => handleTierToggle(value)}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </div>
 
+      {/* ── Date range ── */}
       <div style={{ marginBottom: 12 }}>
         <label htmlFor="startDate">Start Date:</label>
         <input
@@ -52,22 +71,30 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           type="date"
           value={filters.startDate}
           onChange={handleStartDateChange}
+          style={{ display: 'block', marginTop: 4 }}
         />
       </div>
 
-      <div>
+      <div style={{ marginBottom: 12 }}>
         <label htmlFor="endDate">End Date:</label>
         <input
           id="endDate"
           type="date"
           value={filters.endDate}
           onChange={handleEndDateChange}
+          style={{ display: 'block', marginTop: 4 }}
         />
       </div>
 
+      {/* ── Return Period ── */}
       <div style={{ marginBottom: 12 }}>
         <label htmlFor="returnPeriod">Return Period:</label>
-        <select id="returnPeriod" value={filters.returnPeriod} onChange={handleReturnPeriodChange}>
+        <select
+          id="returnPeriod"
+          value={filters.returnPeriod}
+          onChange={handleReturnPeriodChange}
+          style={{ display: 'block', marginTop: 4 }}
+        >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>

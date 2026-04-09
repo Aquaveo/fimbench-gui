@@ -1,21 +1,37 @@
 import { useState } from 'react';
 import FilterSidebar, { type Filters } from '../components/FilterSidebar';
 import Map from '../components/Map';
+import FIMTable from '../components/FIMTable';
 import './App.css';
 
 function App() {
-
   const [filters, setFilters] = useState<Filters>({
-    tier: 'tier2',           // matches FIM_RASTER_BY_TIER keys
-    returnPeriod: '100',     
-    startDate: '2016-01-03', // default
-    endDate: '2025-07-04',   // default
+    tiers: ['tier2'],
+    returnPeriod: '100',
+    startDate: '2016-01-03',
+    endDate: '2025-07-04',
   });
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+
+      {/* Left sidebar */}
       <FilterSidebar filters={filters} setFilters={setFilters} />
-      <Map filters={filters} />
+
+      {/* Right: map on top, table on bottom */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Map takes up ~60% of height */}
+        <div style={{ flex: '0 0 60%', minHeight: 0 }}>
+          <Map filters={filters} />
+        </div>
+
+        {/* Table takes the remaining ~40% */}
+        <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
+          <FIMTable filters={filters} />
+        </div>
+
+      </div>
     </div>
   );
 }
