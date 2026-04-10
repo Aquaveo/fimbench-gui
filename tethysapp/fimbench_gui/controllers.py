@@ -31,7 +31,7 @@ def tile_proxy(request, z, x, tile):
             return HttpResponse(status=204)
 
         upstream.raise_for_status()
-
+        
         # Keep upstream bytes compressed as-is
         upstream.raw.decode_content = False
         body = upstream.raw.read()
@@ -46,6 +46,7 @@ def tile_proxy(request, z, x, tile):
 
         # IMPORTANT: body is gzipped, so tell the browser
         response["Content-Encoding"] = "gzip"
+        
 
         if "Cache-Control" in upstream.headers:
             response["Cache-Control"] = upstream.headers["Cache-Control"]

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────
 const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
@@ -15,19 +15,14 @@ function buildMetaUrl(s3Prefix: string, fileName: string): string {
 
 // ── Normalize one metadata JSON into a display record ─────────
 function parseRecord(j: any, s3Prefix: string, fileName: string) {
-  // River Basin — string or array
   const basin = Array.isArray(j['River Basin Name'])
     ? j['River Basin Name'].join(', ')
     : (j['River Basin Name'] ?? '—');
 
-  // HUC8 — string or array
   const huc8 = Array.isArray(j['HUC8'])
     ? j['HUC8'].join(', ')
     : (j['HUC8'] ?? '—');
 
-  // Date — Tier 1/2/3: "Flooding Event" (YYYYMMDD)
-  //        Tier 4: synthetic, no date
-  //        HWM: "Start Date of the Flood" / "End Date of the Flood" (YYYYMMDD)
   const fmt = (d: string) =>
     d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : d;
 
@@ -35,22 +30,23 @@ function parseRecord(j: any, s3Prefix: string, fileName: string) {
   const startDate: string = j['Start Date of the Flood'] ?? '';
   const endDate: string   = j['End Date of the Flood'] ?? '';
 
+  // Keep a sortable ISO date string alongside the display string
   let year = '—';
   let date = '—';
+  let dateSortKey = '';   // ISO string for reliable date sorting
 
   if (rawEvent) {
     year = rawEvent.slice(0, 4);
     date = fmt(rawEvent);
+    dateSortKey = fmt(rawEvent);           // already YYYY-MM-DD
   } else if (startDate) {
     year = startDate.slice(0, 4);
     date = endDate && endDate !== startDate
       ? `${fmt(startDate)} – ${fmt(endDate)}`
       : fmt(startDate);
+    dateSortKey = fmt(startDate);
   }
 
-  // Platform — Tier 1/2/3: "Full form of the sensor code"
-  //            Tier 4: "BLE" key exists → label it
-  //            HWM: may use sensor code or another key
   let platform: string =
     j['Full form of the sensor code'] ??
     j['Sensor'] ??
@@ -59,15 +55,15 @@ function parseRecord(j: any, s3Prefix: string, fileName: string) {
   if (!platform && j['BLE']) platform = 'Base Level Engineering (FEMA BLE)';
   if (!platform) platform = '—';
 
-  // Quality — HWM JSONs have no "Quality" field, default to "HWM"
   const quality = j['Quality'] ?? (startDate ? 'HWM' : '—');
 
   return {
-    riverBasin: basin,
-    state:      j['State'] ?? '—',
+    riverBasin:   basin,
+    state:        j['State'] ?? '—',
     year,
     date,
-    resolution: j['Resolution in meter'] ?? 0,
+    dateSortKey,
+    resolution:   j['Resolution in meter'] ?? 0,
     huc8,
     quality,
     platform,
@@ -76,8 +72,81 @@ function parseRecord(j: any, s3Prefix: string, fileName: string) {
   };
 }
 
-// ── Types ─────────────────────────────────────────────────────
+// ── Sorting ───────────────────────────────────────────────────
 type FIMRecord = ReturnType<typeof parseRecord>;
+
+type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'quality' | 'platform';
+type SortDir = 'asc' | 'desc';
+
+const SORT_TYPE: Record<SortKey, 'text' | 'number' | 'date'> = {
+  riverBasin: 'text',
+  state:      'text',
+  year:       'number',
+  date:       'date',
+  resolution: 'number',
+  huc8:       'text',
+  quality:    'text',
+  platform:   'text',
+};
+
+function compareRecords(a: FIMRecord, b: FIMRecord, key: SortKey, dir: SortDir): number {
+  const mul = dir === 'asc' ? 1 : -1;
+  const kind = SORT_TYPE[key];
+
+  if (kind === 'number') {
+    const na = key === 'year'
+      ? (a.year === '—' ? -Infinity : Number(a.year))
+      : Number(a[key]);
+    const nb = key === 'year'
+      ? (b.year === '—' ? -Infinity : Number(b.year))
+      : Number(b[key]);
+    return mul * (na - nb);
+  }
+
+  if (kind === 'date') {
+    const da = a.dateSortKey || '';
+    const db = b.dateSortKey || '';
+    if (!da && !db) return 0;
+    if (!da) return 1;   // unknowns always last regardless of direction
+    if (!db) return -1;
+    return mul * da.localeCompare(db);
+  }
+
+  // text
+  const va = (a[key as keyof FIMRecord] as string) ?? '';
+  const vb = (b[key as keyof FIMRecord] as string) ?? '';
+  if (va === '—' && vb === '—') return 0;
+  if (va === '—') return 1;    // '—' always last
+  if (vb === '—') return -1;
+  return mul * va.localeCompare(vb, undefined, { sensitivity: 'base' });
+}
+
+// ── Column definitions ────────────────────────────────────────
+type ColDef = {
+  label: string;
+  sortKey?: SortKey;
+  width: number;
+  align?: 'left' | 'right';
+  render: (r: FIMRecord) => React.ReactNode;
+};
+
+const COLUMNS: ColDef[] = [
+  { label: 'River / Basin', sortKey: 'riverBasin', width: 180, render: r => r.riverBasin },
+  { label: 'State',         sortKey: 'state',       width: 110, render: r => r.state },
+  { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
+  { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
+  { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
+    render: r => Number(r.resolution).toFixed(2) },
+  { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
+  { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality },
+  { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
+  { label: 'Download FIM',  width: 90,
+    render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+  { label: 'Metadata',      width: 80,
+    render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
+];
+
+// ── Types ─────────────────────────────────────────────────────
 type Props = { features: any[] };
 const PAGE_SIZE = 20;
 
@@ -86,6 +155,8 @@ export default function FIMTable({ features }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     if (features.length === 0) { setRecords([]); return; }
@@ -115,6 +186,23 @@ export default function FIMTable({ features }: Props) {
     return () => { cancelled = true; };
   }, [features]);
 
+  // Sort records — memoized so it only reruns when records/sort state changes
+  const sortedRecords = useMemo(
+    () => [...records].sort((a, b) => compareRecords(a, b, sortKey, sortDir)),
+    [records, sortKey, sortDir]
+  );
+
+  const handleHeaderClick = (key: SortKey | undefined) => {
+    if (!key) return;
+    if (key === sortKey) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+    setPage(1);   // jump back to page 1 on any sort change
+  };
+
   if (features.length === 0) return (
     <div style={containerStyle}>
       <p style={{ color: '#888', padding: 12 }}>No FIM extents visible in current map view.</p>
@@ -127,8 +215,8 @@ export default function FIMTable({ features }: Props) {
     </div>
   );
 
-  const totalPages  = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
-  const pageRows    = records.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / PAGE_SIZE));
+  const pageRows   = sortedRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div style={containerStyle}>
@@ -149,43 +237,60 @@ export default function FIMTable({ features }: Props) {
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <colgroup>
-            <col style={{ width: 180 }} /> {/* River/Basin */}
-            <col style={{ width: 110 }} /> {/* State */}
-            <col style={{ width: 55  }} /> {/* Year */}
-            <col style={{ width: 95  }} /> {/* Date */}
-            <col style={{ width: 90  }} /> {/* Resolution */}
-            <col style={{ width: 130 }} /> {/* HUC8 */}
-            <col style={{ width: 80  }} /> {/* Quality */}
-            <col style={{ width: 180 }} /> {/* Platform */}
-            <col style={{ width: 90  }} /> {/* Download */}
-            <col style={{ width: 80  }} /> {/* Metadata */}
+            {COLUMNS.map((col, i) => (
+              <col key={i} style={{ width: col.width }} />
+            ))}
           </colgroup>
           <thead>
             <tr style={{ backgroundColor: '#e8e8e8' }}>
-              {['River / Basin','State','Year','Date','Resolution (m)','HUC8','Quality','Platform','Download FIM','Metadata'].map(h => (
-                <th key={h} style={thStyle}>{h}</th>
-              ))}
+              {COLUMNS.map((col) => {
+                const isSorted = col.sortKey === sortKey;
+                const sortable = !!col.sortKey;
+                return (
+                  <th
+                    key={col.label}
+                    style={{
+                      ...thStyle,
+                      cursor:          sortable ? 'pointer' : 'default',
+                      userSelect:      'none',
+                      backgroundColor: isSorted ? '#d0dff5' : '#e8e8e8',
+                    }}
+                    onClick={() => handleHeaderClick(col.sortKey)}
+                    title={sortable ? `Sort by ${col.label}` : undefined}
+                  >
+                    {col.label}
+                    {sortable && <SortIndicator active={isSorted} dir={sortDir} />}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {pageRows.map((r, i) => (
               <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9f9f9', verticalAlign: 'top' }}>
-                <td style={tdStyle}>{r.riverBasin}</td>
-                <td style={tdStyle}>{r.state}</td>
-                <td style={tdStyle}>{r.year}</td>
-                <td style={tdStyle}>{r.date}</td>
-                <td style={{ ...tdStyle, textAlign: 'right' }}>{Number(r.resolution).toFixed(2)}</td>
-                <td style={tdStyle}>{r.huc8}</td>
-                <td style={tdStyle}>{r.quality}</td>
-                <td style={tdStyle}>{r.platform}</td>
-                <td style={tdStyle}><a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a></td>
-                <td style={tdStyle}><a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a></td>
+                {COLUMNS.map((col) => (
+                  <td
+                    key={col.label}
+                    style={{ ...tdStyle, textAlign: col.align ?? 'left' }}
+                  >
+                    {col.render(r)}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+// ── Sort indicator icon ───────────────────────────────────────
+function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
+  return (
+    <span style={{ marginLeft: 4, opacity: active ? 1 : 0.3, fontSize: 10 }}>
+      {active ? (dir === 'asc' ? '▲' : '▼') : '⇅'}
+    </span>
   );
 }
 
@@ -197,7 +302,7 @@ const containerStyle: React.CSSProperties = {
 const thStyle: React.CSSProperties = {
   padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid #ccc',
   whiteSpace: 'normal', wordBreak: 'break-word', position: 'sticky',
-  top: 0, backgroundColor: '#e8e8e8',
+  top: 0,
 };
 const tdStyle: React.CSSProperties = {
   padding: '5px 10px', borderBottom: '1px solid #eee',
