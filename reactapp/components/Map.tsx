@@ -43,6 +43,7 @@ const TIER_LABELS: Record<string, string> = {
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
+  onFeatureClick?: (feature: any | null) => void
 };
 
 type ViewState = {
@@ -82,7 +83,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters , onFeaturesChange }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
@@ -238,12 +239,27 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
         });
       }
 
-      // Click handler to log properties (keep for debugging)
-      map.on('click', 'fim-layer', (e) => {
-        if (e.features?.length) console.log('extent props:', e.features[0].properties);
-      });
+      // ── Click: feature selection ──────────────────────────────────
+      // Centroids take priority — check them first, then extents
       map.on('click', 'centroids-layer', (e) => {
-        if (e.features?.length) console.log('centroid props:', e.features[0].properties);
+        if (!e.features?.length) return;
+        e.preventDefault();   // stops the map-level click from also firing
+        onFeatureClick?.(e.features[0].properties);
+        console.log("\nClicked centroids-layer\n");
+      });
+
+      map.on('click', 'fim-layer', (e) => {
+        if (!e.features?.length) return;
+        e.preventDefault();
+        onFeatureClick?.(e.features[0].properties);
+        console.log("\nClicked fim-layer\n");
+      });
+
+      // ── Click: empty space clears selection ───────────────────────
+      map.on('click', (e) => {
+        if (e.defaultPrevented) return;   // a feature click already handled this
+        onFeatureClick?.(null);
+        console.log("\nClicked on empty space, clearing selection\n");
       });
 
       // ── Cursor: pointer over interactive layers ──────────────────

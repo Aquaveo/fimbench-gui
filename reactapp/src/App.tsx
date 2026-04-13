@@ -13,6 +13,7 @@ function App() {
   });
 
   const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
+  const [_selectedFeature, setSelectedFeature] = useState<any | null>(null);
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -27,6 +28,7 @@ function App() {
           <Map
             filters={filters}
             onFeaturesChange={setVisibleFeatures}
+            onFeatureClick={setSelectedFeature}
           />
         </div>
 
