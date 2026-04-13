@@ -239,38 +239,31 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
         });
       }
 
-      // ── Click: feature selection ──────────────────────────────────
-      // Centroids take priority — check them first, then extents
-      map.on('click', 'centroids-layer', (e) => {
-        if (!e.features?.length) return;
-        e.preventDefault();   // stops the map-level click from also firing
-        onFeatureClick?.(e.features[0].properties);
-        console.log("\nClicked centroids-layer\n");
-      });
+      // ── Click: unified handler with explicit layer priority ───────
+      // Layers are checked in order; first match wins, so centroids
+      // always beat extent polygons when they overlap. To add cluster
+      // or other interactive layers, prepend/append to this array.
+      const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
 
-      map.on('click', 'fim-layer', (e) => {
-        if (!e.features?.length) return;
-        e.preventDefault();
-        onFeatureClick?.(e.features[0].properties);
-        console.log("\nClicked fim-layer\n");
-      });
-
-      // ── Click: empty space clears selection ───────────────────────
       map.on('click', (e) => {
-        if (e.defaultPrevented) return;   // a feature click already handled this
+        for (const layerId of INTERACTIVE_LAYERS) {
+          if (!map.getLayer(layerId)) continue;
+          const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
+          if (features.length > 0) {
+            onFeatureClick?.(features[0].properties);
+            return;
+          }
+        }
         onFeatureClick?.(null);
-        console.log("\nClicked on empty space, clearing selection\n");
       });
 
       // ── Cursor: pointer over interactive layers ──────────────────
-      const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
-
       INTERACTIVE_LAYERS.forEach(layerId => {
         map.on('mouseenter', layerId, () => {
           map.getCanvas().style.cursor = 'pointer';
         });
         map.on('mouseleave', layerId, () => {
-          map.getCanvas().style.cursor = '';  // '' resets to MapLibre's default grab cursor
+          map.getCanvas().style.cursor = '';
         });
       });
 
