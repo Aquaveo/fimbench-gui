@@ -246,6 +246,18 @@ export default function Map({ filters , onFeaturesChange }: MapProps) {
         if (e.features?.length) console.log('centroid props:', e.features[0].properties);
       });
 
+      // ── Cursor: pointer over interactive layers ──────────────────
+      const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
+
+      INTERACTIVE_LAYERS.forEach(layerId => {
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';  // '' resets to MapLibre's default grab cursor
+        });
+      });
+
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
       emitFeatures(); // emit once immediately after load
