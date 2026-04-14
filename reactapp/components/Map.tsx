@@ -129,8 +129,8 @@ type ViewState = {
 };
 
 const DEFAULT_VIEW: ViewState = {
-  center: [-98, 29.9],
-  zoom: 6,
+  center: [-96, 38],
+  zoom: 4,
   bearing: 0,
   pitch: 0,
 };
@@ -167,6 +167,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
   
   const catalogRef = useRef<any[]>([]);              // all catalog records, loaded once
   const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
+  const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
 
   const buildCentroidGeoJSON = (tiers: string[]) => ({
     type: 'FeatureCollection' as const,
@@ -244,6 +245,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       });
       onFeaturesChange(unique.map(f => f.properties));
     };
+    emitFeaturesRef.current = emitFeatures;
 
     map.on('load', () => {
       // ── Centroid source (GeoJSON, updated client-side) ──
@@ -344,6 +346,8 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
           src?.setData(buildCentroidGeoJSON(filters.tiers));
+          // Emit features once the new centroid data has been rendered
+          map.once('idle', () => emitFeaturesRef.current?.());
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
