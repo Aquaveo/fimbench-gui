@@ -14,7 +14,7 @@ function buildMetaUrl(s3Prefix: string, fileName: string): string {
 }
 
 // ── Normalize one metadata JSON into a display record ─────────
-function parseRecord(j: any, s3Prefix: string, fileName: string) {
+function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string) {
   const basin = Array.isArray(j['River Basin Name'])
     ? j['River Basin Name'].join(', ')
     : (j['River Basin Name'] ?? '—');
@@ -58,6 +58,7 @@ function parseRecord(j: any, s3Prefix: string, fileName: string) {
   const quality = j['Quality'] ?? (startDate ? 'HWM' : '—');
 
   return {
+    siteId,
     riverBasin:   basin,
     state:        j['State'] ?? '—',
     year,
@@ -147,11 +148,15 @@ const COLUMNS: ColDef[] = [
 ];
 
 // ── Types ─────────────────────────────────────────────────────
-type Props = { features: any[] };
+type Props = {
+  features: any[];
+  selectedSiteId?: string | null;
+  onRowClick?: (siteId: string) => void;
+};
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features }: Props) {
+export default function FIMTable({ features, selectedSiteId: _selectedSiteId, onRowClick: _onRowClick }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
@@ -173,7 +178,7 @@ export default function FIMTable({ features }: Props) {
             const res = await fetch(metaUrl);
             if (!res.ok) return null;
             const j = await res.json();
-            return parseRecord(j, f.s3_prefix, f.file_name);
+            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id);
           } catch { return null; }
         })
       );

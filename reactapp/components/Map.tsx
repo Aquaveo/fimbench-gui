@@ -43,7 +43,8 @@ const TIER_LABELS: Record<string, string> = {
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
-  onFeatureClick?: (feature: any | null) => void
+  onFeatureClick?: (feature: any | null) => void;
+  selectedSiteId?: string | null;
 };
 
 type ViewState = {
@@ -83,7 +84,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick, selectedSiteId: _selectedSiteId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);

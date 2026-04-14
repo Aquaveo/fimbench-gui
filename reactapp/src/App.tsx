@@ -13,7 +13,11 @@ function App() {
   });
 
   const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
-  const [_selectedFeature, setSelectedFeature] = useState<any | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+
+  const handleFeatureClick = (feature: any | null) => {
+    setSelectedSiteId(feature?.site_id ?? null);
+  };
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -28,12 +32,17 @@ function App() {
           <Map
             filters={filters}
             onFeaturesChange={setVisibleFeatures}
-            onFeatureClick={setSelectedFeature}
+            onFeatureClick={handleFeatureClick}
+            selectedSiteId={selectedSiteId}
           />
         </div>
 
         <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
-          <FIMTable features={visibleFeatures} />
+          <FIMTable
+            features={visibleFeatures}
+            selectedSiteId={selectedSiteId}
+            onRowClick={setSelectedSiteId}
+          />
         </div>
 
       </div>
