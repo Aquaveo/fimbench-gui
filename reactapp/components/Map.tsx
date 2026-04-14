@@ -361,6 +361,16 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       (map.getSource('centroids') as maplibregl.GeoJSONSource)
         .setData(buildCentroidGeoJSON(filters.tiers));
     }
+
+    // Clear selection if the selected feature's tier is no longer active
+    if (selectedSiteIdRef.current) {
+      const selectedRecord = catalogRef.current.find(
+        r => r.site_id === selectedSiteIdRef.current
+      );
+      if (selectedRecord && !filters.tiers.includes(selectedRecord.tier)) {
+        onFeatureClick?.(null);
+      }
+    }
   }, [filters.tiers]);
 
   useEffect(() => {
