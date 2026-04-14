@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl, {
+  type ExpressionSpecification,
   type LngLatLike,
   type RasterSourceSpecification,
   type StyleSpecification,
@@ -39,6 +40,75 @@ const TIER_LABELS: Record<string, string> = {
   Tier_4: 'Tier 4',
   HWM:    'High Water Mark',
 };
+
+// -----------------------------
+// Shared paint expressions
+// Extracted so they can be reused in both addLayer and setPaintProperty calls.
+// -----------------------------
+const TIER_COLOR_EXPR: ExpressionSpecification = [
+  'match', ['get', 'tier'],
+  'Tier_1', TIER_CENTROID_COLORS.Tier_1,
+  'Tier_2', TIER_CENTROID_COLORS.Tier_2,
+  'Tier_3', TIER_CENTROID_COLORS.Tier_3,
+  'Tier_4', TIER_CENTROID_COLORS.Tier_4,
+  'HWM',    TIER_CENTROID_COLORS.HWM,
+  '#aaaaaa',
+];
+
+const CENTROID_OPACITY_EXPR: ExpressionSpecification = [
+  'interpolate', ['linear'], ['zoom'],
+  ZOOM_CROSSFADE_START, 1,
+  ZOOM_CROSSFADE_END,   0,
+];
+
+const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
+  'interpolate', ['linear'], ['zoom'],
+  ZOOM_CROSSFADE_START, 0,
+  ZOOM_CROSSFADE_END,   0.6,
+];
+
+// Applies (or resets) selection-emphasis paint properties on both layers.
+// Called both from the selectedSiteId useEffect and inside map.on('load')
+// so that basemap switches re-apply the current selection state.
+function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | undefined) {
+  if (!map.getLayer('centroids-layer') || !map.getLayer('fim-layer')) return;
+
+  if (!siteId) {
+    // Reset to default — no active selection
+    map.setPaintProperty('centroids-layer', 'circle-color', TIER_COLOR_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-opacity', CENTROID_OPACITY_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', CENTROID_OPACITY_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-radius', 7);
+    map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
+    map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
+  } else {
+    const isSelected: ExpressionSpecification = ['==', ['get', 'site_id'], siteId];
+
+    // Centroids: selected stays in tier color and grows slightly; others fade to gray
+    map.setPaintProperty('centroids-layer', 'circle-color', [
+      'case', isSelected, TIER_COLOR_EXPR, '#cccccc',
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-opacity', [
+      'case', isSelected, 1, 0.2,
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', [
+      'case', isSelected, 1, 0.2,
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-radius', [
+      'case', isSelected, 9, 6,
+    ]);
+
+    // Extents: selected stays in full blue; others become very faint gray
+    map.setPaintProperty('fim-layer', 'fill-color', [
+      'case', isSelected, '#0067E1', '#aaaaaa',
+    ]);
+    map.setPaintProperty('fim-layer', 'fill-opacity', [
+      'case', isSelected,
+      EXTENT_OPACITY_EXPR,
+      ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
+    ]);
+  }
+}
 
 type MapProps = {
   filters: Filters;
@@ -84,14 +154,15 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick, selectedSiteId: _selectedSiteId }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick, selectedSiteId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
   const [basemap, setBasemap] =
     useState<keyof typeof BASEMAPS>('Topographic');
   
-  const catalogRef = useRef<any[]>([]);   // all catalog records, loaded once
+  const catalogRef = useRef<any[]>([]);              // all catalog records, loaded once
+  const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
 
   const buildCentroidGeoJSON = (tiers: string[]) => ({
     type: 'FeatureCollection' as const,
@@ -184,29 +255,11 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
         source: 'centroids',
         paint: {
           'circle-radius': 7,
-          // Color by tier using a match expression
-          'circle-color': [
-            'match', ['get', 'tier'],
-            'Tier_1', TIER_CENTROID_COLORS.Tier_1,
-            'Tier_2', TIER_CENTROID_COLORS.Tier_2,
-            'Tier_3', TIER_CENTROID_COLORS.Tier_3,
-            'Tier_4', TIER_CENTROID_COLORS.Tier_4,
-            'HWM',    TIER_CENTROID_COLORS.HWM,
-            '#aaaaaa',
-          ],
+          'circle-color': TIER_COLOR_EXPR,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1.5,
-          // Fade OUT as zoom increases through crossfade zone
-          'circle-opacity': [
-            'interpolate', ['linear'], ['zoom'],
-            ZOOM_CROSSFADE_START, 1,
-            ZOOM_CROSSFADE_END,   0,
-          ],
-          'circle-stroke-opacity': [
-            'interpolate', ['linear'], ['zoom'],
-            ZOOM_CROSSFADE_START, 1,
-            ZOOM_CROSSFADE_END,   0,
-          ],
+          'circle-opacity': CENTROID_OPACITY_EXPR,
+          'circle-stroke-opacity': CENTROID_OPACITY_EXPR,
         },
       });
 
@@ -230,11 +283,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
           filter: ['in', ['get', 'tier'], ['literal', filters.tiers]],
           paint: {
             'fill-color': '#0067E1',
-            'fill-opacity': [
-              'interpolate', ['linear'], ['zoom'],
-              ZOOM_CROSSFADE_START, 0,
-              ZOOM_CROSSFADE_END,   0.6,
-            ],
+            'fill-opacity': EXTENT_OPACITY_EXPR,
             'fill-outline-color': '#003B8E',
           },
         });
@@ -267,6 +316,9 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
           map.getCanvas().style.cursor = '';
         });
       });
+
+      // Re-apply selection emphasis after every map reload (e.g. basemap switch)
+      applySelectionEmphasis(map, selectedSiteIdRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -310,6 +362,13 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
         .setData(buildCentroidGeoJSON(filters.tiers));
     }
   }, [filters.tiers]);
+
+  useEffect(() => {
+    selectedSiteIdRef.current = selectedSiteId ?? null;
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    applySelectionEmphasis(map, selectedSiteId);
+  }, [selectedSiteId]);
 
   // -----------------------------
   // UI
