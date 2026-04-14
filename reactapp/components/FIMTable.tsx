@@ -156,7 +156,7 @@ type Props = {
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteId: _selectedSiteId, onRowClick: _onRowClick }: Props) {
+export default function FIMTable({ features, selectedSiteId, onRowClick }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
@@ -271,18 +271,30 @@ export default function FIMTable({ features, selectedSiteId: _selectedSiteId, on
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((r, i) => (
-              <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9f9f9', verticalAlign: 'top' }}>
-                {COLUMNS.map((col) => (
-                  <td
-                    key={col.label}
-                    style={{ ...tdStyle, textAlign: col.align ?? 'left' }}
-                  >
-                    {col.render(r)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {pageRows.map((r, i) => {
+              const isSelected = r.siteId === selectedSiteId;
+              return (
+                <tr
+                  key={i}
+                  onClick={() => onRowClick?.(r.siteId)}
+                  style={{
+                    backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),
+                    verticalAlign: 'top',
+                    cursor: 'pointer',
+                    fontWeight: isSelected ? 600 : 'normal',
+                  }}
+                >
+                  {COLUMNS.map((col) => (
+                    <td
+                      key={col.label}
+                      style={{ ...tdStyle, textAlign: col.align ?? 'left' }}
+                    >
+                      {col.render(r)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
