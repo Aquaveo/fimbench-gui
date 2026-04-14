@@ -42,6 +42,10 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters }: F
     setFilters({ ...filters, tiers: updated });
   };
 
+  const handleHuc8Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, huc8Id: e.target.value });
+  };
+
   const handleReturnPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ ...filters, returnPeriod: e.target.value });
   };
@@ -73,6 +77,24 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters }: F
             </label>
           ))}
         </div>
+      </div>
+
+      {/* ── HUC8 ID ── */}
+      <div style={{ marginBottom: 12 }}>
+        <label htmlFor="huc8Id" style={{ fontWeight: 600 }}>HUC8 ID:</label>
+        <input
+          id="huc8Id"
+          type="text"
+          value={filters.huc8Id}
+          onChange={handleHuc8Change}
+          placeholder="e.g. 12100201"
+          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+        />
+        {filters.huc8Id && (
+          <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+            State &amp; date filters are inactive while HUC8 is set
+          </span>
+        )}
       </div>
 
       {/* ── Date range ── */}

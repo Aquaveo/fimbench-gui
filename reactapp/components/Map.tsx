@@ -169,11 +169,26 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
   const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
 
-  const buildCentroidGeoJSON = (tiers: string[]) => ({
-    type: 'FeatureCollection' as const,
-    features: catalogRef.current
-      .filter(r => tiers.includes(r.tier))
-      .map(r => ({
+  const filtersRef = useRef(filters);
+
+  const buildCentroidGeoJSON = (f: Filters) => {
+    const { tiers, huc8Id } = f;
+    const isHucMode = !!huc8Id;
+
+    return {
+      type: 'FeatureCollection' as const,
+      features: catalogRef.current
+        .filter(r => {
+          if (!tiers.includes(r.tier)) return false;
+          if (isHucMode) {
+            const huc8s: string[] = Array.isArray(r.huc8)
+              ? r.huc8.map(String)
+              : r.huc8 ? [String(r.huc8)] : [];
+            return huc8s.some(h => h === huc8Id);
+          }
+          return true;
+        })
+        .map(r => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: r.centroid },
         properties: {
@@ -188,7 +203,8 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
           quality:      r.quality,
         },
       })),
-  });
+    };
+  };
 
   // -----------------------------
   // Create map
@@ -233,14 +249,34 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
 
     const emitFeatures = () => {
       if (!onFeaturesChange) return;
+
+      // Build allowed site_ids from catalog using current filters
+      const { tiers, huc8Id } = filtersRef.current;
+      const isHucMode = !!huc8Id;
+      const allowedIds = new Set<string>(
+        catalogRef.current
+          .filter(r => {
+            if (!tiers.includes(r.tier)) return false;
+            if (isHucMode) {
+              const huc8s: string[] = Array.isArray(r.huc8)
+                ? r.huc8.map(String)
+                : r.huc8 ? [String(r.huc8)] : [];
+              return huc8s.some(h => h === huc8Id);
+            }
+            return true;
+          })
+          .map(r => r.site_id as string)
+      );
+
       const extents   = map.queryRenderedFeatures({ layers: ['fim-layer'] });
       const centroids = map.queryRenderedFeatures({ layers: ['centroids-layer'] });
       const raw = [...extents, ...centroids];
       const seen = new Set<string>();
       const unique = raw.filter(f => {
-        const key = f.properties?.site_id ?? f.properties?.id ?? JSON.stringify(f.properties);
-        if (seen.has(key)) return false;
-        seen.add(key);
+        const sid = f.properties?.site_id;
+        if (!sid || !allowedIds.has(sid)) return false;
+        if (seen.has(sid)) return false;
+        seen.add(sid);
         return true;
       });
       onFeaturesChange(unique.map(f => f.properties));
@@ -251,7 +287,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       // ── Centroid source (GeoJSON, updated client-side) ──
       map.addSource('centroids', {
         type: 'geojson',
-        data: buildCentroidGeoJSON(filters.tiers),
+        data: buildCentroidGeoJSON(filters),
       });
 
       // ── Centroid circle layer (visible below crossfade zone) ──
@@ -345,7 +381,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filters.tiers));
+          src?.setData(buildCentroidGeoJSON(filters));
           // Emit features once the new centroid data has been rendered
           map.once('idle', () => emitFeaturesRef.current?.());
         }
@@ -354,32 +390,59 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
   }, []); // runs once
 
   useEffect(() => {
+    filtersRef.current = filters;
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Update extent filter
+    const { tiers, huc8Id } = filters;
+    const isHucMode = !!huc8Id;
+
+    // Update extent filter — tier + huc8 (via allowed site_ids)
     if (map.getLayer('fim-layer')) {
-      map.setFilter('fim-layer', [
-        'in', ['get', 'tier'], ['literal', filters.tiers]
-      ]);
+      if (isHucMode) {
+        const allowedSiteIds = catalogRef.current
+          .filter(r => {
+            if (!tiers.includes(r.tier)) return false;
+            const huc8s: string[] = Array.isArray(r.huc8)
+              ? r.huc8.map(String)
+              : r.huc8 ? [String(r.huc8)] : [];
+            return huc8s.some(h => h === huc8Id);
+          })
+          .map(r => r.site_id as string);
+        map.setFilter('fim-layer', [
+          'in', ['get', 'site_id'], ['literal', allowedSiteIds]
+        ]);
+      } else {
+        map.setFilter('fim-layer', [
+          'in', ['get', 'tier'], ['literal', tiers]
+        ]);
+      }
     }
 
     // Update centroid GeoJSON data
     if (map.getSource('centroids')) {
       (map.getSource('centroids') as maplibregl.GeoJSONSource)
-        .setData(buildCentroidGeoJSON(filters.tiers));
+        .setData(buildCentroidGeoJSON(filters));
     }
 
-    // Clear selection if the selected feature's tier is no longer active
+    // Clear selection if the selected feature no longer passes filters
     if (selectedSiteIdRef.current) {
-      const selectedRecord = catalogRef.current.find(
+      const rec = catalogRef.current.find(
         r => r.site_id === selectedSiteIdRef.current
       );
-      if (selectedRecord && !filters.tiers.includes(selectedRecord.tier)) {
-        onFeatureClick?.(null);
+      if (rec) {
+        const tierOk = tiers.includes(rec.tier);
+        let huc8Ok = true;
+        if (isHucMode) {
+          const huc8s: string[] = Array.isArray(rec.huc8)
+            ? rec.huc8.map(String)
+            : rec.huc8 ? [String(rec.huc8)] : [];
+          huc8Ok = huc8s.some(h => h === huc8Id);
+        }
+        if (!tierOk || !huc8Ok) onFeatureClick?.(null);
       }
     }
-  }, [filters.tiers]);
+  }, [filters.tiers, filters.huc8Id]);
 
   useEffect(() => {
     selectedSiteIdRef.current = selectedSiteId ?? null;
