@@ -80,6 +80,7 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
     map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', CENTROID_OPACITY_EXPR);
     map.setPaintProperty('centroids-layer', 'circle-radius', 7);
     map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
+    map.setPaintProperty('fim-layer', 'fill-outline-color', '#003B8E');
     map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
   } else {
     const isSelected: ExpressionSpecification = ['==', ['get', 'site_id'], siteId];
@@ -101,6 +102,9 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
     // Extents: selected stays in full blue; others become very faint gray
     map.setPaintProperty('fim-layer', 'fill-color', [
       'case', isSelected, '#0067E1', '#aaaaaa',
+    ]);
+    map.setPaintProperty('fim-layer', 'fill-outline-color', [
+      'case', isSelected, '#003B8E', '#aaaaaa',
     ]);
     map.setPaintProperty('fim-layer', 'fill-opacity', [
       'case', isSelected,
