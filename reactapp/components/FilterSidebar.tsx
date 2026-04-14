@@ -2,6 +2,8 @@ import React from 'react';
 
 export type Filters = {
   tiers: string[];
+  states: string[];     // multi-select; empty = all states
+  huc8Id: string;       // direct input; empty = no HUC8 filter
   returnPeriod: string;
   startDate: string;
   endDate: string;
@@ -10,6 +12,16 @@ export type Filters = {
 type FilterSidebarProps = {
   filters: Filters;
   setFilters: (filters: Filters) => void;
+  onResetFilters: () => void;
+};
+
+export const DEFAULT_FILTERS: Filters = {
+  tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
+  states: [],
+  huc8Id: '',
+  returnPeriod: '100',
+  startDate: '2016-01-03',
+  endDate: '2025-07-04',
 };
 
 const TIER_OPTIONS = [
@@ -20,7 +32,7 @@ const TIER_OPTIONS = [
   { value: 'HWM',    label: 'High Water Mark' },
 ];
 
-export default function FilterSidebar({ filters, setFilters }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, setFilters, onResetFilters }: FilterSidebarProps) {
 
   const handleTierToggle = (value: string) => {
     const already = filters.tiers.includes(value);
@@ -71,7 +83,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           type="date"
           value={filters.startDate}
           onChange={handleStartDateChange}
-          style={{ display: 'block', marginTop: 4 }}
+          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
         />
       </div>
 
@@ -82,7 +94,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           type="date"
           value={filters.endDate}
           onChange={handleEndDateChange}
-          style={{ display: 'block', marginTop: 4 }}
+          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
         />
       </div>
 
@@ -93,12 +105,29 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           id="returnPeriod"
           value={filters.returnPeriod}
           onChange={handleReturnPeriodChange}
-          style={{ display: 'block', marginTop: 4 }}
+          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
         >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>
       </div>
+
+      {/* ── Actions ── */}
+      <div style={{ marginTop: 16 }}>
+        <button onClick={onResetFilters} style={btnStyle}>
+          Reset Filters
+        </button>
+      </div>
     </div>
   );
 }
+
+const btnStyle: React.CSSProperties = {
+  padding: '6px 10px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  border: '1px solid #bbb',
+  borderRadius: 4,
+  backgroundColor: '#fff',
+};

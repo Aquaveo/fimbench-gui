@@ -1,16 +1,11 @@
 import { useState } from 'react';
-import FilterSidebar, { type Filters } from '../components/FilterSidebar';
+import FilterSidebar, { DEFAULT_FILTERS, type Filters } from '../components/FilterSidebar';
 import Map from '../components/Map';
 import FIMTable from '../components/FIMTable';
 import './App.css';
 
 function App() {
-  const [filters, setFilters] = useState<Filters>({
-    tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
-    returnPeriod: '100',
-    startDate: '2016-01-03',
-    endDate: '2025-07-04',
-  });
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -23,7 +18,11 @@ function App() {
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
       {/* Left sidebar */}
-      <FilterSidebar filters={filters} setFilters={setFilters} />
+      <FilterSidebar
+        filters={filters}
+        setFilters={setFilters}
+        onResetFilters={() => setFilters(DEFAULT_FILTERS)}
+      />
 
       {/* Right: map on top, table on bottom */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -42,6 +41,7 @@ function App() {
             features={visibleFeatures}
             selectedSiteId={selectedSiteId}
             onRowClick={setSelectedSiteId}
+            onClearSelection={() => setSelectedSiteId(null)}
           />
         </div>
 

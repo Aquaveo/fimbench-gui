@@ -152,11 +152,12 @@ type Props = {
   features: any[];
   selectedSiteId?: string | null;
   onRowClick?: (siteId: string) => void;
+  onClearSelection?: () => void;
 };
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteId, onRowClick }: Props) {
+export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
@@ -261,13 +262,22 @@ export default function FIMTable({ features, selectedSiteId, onRowClick }: Props
       {/* Header */}
       <div style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong>FIM Records ({records.length})</strong>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</button>
-            <span>Page {page} / {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={onClearSelection}
+            disabled={!selectedSiteId}
+            style={{ ...tableHeaderBtnStyle, opacity: selectedSiteId ? 1 : 0.4, cursor: selectedSiteId ? 'pointer' : 'default' }}
+          >
+            Clear Selection
+          </button>
+          {totalPages > 1 && (
+            <>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={tableHeaderBtnStyle}>‹</button>
+              <span>Page {page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={tableHeaderBtnStyle}>›</button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -345,6 +355,16 @@ function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 // ── Styles ────────────────────────────────────────────────────
+const tableHeaderBtnStyle: React.CSSProperties = {
+  fontFamily: 'inherit',
+  fontSize: 13,
+  cursor: 'pointer',
+  padding: '2px 8px',
+  border: '1px solid #bbb',
+  borderRadius: 4,
+  backgroundColor: '#fff',
+};
+
 const containerStyle: React.CSSProperties = {
   height: '100%', overflow: 'hidden', display: 'flex',
   flexDirection: 'column', backgroundColor: '#fff', borderTop: '2px solid #ccc',
