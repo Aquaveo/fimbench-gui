@@ -22,6 +22,21 @@ function stateMatches(recordState: unknown, selected: string[]): boolean {
   return recStates.some(s => selected.includes(s));
 }
 
+// Returns true if the record's date (single or range) overlaps the filter window.
+// Records with no date info are included (we don't hide data we can't place in time).
+// Filter bounds are YYYY-MM-DD strings and compared lexicographically (safe for ISO).
+function dateMatches(record: any, startDate: string, endDate: string): boolean {
+  const single: string | null = record.date_ymd ?? null;
+  const recStart: string | null = record.start_date_ymd ?? null;
+  const recEnd: string | null   = record.end_date_ymd ?? null;
+
+  if (single) return single >= startDate && single <= endDate;
+  if (recStart && recEnd) return recStart <= endDate && recEnd >= startDate;
+  if (recStart) return recStart >= startDate && recStart <= endDate;
+  if (recEnd)   return recEnd   >= startDate && recEnd   <= endDate;
+  return true;  // no date info — include
+}
+
 // -----------------------------
 // Basemaps
 // -----------------------------
@@ -187,7 +202,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
   const filtersRef = useRef(filters);
 
   const buildCentroidGeoJSON = (f: Filters) => {
-    const { tiers, states, huc8Id } = f;
+    const { tiers, states, huc8Id, startDate, endDate } = f;
     const isHucMode = !!huc8Id;
 
     return {
@@ -202,6 +217,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
             return huc8s.some(h => h === huc8Id);
           } else {
             if (!stateMatches(r.state, states)) return false;
+            if (!dateMatches(r, startDate, endDate)) return false;
           }
           return true;
         })
@@ -268,7 +284,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
       if (!onFeaturesChange) return;
 
       // Build allowed site_ids from catalog using current filters
-      const { tiers, states, huc8Id } = filtersRef.current;
+      const { tiers, states, huc8Id, startDate, endDate } = filtersRef.current;
       const isHucMode = !!huc8Id;
       const allowedIds = new Set<string>(
         catalogRef.current
@@ -281,6 +297,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
               return huc8s.some(h => h === huc8Id);
             } else {
               if (!stateMatches(r.state, states)) return false;
+              if (!dateMatches(r, startDate, endDate)) return false;
             }
             return true;
           })
@@ -421,12 +438,13 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const { tiers, states, huc8Id } = filters;
+    const { tiers, states, huc8Id, startDate, endDate } = filters;
     const isHucMode = !!huc8Id;
+    const hasDateConstraint = !isHucMode && !!(startDate || endDate);
 
-    // Update extent filter — tier + huc8 or state (via allowed site_ids)
+    // Update extent filter — tier + huc8 or state/date (via allowed site_ids)
     if (map.getLayer('fim-layer')) {
-      if (isHucMode || states.length > 0) {
+      if (isHucMode || states.length > 0 || hasDateConstraint) {
         // Use catalog to compute allowed site_ids
         const allowedSiteIds = catalogRef.current
           .filter(r => {
@@ -438,6 +456,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
               return huc8s.some(h => h === huc8Id);
             } else {
               if (!stateMatches(r.state, states)) return false;
+              if (!dateMatches(r, startDate, endDate)) return false;
             }
             return true;
           })
@@ -466,6 +485,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
       if (rec) {
         const tierOk = tiers.includes(rec.tier);
         const stateOk = isHucMode || stateMatches(rec.state, states);
+        const dateOk  = isHucMode || dateMatches(rec, startDate, endDate);
         let huc8Ok = true;
         if (isHucMode) {
           const huc8s: string[] = Array.isArray(rec.huc8)
@@ -473,10 +493,10 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
             : rec.huc8 ? [String(rec.huc8)] : [];
           huc8Ok = huc8s.some(h => h === huc8Id);
         }
-        if (!tierOk || !huc8Ok || !stateOk) onFeatureClick?.(null);
+        if (!tierOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
       }
     }
-  }, [filters.tiers, filters.states, filters.huc8Id]);
+  }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate]);
 
   useEffect(() => {
     selectedSiteIdRef.current = selectedSiteId ?? null;
