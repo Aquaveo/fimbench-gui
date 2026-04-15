@@ -22,19 +22,36 @@ function stateMatches(recordState: unknown, selected: string[]): boolean {
   return recStates.some(s => selected.includes(s));
 }
 
-// Returns true if the record's date (single or range) overlaps the filter window.
-// Records with no date info are included (we don't hide data we can't place in time).
-// Filter bounds are YYYY-MM-DD strings and compared lexicographically (safe for ISO).
-function dateMatches(record: any, startDate: string, endDate: string): boolean {
-  const single: string | null = record.date_ymd ?? null;
-  const recStart: string | null = record.start_date_ymd ?? null;
-  const recEnd: string | null   = record.end_date_ymd ?? null;
+// Safely parse a strict YYYY-MM-DD string into a UTC timestamp.
+// Returns null for anything that isn't exactly YYYY-MM-DD or isn't a real calendar date.
+// The regex gate is important because new Date() is lenient — it would otherwise accept
+// "2010", "2010-3-29", "03/29/2010", etc.
+const YMD_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+function parseYmd(str: unknown): number | null {
+  if (typeof str !== 'string' || !YMD_REGEX.test(str)) return null;
+  const ts = new Date(str).getTime();
+  return Number.isNaN(ts) ? null : ts;
+}
 
-  if (single) return single >= startDate && single <= endDate;
-  if (recStart && recEnd) return recStart <= endDate && recEnd >= startDate;
-  if (recStart) return recStart >= startDate && recStart <= endDate;
-  if (recEnd)   return recEnd   >= startDate && recEnd   <= endDate;
-  return true;  // no date info — include
+// Returns true if the record's date (single or range) overlaps the filter window.
+// Records with no valid date info are included (we don't hide data we can't place in time).
+// All inputs are parsed via parseYmd; malformed or empty values become unconstrained
+// bounds (filter side) or are treated as missing (record side).
+function dateMatches(record: any, startDate: string, endDate: string): boolean {
+  const filterStart = parseYmd(startDate) ?? -Infinity;
+  const filterEnd   = parseYmd(endDate)   ?? Infinity;
+
+  const single   = parseYmd(record.date_ymd);
+  const recStart = parseYmd(record.start_date_ymd);
+  const recEnd   = parseYmd(record.end_date_ymd);
+
+  if (single !== null) return single >= filterStart && single <= filterEnd;
+  if (recStart !== null && recEnd !== null) {
+    return recStart <= filterEnd && recEnd >= filterStart;
+  }
+  if (recStart !== null) return recStart >= filterStart && recStart <= filterEnd;
+  if (recEnd   !== null) return recEnd   >= filterStart && recEnd   <= filterEnd;
+  return true;  // no valid date info — include
 }
 
 // -----------------------------

@@ -53,6 +53,14 @@ const stateLabel = (abbr: string) => {
   return name ? `${name} (${abbr})` : abbr;
 };
 
+// Add (or subtract, with negative n) whole days to a YYYY-MM-DD string.
+// Operates in UTC to avoid any timezone-induced off-by-one.
+const addDays = (ymd: string, n: number): string => {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates }: FilterSidebarProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
 
@@ -81,11 +89,23 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   };
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters({ ...filters, startDate: e.target.value });
+    const newStart = e.target.value;
+    const next = { ...filters, startDate: newStart };
+    // Keep end at least one day after start
+    if (newStart && filters.endDate && newStart >= filters.endDate) {
+      next.endDate = addDays(newStart, 1);
+    }
+    setFilters(next);
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters({ ...filters, endDate: e.target.value });
+    const newEnd = e.target.value;
+    const next = { ...filters, endDate: newEnd };
+    // Keep start at least one day before end
+    if (newEnd && filters.startDate && newEnd <= filters.startDate) {
+      next.startDate = addDays(newEnd, -1);
+    }
+    setFilters(next);
   };
 
   return (
