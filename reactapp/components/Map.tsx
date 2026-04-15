@@ -8,6 +8,20 @@ import maplibregl, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { type Filters } from './FilterSidebar';
 
+// Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
+function parseStates(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String);
+  if (typeof raw === 'string') return raw.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
+// Returns true if the record's states overlap with any of the selected states.
+function stateMatches(recordState: unknown, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  const recStates = parseStates(recordState);
+  return recStates.some(s => selected.includes(s));
+}
+
 // -----------------------------
 // Basemaps
 // -----------------------------
@@ -118,6 +132,7 @@ type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
   onFeatureClick?: (feature: any | null) => void;
+  onCatalogStates?: (states: string[]) => void;
   selectedSiteId?: string | null;
 };
 
@@ -158,7 +173,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick, selectedSiteId }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatalogStates, selectedSiteId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
@@ -172,7 +187,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
   const filtersRef = useRef(filters);
 
   const buildCentroidGeoJSON = (f: Filters) => {
-    const { tiers, huc8Id } = f;
+    const { tiers, states, huc8Id } = f;
     const isHucMode = !!huc8Id;
 
     return {
@@ -185,6 +200,8 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
               ? r.huc8.map(String)
               : r.huc8 ? [String(r.huc8)] : [];
             return huc8s.some(h => h === huc8Id);
+          } else {
+            if (!stateMatches(r.state, states)) return false;
           }
           return true;
         })
@@ -251,7 +268,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       if (!onFeaturesChange) return;
 
       // Build allowed site_ids from catalog using current filters
-      const { tiers, huc8Id } = filtersRef.current;
+      const { tiers, states, huc8Id } = filtersRef.current;
       const isHucMode = !!huc8Id;
       const allowedIds = new Set<string>(
         catalogRef.current
@@ -262,6 +279,8 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
                 ? r.huc8.map(String)
                 : r.huc8 ? [String(r.huc8)] : [];
               return huc8s.some(h => h === huc8Id);
+            } else {
+              if (!stateMatches(r.state, states)) return false;
             }
             return true;
           })
@@ -377,6 +396,14 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       .then(r => r.json())
       .then(data => {
         catalogRef.current = data.records ?? [];
+
+        // Emit unique sorted states to parent
+        if (onCatalogStates) {
+          const all = catalogRef.current.flatMap(r => parseStates(r.state));
+          const unique = [...new Set(all)].sort();
+          onCatalogStates(unique);
+        }
+
         // If map is already loaded, populate the centroid source immediately
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
@@ -394,19 +421,25 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const { tiers, huc8Id } = filters;
+    const { tiers, states, huc8Id } = filters;
     const isHucMode = !!huc8Id;
 
-    // Update extent filter — tier + huc8 (via allowed site_ids)
+    // Update extent filter — tier + huc8 or state (via allowed site_ids)
     if (map.getLayer('fim-layer')) {
-      if (isHucMode) {
+      if (isHucMode || states.length > 0) {
+        // Use catalog to compute allowed site_ids
         const allowedSiteIds = catalogRef.current
           .filter(r => {
             if (!tiers.includes(r.tier)) return false;
-            const huc8s: string[] = Array.isArray(r.huc8)
-              ? r.huc8.map(String)
-              : r.huc8 ? [String(r.huc8)] : [];
-            return huc8s.some(h => h === huc8Id);
+            if (isHucMode) {
+              const huc8s: string[] = Array.isArray(r.huc8)
+                ? r.huc8.map(String)
+                : r.huc8 ? [String(r.huc8)] : [];
+              return huc8s.some(h => h === huc8Id);
+            } else {
+              if (!stateMatches(r.state, states)) return false;
+            }
+            return true;
           })
           .map(r => r.site_id as string);
         map.setFilter('fim-layer', [
@@ -432,6 +465,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
       );
       if (rec) {
         const tierOk = tiers.includes(rec.tier);
+        const stateOk = isHucMode || stateMatches(rec.state, states);
         let huc8Ok = true;
         if (isHucMode) {
           const huc8s: string[] = Array.isArray(rec.huc8)
@@ -439,10 +473,10 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, selecte
             : rec.huc8 ? [String(rec.huc8)] : [];
           huc8Ok = huc8s.some(h => h === huc8Id);
         }
-        if (!tierOk || !huc8Ok) onFeatureClick?.(null);
+        if (!tierOk || !huc8Ok || !stateOk) onFeatureClick?.(null);
       }
     }
-  }, [filters.tiers, filters.huc8Id]);
+  }, [filters.tiers, filters.states, filters.huc8Id]);
 
   useEffect(() => {
     selectedSiteIdRef.current = selectedSiteId ?? null;

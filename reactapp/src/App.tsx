@@ -8,6 +8,7 @@ function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
 
   const handleFeatureClick = (feature: any | null) => {
@@ -22,6 +23,7 @@ function App() {
         filters={filters}
         setFilters={setFilters}
         onResetFilters={() => setFilters(DEFAULT_FILTERS)}
+        availableStates={availableStates}
       />
 
       {/* Right: map on top, table on bottom */}
@@ -32,6 +34,7 @@ function App() {
             filters={filters}
             onFeaturesChange={setVisibleFeatures}
             onFeatureClick={handleFeatureClick}
+            onCatalogStates={setAvailableStates}
             selectedSiteId={selectedSiteId}
           />
         </div>
