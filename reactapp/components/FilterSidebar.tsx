@@ -14,7 +14,11 @@ type FilterSidebarProps = {
   setFilters: (filters: Filters) => void;
   onResetFilters: () => void;
   availableStates: string[];
+  availableHuc8s: Set<string>;
 };
+
+// HUC8 codes are strings — leading zeros are significant, never parse as numbers.
+const isValidHuc8 = (s: string): boolean => /^\d{8}$/.test(s);
 
 export const DEFAULT_FILTERS: Filters = {
   tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
@@ -61,7 +65,7 @@ const addDays = (ymd: string, n: number): string => {
   return d.toISOString().slice(0, 10);
 };
 
-export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates, availableHuc8s }: FilterSidebarProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
 
   const handleTierToggle = (value: string) => {
@@ -73,7 +77,8 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   };
 
   const handleHuc8Change = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilters({ ...filters, huc8Id: e.target.value });
+    // Strip whitespace but keep as a string (HUC8 leading zeros are significant).
+    setFilters({ ...filters, huc8Id: e.target.value.trim() });
   };
 
   const handleStateToggle = (value: string) => {
@@ -108,6 +113,12 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
     setFilters(next);
   };
 
+  // HUC8 feedback state for inline messages below the input
+  const huc8 = filters.huc8Id;
+  const huc8Empty = huc8 === '';
+  const huc8FormatOk = isValidHuc8(huc8);
+  const huc8InCatalog = huc8FormatOk && availableHuc8s.has(huc8);
+
   return (
     <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto' }}>
       <h2>Filters</h2>
@@ -140,7 +151,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           placeholder="e.g. 12100201"
           style={{ display: 'block', marginTop: 4, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
         />
-        {filters.huc8Id && (
+        {!huc8Empty && !huc8FormatOk && (
+          <span style={{ fontSize: 11, color: '#c0392b', marginTop: 3, display: 'block' }}>
+            HUC8 must be 8 digits
+          </span>
+        )}
+        {huc8FormatOk && !huc8InCatalog && (
+          <span style={{ fontSize: 11, color: '#c0392b', marginTop: 3, display: 'block' }}>
+            No records match this HUC8
+          </span>
+        )}
+        {huc8FormatOk && huc8InCatalog && (
           <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
             State &amp; date filters are inactive while HUC8 is set
           </span>
@@ -148,17 +169,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
       </div>
 
       {/* ── State (dropdown multi-select) ── */}
-      <div style={{ marginBottom: 12, opacity: filters.huc8Id ? 0.4 : 1, position: 'relative' }}>
+      <div style={{ marginBottom: 12, opacity: huc8FormatOk ? 0.4 : 1, position: 'relative' }}>
         <label style={{ fontWeight: 600 }}>State:</label>
         <button
           type="button"
-          disabled={!!filters.huc8Id}
+          disabled={huc8FormatOk}
           onClick={() => setStateDropdownOpen(prev => !prev)}
           style={{
             display: 'block', width: '100%', marginTop: 4, padding: '5px 8px',
             fontFamily: 'inherit', fontSize: 13, textAlign: 'left',
             border: '1px solid #bbb', borderRadius: 4, backgroundColor: '#fff',
-            cursor: filters.huc8Id ? 'default' : 'pointer', boxSizing: 'border-box',
+            cursor: huc8FormatOk ? 'default' : 'pointer', boxSizing: 'border-box',
           }}
         >
           {filters.states.length === 0
@@ -168,7 +189,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
               : `${filters.states.length} states selected`}
           <span style={{ float: 'right' }}>{stateDropdownOpen ? '\u25B2' : '\u25BC'}</span>
         </button>
-        {stateDropdownOpen && !filters.huc8Id && (
+        {stateDropdownOpen && !huc8FormatOk && (
           <div style={{
             position: 'absolute', zIndex: 10, left: 0, right: 0, marginTop: 2,
             maxHeight: 200, overflowY: 'auto',

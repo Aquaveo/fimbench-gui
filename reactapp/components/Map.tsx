@@ -33,6 +33,20 @@ function parseYmd(str: unknown): number | null {
   return Number.isNaN(ts) ? null : ts;
 }
 
+// HUC8 codes are strings (may have leading zeros — do NOT parse as numbers).
+// Exactly 8 digit characters.
+const HUC8_REGEX = /^\d{8}$/;
+const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
+
+// Returns true if the record's return period matches the selected filter.
+// Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
+// records carry this field; everything else is event-based and has no return period.
+function returnPeriodMatches(record: any, selectedPeriod: string): boolean {
+  const rp = record.return_period;
+  if (rp == null) return true;
+  return String(rp) === selectedPeriod;
+}
+
 // Returns true if the record's date (single or range) overlaps the filter window.
 // Records with no valid date info are included (we don't hide data we can't place in time).
 // All inputs are parsed via parseYmd; malformed or empty values become unconstrained
@@ -165,6 +179,7 @@ type MapProps = {
   onFeaturesChange?: (features: any[]) => void;
   onFeatureClick?: (feature: any | null) => void;
   onCatalogStates?: (states: string[]) => void;
+  onCatalogHuc8s?: (huc8s: Set<string>) => void;
   selectedSiteId?: string | null;
 };
 
@@ -205,7 +220,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatalogStates, selectedSiteId }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
@@ -219,14 +234,15 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
   const filtersRef = useRef(filters);
 
   const buildCentroidGeoJSON = (f: Filters) => {
-    const { tiers, states, huc8Id, startDate, endDate } = f;
-    const isHucMode = !!huc8Id;
+    const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = f;
+    const isHucMode = isValidHuc8(huc8Id);
 
     return {
       type: 'FeatureCollection' as const,
       features: catalogRef.current
         .filter(r => {
           if (!tiers.includes(r.tier)) return false;
+          if (!returnPeriodMatches(r, returnPeriod)) return false;
           if (isHucMode) {
             const huc8s: string[] = Array.isArray(r.huc8)
               ? r.huc8.map(String)
@@ -301,12 +317,13 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
       if (!onFeaturesChange) return;
 
       // Build allowed site_ids from catalog using current filters
-      const { tiers, states, huc8Id, startDate, endDate } = filtersRef.current;
-      const isHucMode = !!huc8Id;
+      const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filtersRef.current;
+      const isHucMode = isValidHuc8(huc8Id);
       const allowedIds = new Set<string>(
         catalogRef.current
           .filter(r => {
             if (!tiers.includes(r.tier)) return false;
+            if (!returnPeriodMatches(r, returnPeriod)) return false;
             if (isHucMode) {
               const huc8s: string[] = Array.isArray(r.huc8)
                 ? r.huc8.map(String)
@@ -438,6 +455,17 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
           onCatalogStates(unique);
         }
 
+        // Emit unique HUC8 codes as a Set for O(1) membership checks.
+        // HUC8 values stay as strings (leading zeros are significant).
+        if (onCatalogHuc8s) {
+          const all = catalogRef.current.flatMap(r =>
+            Array.isArray(r.huc8)
+              ? r.huc8.map(String)
+              : r.huc8 ? [String(r.huc8)] : []
+          );
+          onCatalogHuc8s(new Set(all));
+        }
+
         // If map is already loaded, populate the centroid source immediately
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
@@ -455,17 +483,19 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    const { tiers, states, huc8Id, startDate, endDate } = filters;
-    const isHucMode = !!huc8Id;
+    const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filters;
+    const isHucMode = isValidHuc8(huc8Id);
     const hasDateConstraint = !isHucMode && !!(startDate || endDate);
 
-    // Update extent filter — tier + huc8 or state/date (via allowed site_ids)
+    // Update extent filter — always use catalog-based site_id filtering when any
+    // filter beyond tier is active (return period applies in all modes).
     if (map.getLayer('fim-layer')) {
-      if (isHucMode || states.length > 0 || hasDateConstraint) {
+      if (isHucMode || states.length > 0 || hasDateConstraint || returnPeriod) {
         // Use catalog to compute allowed site_ids
         const allowedSiteIds = catalogRef.current
           .filter(r => {
             if (!tiers.includes(r.tier)) return false;
+            if (!returnPeriodMatches(r, returnPeriod)) return false;
             if (isHucMode) {
               const huc8s: string[] = Array.isArray(r.huc8)
                 ? r.huc8.map(String)
@@ -501,6 +531,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
       );
       if (rec) {
         const tierOk = tiers.includes(rec.tier);
+        const rpOk   = returnPeriodMatches(rec, returnPeriod);
         const stateOk = isHucMode || stateMatches(rec.state, states);
         const dateOk  = isHucMode || dateMatches(rec, startDate, endDate);
         let huc8Ok = true;
@@ -510,10 +541,10 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
             : rec.huc8 ? [String(rec.huc8)] : [];
           huc8Ok = huc8s.some(h => h === huc8Id);
         }
-        if (!tierOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
+        if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
       }
     }
-  }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate]);
+  }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate, filters.returnPeriod]);
 
   useEffect(() => {
     selectedSiteIdRef.current = selectedSiteId ?? null;
