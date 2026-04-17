@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 
 // ── Constants ─────────────────────────────────────────────────
 const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
@@ -14,7 +14,7 @@ function buildMetaUrl(s3Prefix: string, fileName: string): string {
 }
 
 // ── Normalize one metadata JSON into a display record ─────────
-function parseRecord(j: any, s3Prefix: string, fileName: string) {
+function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string) {
   const basin = Array.isArray(j['River Basin Name'])
     ? j['River Basin Name'].join(', ')
     : (j['River Basin Name'] ?? '—');
@@ -58,6 +58,7 @@ function parseRecord(j: any, s3Prefix: string, fileName: string) {
   const quality = j['Quality'] ?? (startDate ? 'HWM' : '—');
 
   return {
+    siteId,
     riverBasin:   basin,
     state:        j['State'] ?? '—',
     year,
@@ -147,16 +148,26 @@ const COLUMNS: ColDef[] = [
 ];
 
 // ── Types ─────────────────────────────────────────────────────
-type Props = { features: any[] };
+type Props = {
+  features: any[];
+  selectedSiteId?: string | null;
+  onRowClick?: (siteId: string) => void;
+  onClearSelection?: () => void;
+};
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features }: Props) {
+export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  // Refs for scroll-to-selected behaviour
+  const selectedRowRef      = useRef<HTMLTableRowElement | null>(null);
+  const lastInternalClickRef = useRef<string | null>(null);  // tracks table-initiated clicks
+  const sortedRecordsRef    = useRef<FIMRecord[]>([]);       // stable ref so page-nav effect avoids re-running on every sort
 
   useEffect(() => {
     if (features.length === 0) { setRecords([]); return; }
@@ -173,7 +184,7 @@ export default function FIMTable({ features }: Props) {
             const res = await fetch(metaUrl);
             if (!res.ok) return null;
             const j = await res.json();
-            return parseRecord(j, f.s3_prefix, f.file_name);
+            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id);
           } catch { return null; }
         })
       );
@@ -191,6 +202,33 @@ export default function FIMTable({ features }: Props) {
     () => [...records].sort((a, b) => compareRecords(a, b, sortKey, sortDir)),
     [records, sortKey, sortDir]
   );
+
+  // Keep ref in sync so page-nav effect can read current records without them as a dep
+  useEffect(() => { sortedRecordsRef.current = sortedRecords; }, [sortedRecords]);
+
+  // When selection originates from the map: navigate to the correct page
+  useEffect(() => {
+    if (!selectedSiteId) return;
+    // Table-initiated clicks don't need a page jump — user is already looking at the row
+    if (lastInternalClickRef.current === selectedSiteId) {
+      lastInternalClickRef.current = null;
+      return;
+    }
+    const idx = sortedRecordsRef.current.findIndex(r => r.siteId === selectedSiteId);
+    if (idx === -1) return;
+    setPage(Math.ceil((idx + 1) / PAGE_SIZE));
+  }, [selectedSiteId]);
+
+  // After the page renders, scroll the selected row into view
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [selectedSiteId, page]);
+
+  // Wraps the external callback so we can mark the click as table-initiated
+  const handleRowClick = (siteId: string) => {
+    lastInternalClickRef.current = siteId;
+    onRowClick?.(siteId);
+  };
 
   const handleHeaderClick = (key: SortKey | undefined) => {
     if (!key) return;
@@ -224,13 +262,22 @@ export default function FIMTable({ features }: Props) {
       {/* Header */}
       <div style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong>FIM Records ({records.length})</strong>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</button>
-            <span>Page {page} / {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={onClearSelection}
+            disabled={!selectedSiteId}
+            style={{ ...tableHeaderBtnStyle, opacity: selectedSiteId ? 1 : 0.4, cursor: selectedSiteId ? 'pointer' : 'default' }}
+          >
+            Clear Selection
+          </button>
+          {totalPages > 1 && (
+            <>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={tableHeaderBtnStyle}>‹</button>
+              <span>Page {page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={tableHeaderBtnStyle}>›</button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -266,18 +313,31 @@ export default function FIMTable({ features }: Props) {
             </tr>
           </thead>
           <tbody>
-            {pageRows.map((r, i) => (
-              <tr key={i} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9f9f9', verticalAlign: 'top' }}>
-                {COLUMNS.map((col) => (
-                  <td
-                    key={col.label}
-                    style={{ ...tdStyle, textAlign: col.align ?? 'left' }}
-                  >
-                    {col.render(r)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {pageRows.map((r, i) => {
+              const isSelected = r.siteId === selectedSiteId;
+              return (
+                <tr
+                  key={i}
+                  ref={isSelected ? selectedRowRef : null}
+                  onClick={() => handleRowClick(r.siteId)}
+                  style={{
+                    backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),
+                    verticalAlign: 'top',
+                    cursor: 'pointer',
+                    fontWeight: isSelected ? 600 : 'normal',
+                  }}
+                >
+                  {COLUMNS.map((col) => (
+                    <td
+                      key={col.label}
+                      style={{ ...tdStyle, textAlign: col.align ?? 'left' }}
+                    >
+                      {col.render(r)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -295,6 +355,16 @@ function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 // ── Styles ────────────────────────────────────────────────────
+const tableHeaderBtnStyle: React.CSSProperties = {
+  fontFamily: 'inherit',
+  fontSize: 13,
+  cursor: 'pointer',
+  padding: '2px 8px',
+  border: '1px solid #bbb',
+  borderRadius: 4,
+  backgroundColor: '#fff',
+};
+
 const containerStyle: React.CSSProperties = {
   height: '100%', overflow: 'hidden', display: 'flex',
   flexDirection: 'column', backgroundColor: '#fff', borderTop: '2px solid #ccc',

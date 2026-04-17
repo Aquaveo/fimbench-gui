@@ -1,11 +1,72 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl, {
+  type ExpressionSpecification,
   type LngLatLike,
   type RasterSourceSpecification,
   type StyleSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { type Filters } from './FilterSidebar';
+
+// Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
+function parseStates(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map(String);
+  if (typeof raw === 'string') return raw.split(',').map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
+// Returns true if the record's states overlap with any of the selected states.
+function stateMatches(recordState: unknown, selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  const recStates = parseStates(recordState);
+  return recStates.some(s => selected.includes(s));
+}
+
+// Safely parse a strict YYYY-MM-DD string into a UTC timestamp.
+// Returns null for anything that isn't exactly YYYY-MM-DD or isn't a real calendar date.
+// The regex gate is important because new Date() is lenient — it would otherwise accept
+// "2010", "2010-3-29", "03/29/2010", etc.
+const YMD_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+function parseYmd(str: unknown): number | null {
+  if (typeof str !== 'string' || !YMD_REGEX.test(str)) return null;
+  const ts = new Date(str).getTime();
+  return Number.isNaN(ts) ? null : ts;
+}
+
+// HUC8 codes are strings (may have leading zeros — do NOT parse as numbers).
+// Exactly 8 digit characters.
+const HUC8_REGEX = /^\d{8}$/;
+const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
+
+// Returns true if the record's return period matches the selected filter.
+// Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
+// records carry this field; everything else is event-based and has no return period.
+function returnPeriodMatches(record: any, selectedPeriod: string): boolean {
+  const rp = record.return_period;
+  if (rp == null) return true;
+  return String(rp) === selectedPeriod;
+}
+
+// Returns true if the record's date (single or range) overlaps the filter window.
+// Records with no valid date info are included (we don't hide data we can't place in time).
+// All inputs are parsed via parseYmd; malformed or empty values become unconstrained
+// bounds (filter side) or are treated as missing (record side).
+function dateMatches(record: any, startDate: string, endDate: string): boolean {
+  const filterStart = parseYmd(startDate) ?? -Infinity;
+  const filterEnd   = parseYmd(endDate)   ?? Infinity;
+
+  const single   = parseYmd(record.date_ymd);
+  const recStart = parseYmd(record.start_date_ymd);
+  const recEnd   = parseYmd(record.end_date_ymd);
+
+  if (single !== null) return single >= filterStart && single <= filterEnd;
+  if (recStart !== null && recEnd !== null) {
+    return recStart <= filterEnd && recEnd >= filterStart;
+  }
+  if (recStart !== null) return recStart >= filterStart && recStart <= filterEnd;
+  if (recEnd   !== null) return recEnd   >= filterStart && recEnd   <= filterEnd;
+  return true;  // no valid date info — include
+}
 
 // -----------------------------
 // Basemaps
@@ -40,10 +101,86 @@ const TIER_LABELS: Record<string, string> = {
   HWM:    'High Water Mark',
 };
 
+// -----------------------------
+// Shared paint expressions
+// Extracted so they can be reused in both addLayer and setPaintProperty calls.
+// -----------------------------
+const TIER_COLOR_EXPR: ExpressionSpecification = [
+  'match', ['get', 'tier'],
+  'Tier_1', TIER_CENTROID_COLORS.Tier_1,
+  'Tier_2', TIER_CENTROID_COLORS.Tier_2,
+  'Tier_3', TIER_CENTROID_COLORS.Tier_3,
+  'Tier_4', TIER_CENTROID_COLORS.Tier_4,
+  'HWM',    TIER_CENTROID_COLORS.HWM,
+  '#aaaaaa',
+];
+
+const CENTROID_OPACITY_EXPR: ExpressionSpecification = [
+  'interpolate', ['linear'], ['zoom'],
+  ZOOM_CROSSFADE_START, 1,
+  ZOOM_CROSSFADE_END,   0,
+];
+
+const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
+  'interpolate', ['linear'], ['zoom'],
+  ZOOM_CROSSFADE_START, 0,
+  ZOOM_CROSSFADE_END,   0.6,
+];
+
+// Applies (or resets) selection-emphasis paint properties on both layers.
+// Called both from the selectedSiteId useEffect and inside map.on('load')
+// so that basemap switches re-apply the current selection state.
+function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | undefined) {
+  if (!map.getLayer('centroids-layer') || !map.getLayer('fim-layer')) return;
+
+  if (!siteId) {
+    // Reset to default — no active selection
+    map.setPaintProperty('centroids-layer', 'circle-color', TIER_COLOR_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-opacity', CENTROID_OPACITY_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', CENTROID_OPACITY_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-radius', 7);
+    map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
+    map.setPaintProperty('fim-layer', 'fill-outline-color', '#003B8E');
+    map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
+  } else {
+    const isSelected: ExpressionSpecification = ['==', ['get', 'site_id'], siteId];
+
+    // Centroids: selected stays in tier color and grows slightly; others fade to gray
+    map.setPaintProperty('centroids-layer', 'circle-color', [
+      'case', isSelected, TIER_COLOR_EXPR, '#cccccc',
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-opacity', [
+      'case', isSelected, 1, 0.2,
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', [
+      'case', isSelected, 1, 0.2,
+    ]);
+    map.setPaintProperty('centroids-layer', 'circle-radius', [
+      'case', isSelected, 9, 6,
+    ]);
+
+    // Extents: selected stays in full blue; others become very faint gray
+    map.setPaintProperty('fim-layer', 'fill-color', [
+      'case', isSelected, '#0067E1', '#aaaaaa',
+    ]);
+    map.setPaintProperty('fim-layer', 'fill-outline-color', [
+      'case', isSelected, '#003B8E', '#aaaaaa',
+    ]);
+    map.setPaintProperty('fim-layer', 'fill-opacity', [
+      'case', isSelected,
+      EXTENT_OPACITY_EXPR,
+      ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
+    ]);
+  }
+}
+
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: any[]) => void;
-  onFeatureClick?: (feature: any | null) => void
+  onFeatureClick?: (feature: any | null) => void;
+  onCatalogStates?: (states: string[]) => void;
+  onCatalogHuc8s?: (huc8s: Set<string>) => void;
+  selectedSiteId?: string | null;
 };
 
 type ViewState = {
@@ -54,8 +191,8 @@ type ViewState = {
 };
 
 const DEFAULT_VIEW: ViewState = {
-  center: [-98, 29.9],
-  zoom: 6,
+  center: [-96, 38],
+  zoom: 4,
   bearing: 0,
   pitch: 0,
 };
@@ -83,20 +220,41 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapProps) {
+export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
   const [basemap, setBasemap] =
     useState<keyof typeof BASEMAPS>('Topographic');
   
-  const catalogRef = useRef<any[]>([]);   // all catalog records, loaded once
+  const catalogRef = useRef<any[]>([]);              // all catalog records, loaded once
+  const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
+  const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
 
-  const buildCentroidGeoJSON = (tiers: string[]) => ({
-    type: 'FeatureCollection' as const,
-    features: catalogRef.current
-      .filter(r => tiers.includes(r.tier))
-      .map(r => ({
+  const filtersRef = useRef(filters);
+
+  const buildCentroidGeoJSON = (f: Filters) => {
+    const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = f;
+    const isHucMode = isValidHuc8(huc8Id);
+
+    return {
+      type: 'FeatureCollection' as const,
+      features: catalogRef.current
+        .filter(r => {
+          if (!tiers.includes(r.tier)) return false;
+          if (!returnPeriodMatches(r, returnPeriod)) return false;
+          if (isHucMode) {
+            const huc8s: string[] = Array.isArray(r.huc8)
+              ? r.huc8.map(String)
+              : r.huc8 ? [String(r.huc8)] : [];
+            return huc8s.some(h => h === huc8Id);
+          } else {
+            if (!stateMatches(r.state, states)) return false;
+            if (!dateMatches(r, startDate, endDate)) return false;
+          }
+          return true;
+        })
+        .map(r => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: r.centroid },
         properties: {
@@ -111,7 +269,8 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
           quality:      r.quality,
         },
       })),
-  });
+    };
+  };
 
   // -----------------------------
   // Create map
@@ -156,24 +315,49 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
 
     const emitFeatures = () => {
       if (!onFeaturesChange) return;
+
+      // Build allowed site_ids from catalog using current filters
+      const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filtersRef.current;
+      const isHucMode = isValidHuc8(huc8Id);
+      const allowedIds = new Set<string>(
+        catalogRef.current
+          .filter(r => {
+            if (!tiers.includes(r.tier)) return false;
+            if (!returnPeriodMatches(r, returnPeriod)) return false;
+            if (isHucMode) {
+              const huc8s: string[] = Array.isArray(r.huc8)
+                ? r.huc8.map(String)
+                : r.huc8 ? [String(r.huc8)] : [];
+              return huc8s.some(h => h === huc8Id);
+            } else {
+              if (!stateMatches(r.state, states)) return false;
+              if (!dateMatches(r, startDate, endDate)) return false;
+            }
+            return true;
+          })
+          .map(r => r.site_id as string)
+      );
+
       const extents   = map.queryRenderedFeatures({ layers: ['fim-layer'] });
       const centroids = map.queryRenderedFeatures({ layers: ['centroids-layer'] });
       const raw = [...extents, ...centroids];
       const seen = new Set<string>();
       const unique = raw.filter(f => {
-        const key = f.properties?.site_id ?? f.properties?.id ?? JSON.stringify(f.properties);
-        if (seen.has(key)) return false;
-        seen.add(key);
+        const sid = f.properties?.site_id;
+        if (!sid || !allowedIds.has(sid)) return false;
+        if (seen.has(sid)) return false;
+        seen.add(sid);
         return true;
       });
       onFeaturesChange(unique.map(f => f.properties));
     };
+    emitFeaturesRef.current = emitFeatures;
 
     map.on('load', () => {
       // ── Centroid source (GeoJSON, updated client-side) ──
       map.addSource('centroids', {
         type: 'geojson',
-        data: buildCentroidGeoJSON(filters.tiers),
+        data: buildCentroidGeoJSON(filters),
       });
 
       // ── Centroid circle layer (visible below crossfade zone) ──
@@ -183,29 +367,11 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
         source: 'centroids',
         paint: {
           'circle-radius': 7,
-          // Color by tier using a match expression
-          'circle-color': [
-            'match', ['get', 'tier'],
-            'Tier_1', TIER_CENTROID_COLORS.Tier_1,
-            'Tier_2', TIER_CENTROID_COLORS.Tier_2,
-            'Tier_3', TIER_CENTROID_COLORS.Tier_3,
-            'Tier_4', TIER_CENTROID_COLORS.Tier_4,
-            'HWM',    TIER_CENTROID_COLORS.HWM,
-            '#aaaaaa',
-          ],
+          'circle-color': TIER_COLOR_EXPR,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1.5,
-          // Fade OUT as zoom increases through crossfade zone
-          'circle-opacity': [
-            'interpolate', ['linear'], ['zoom'],
-            ZOOM_CROSSFADE_START, 1,
-            ZOOM_CROSSFADE_END,   0,
-          ],
-          'circle-stroke-opacity': [
-            'interpolate', ['linear'], ['zoom'],
-            ZOOM_CROSSFADE_START, 1,
-            ZOOM_CROSSFADE_END,   0,
-          ],
+          'circle-opacity': CENTROID_OPACITY_EXPR,
+          'circle-stroke-opacity': CENTROID_OPACITY_EXPR,
         },
       });
 
@@ -229,50 +395,42 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
           filter: ['in', ['get', 'tier'], ['literal', filters.tiers]],
           paint: {
             'fill-color': '#0067E1',
-            'fill-opacity': [
-              'interpolate', ['linear'], ['zoom'],
-              ZOOM_CROSSFADE_START, 0,
-              ZOOM_CROSSFADE_END,   0.6,
-            ],
+            'fill-opacity': EXTENT_OPACITY_EXPR,
             'fill-outline-color': '#003B8E',
           },
         });
       }
 
-      // ── Click: feature selection ──────────────────────────────────
-      // Centroids take priority — check them first, then extents
-      map.on('click', 'centroids-layer', (e) => {
-        if (!e.features?.length) return;
-        e.preventDefault();   // stops the map-level click from also firing
-        onFeatureClick?.(e.features[0].properties);
-        console.log("\nClicked centroids-layer\n");
-      });
+      // ── Click: unified handler with explicit layer priority ───────
+      // Layers are checked in order; first match wins, so centroids
+      // always beat extent polygons when they overlap. To add cluster
+      // or other interactive layers, prepend/append to this array.
+      const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
 
-      map.on('click', 'fim-layer', (e) => {
-        if (!e.features?.length) return;
-        e.preventDefault();
-        onFeatureClick?.(e.features[0].properties);
-        console.log("\nClicked fim-layer\n");
-      });
-
-      // ── Click: empty space clears selection ───────────────────────
       map.on('click', (e) => {
-        if (e.defaultPrevented) return;   // a feature click already handled this
+        for (const layerId of INTERACTIVE_LAYERS) {
+          if (!map.getLayer(layerId)) continue;
+          const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
+          if (features.length > 0) {
+            onFeatureClick?.(features[0].properties);
+            return;
+          }
+        }
         onFeatureClick?.(null);
-        console.log("\nClicked on empty space, clearing selection\n");
       });
 
       // ── Cursor: pointer over interactive layers ──────────────────
-      const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
-
       INTERACTIVE_LAYERS.forEach(layerId => {
         map.on('mouseenter', layerId, () => {
           map.getCanvas().style.cursor = 'pointer';
         });
         map.on('mouseleave', layerId, () => {
-          map.getCanvas().style.cursor = '';  // '' resets to MapLibre's default grab cursor
+          map.getCanvas().style.cursor = '';
         });
       });
+
+      // Re-apply selection emphasis after every map reload (e.g. basemap switch)
+      applySelectionEmphasis(map, selectedSiteIdRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -289,33 +447,111 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick }: MapPr
       .then(r => r.json())
       .then(data => {
         catalogRef.current = data.records ?? [];
+
+        // Emit unique sorted states to parent
+        if (onCatalogStates) {
+          const all = catalogRef.current.flatMap(r => parseStates(r.state));
+          const unique = [...new Set(all)].sort();
+          onCatalogStates(unique);
+        }
+
+        // Emit unique HUC8 codes as a Set for O(1) membership checks.
+        // HUC8 values stay as strings (leading zeros are significant).
+        if (onCatalogHuc8s) {
+          const all = catalogRef.current.flatMap(r =>
+            Array.isArray(r.huc8)
+              ? r.huc8.map(String)
+              : r.huc8 ? [String(r.huc8)] : []
+          );
+          onCatalogHuc8s(new Set(all));
+        }
+
         // If map is already loaded, populate the centroid source immediately
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filters.tiers));
+          src?.setData(buildCentroidGeoJSON(filters));
+          // Emit features once the new centroid data has been rendered
+          map.once('idle', () => emitFeaturesRef.current?.());
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
   }, []); // runs once
 
   useEffect(() => {
+    filtersRef.current = filters;
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
 
-    // Update extent filter
+    const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filters;
+    const isHucMode = isValidHuc8(huc8Id);
+    const hasDateConstraint = !isHucMode && !!(startDate || endDate);
+
+    // Update extent filter — always use catalog-based site_id filtering when any
+    // filter beyond tier is active (return period applies in all modes).
     if (map.getLayer('fim-layer')) {
-      map.setFilter('fim-layer', [
-        'in', ['get', 'tier'], ['literal', filters.tiers]
-      ]);
+      if (isHucMode || states.length > 0 || hasDateConstraint || returnPeriod) {
+        // Use catalog to compute allowed site_ids
+        const allowedSiteIds = catalogRef.current
+          .filter(r => {
+            if (!tiers.includes(r.tier)) return false;
+            if (!returnPeriodMatches(r, returnPeriod)) return false;
+            if (isHucMode) {
+              const huc8s: string[] = Array.isArray(r.huc8)
+                ? r.huc8.map(String)
+                : r.huc8 ? [String(r.huc8)] : [];
+              return huc8s.some(h => h === huc8Id);
+            } else {
+              if (!stateMatches(r.state, states)) return false;
+              if (!dateMatches(r, startDate, endDate)) return false;
+            }
+            return true;
+          })
+          .map(r => r.site_id as string);
+        map.setFilter('fim-layer', [
+          'in', ['get', 'site_id'], ['literal', allowedSiteIds]
+        ]);
+      } else {
+        map.setFilter('fim-layer', [
+          'in', ['get', 'tier'], ['literal', tiers]
+        ]);
+      }
     }
 
     // Update centroid GeoJSON data
     if (map.getSource('centroids')) {
       (map.getSource('centroids') as maplibregl.GeoJSONSource)
-        .setData(buildCentroidGeoJSON(filters.tiers));
+        .setData(buildCentroidGeoJSON(filters));
     }
-  }, [filters.tiers]);
+
+    // Clear selection if the selected feature no longer passes filters
+    if (selectedSiteIdRef.current) {
+      const rec = catalogRef.current.find(
+        r => r.site_id === selectedSiteIdRef.current
+      );
+      if (rec) {
+        const tierOk = tiers.includes(rec.tier);
+        const rpOk   = returnPeriodMatches(rec, returnPeriod);
+        const stateOk = isHucMode || stateMatches(rec.state, states);
+        const dateOk  = isHucMode || dateMatches(rec, startDate, endDate);
+        let huc8Ok = true;
+        if (isHucMode) {
+          const huc8s: string[] = Array.isArray(rec.huc8)
+            ? rec.huc8.map(String)
+            : rec.huc8 ? [String(rec.huc8)] : [];
+          huc8Ok = huc8s.some(h => h === huc8Id);
+        }
+        if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
+      }
+    }
+  }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate, filters.returnPeriod]);
+
+  useEffect(() => {
+    selectedSiteIdRef.current = selectedSiteId ?? null;
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    applySelectionEmphasis(map, selectedSiteId);
+  }, [selectedSiteId]);
 
   // -----------------------------
   // UI
