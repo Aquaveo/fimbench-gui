@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import HeaderBar from '../components/HeaderBar';
+import Footer from '../components/Footer';
 import FilterSidebar, { DEFAULT_FILTERS, type Filters } from '../components/FilterSidebar';
 import Map from '../components/Map';
 import FIMTable from '../components/FIMTable';
@@ -59,6 +60,8 @@ function App() {
       </div>
 
       </div>
+
+      <Footer />
     </div>
   );
 }
