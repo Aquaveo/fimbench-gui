@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import HeaderBar from '../components/HeaderBar';
 import FilterSidebar, { DEFAULT_FILTERS, type Filters } from '../components/FilterSidebar';
 import Map from '../components/Map';
 import FIMTable from '../components/FIMTable';
@@ -17,7 +18,11 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+
+      <HeaderBar />
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
       {/* Left sidebar */}
       <FilterSidebar
@@ -50,6 +55,8 @@ function App() {
             onClearSelection={() => setSelectedSiteId(null)}
           />
         </div>
+
+      </div>
 
       </div>
     </div>
