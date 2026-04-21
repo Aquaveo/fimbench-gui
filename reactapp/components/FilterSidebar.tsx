@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export type Filters = {
   tiers: string[];
@@ -36,6 +37,68 @@ const TIER_OPTIONS = [
   { value: 'Tier_4', label: 'Tier 4' },
   { value: 'HWM',    label: 'High Water Mark' },
 ];
+
+const TIER_DESCRIPTIONS: Record<string, string> = {
+  Tier_1: 'Very high-resolution NOAA imagery (20–50 cm)',
+  Tier_2: 'PlanetScope + hydrologically guided algorithm (3–5 m)',
+  Tier_3: 'Sentinel-1A + gap-filled algorithm (10 m)',
+  Tier_4: 'FEMA Base Level Engineering synthetic events (10 m)',
+  HWM:    'High Water Mark-derived maps (10 m)',
+};
+
+// Small "i" badge + custom hover tooltip. Portal'd to document.body so it
+// escapes the sidebar's scroll container. Styled to match the map feature
+// popup (Alan Sans via body, rounded card, subtle shadow).
+function InfoBadge({ description }: { description: string }) {
+  const [hovered, setHovered] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const ref = useRef<HTMLSpanElement>(null);
+
+  const handleEnter = () => {
+    const el = ref.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setPos({ top: r.top + r.height / 2, left: r.right + 8 });
+    }
+    setHovered(true);
+  };
+
+  return (
+    <>
+      <span
+        ref={ref}
+        aria-label={description}
+        onMouseEnter={handleEnter}
+        onMouseLeave={() => setHovered(false)}
+        // Badge lives inside a <label>, where a click would toggle the
+        // checkbox. preventDefault stops that, so users can't accidentally
+        // toggle a tier while poking at the info badge.
+        onClick={(e) => e.preventDefault()}
+        style={infoBadgeStyle}
+      >
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+          <path d="M9 10C9 9.44772 9.44772 9 10 9C10.5523 9 11 9.44772 11 10V14C11 14.5523 10.5523 15 10 15C9.44772 15 9 14.5523 9 14V10Z" fill="#000000" />
+          <circle cx="10" cy="7" r="1" fill="#000000" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10ZM16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10Z" fill="#000000" />
+        </svg>
+      </span>
+      {hovered && createPortal(
+        <div
+          className="tier-info-tooltip"
+          style={{
+            ...tooltipStyle,
+            top: pos.top,
+            left: pos.left,
+          }}
+          role="tooltip"
+        >
+          {description}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 const STATE_NAMES: Record<string, string> = {
   AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
@@ -134,13 +197,19 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
         <label style={{ fontWeight: 600 }}>FIM Tier:</label>
         <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {TIER_OPTIONS.map(({ value, label }) => (
-            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <label
+              key={value}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            >
               <input
                 type="checkbox"
                 checked={filters.tiers.includes(value)}
                 onChange={() => handleTierToggle(value)}
               />
-              {label}
+              <span>
+                {label}
+                <InfoBadge description={TIER_DESCRIPTIONS[value]} />
+              </span>
             </label>
           ))}
         </div>
@@ -283,6 +352,28 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
     </div>
   );
 }
+
+const infoBadgeStyle: React.CSSProperties = {
+  display: 'inline-block',
+  verticalAlign: 'super',
+  marginLeft: 2,
+  cursor: 'pointer',
+};
+
+const tooltipStyle: React.CSSProperties = {
+  position: 'fixed',
+  zIndex: 10000,
+  background: '#ffffff',
+  color: '#222',
+  padding: '8px 10px',
+  borderRadius: 4,
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
+  fontSize: 12,
+  lineHeight: 1.45,
+  maxWidth: 260,
+  pointerEvents: 'none',
+  transform: 'translateY(-50%)',
+};
 
 const btnStyle: React.CSSProperties = {
   padding: '6px 10px',
