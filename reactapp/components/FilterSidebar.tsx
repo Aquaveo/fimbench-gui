@@ -120,7 +120,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const huc8InCatalog = huc8FormatOk && availableHuc8s.has(huc8);
 
   return (
-    <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto' }}>
+    <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <h2>Filters</h2>
 
       {/* ── Tier (multi-select checkboxes) ── */}
@@ -259,6 +259,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           Reset Filters
         </button>
       </div>
+
     </div>
   );
 }
@@ -272,3 +273,4 @@ const btnStyle: React.CSSProperties = {
   borderRadius: 4,
   backgroundColor: '#fff',
 };
+

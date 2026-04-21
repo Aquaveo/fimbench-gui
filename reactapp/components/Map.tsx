@@ -68,6 +68,47 @@ function dateMatches(record: any, startDate: string, endDate: string): boolean {
   return true;  // no valid date info — include
 }
 
+// Escape HTML so catalog-sourced strings can't inject markup into the tooltip.
+function escapeHtml(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Produce the Date/Return-Period line for a catalog record. Tier 4 (FEMA BLE) uses
+// return period; others use date(_ymd) or a start/end range. Missing values → em-dash.
+function dateOrReturnPeriod(rec: any): { label: string; value: string } {
+  const rp = rec?.return_period;
+  if (rp != null && rp !== '') {
+    return { label: 'Return Period', value: `${rp}-year` };
+  }
+  const single = typeof rec?.date_ymd === 'string' ? rec.date_ymd : '';
+  if (single) return { label: 'Date', value: single };
+  const s = typeof rec?.start_date_ymd === 'string' ? rec.start_date_ymd : '';
+  const e = typeof rec?.end_date_ymd   === 'string' ? rec.end_date_ymd   : '';
+  if (s && e) return { label: 'Date', value: `${s} – ${e}` };
+  if (s)      return { label: 'Date', value: s };
+  if (e)      return { label: 'Date', value: e };
+  return { label: 'Date', value: '—' };
+}
+
+function buildTooltipHtml(rec: any): string {
+  const tierLabel = TIER_LABELS[rec?.tier] ?? (rec?.tier ?? '—');
+  const stateStr  = Array.isArray(rec?.state) ? rec.state.join(', ') : (rec?.state || '—');
+  const { label, value } = dateOrReturnPeriod(rec);
+  return `
+    <div style="font-size:12px;line-height:1.45;min-width:180px">
+      <div><strong>FIM ID:</strong> ${escapeHtml(rec?.site_id)}</div>
+      <div><strong>Tier:</strong> ${escapeHtml(tierLabel)}</div>
+      <div><strong>State:</strong> ${escapeHtml(stateStr)}</div>
+      <div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
 // -----------------------------
 // Basemaps
 // -----------------------------
@@ -427,6 +468,55 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
         map.on('mouseleave', layerId, () => {
           map.getCanvas().style.cursor = '';
         });
+      });
+
+      // ── Hover tooltip ────────────────────────────────────────────
+      // One popup instance, reused. `pointer-events: none` via className
+      // keeps the popup from swallowing mousemove events on the map below,
+      // which would otherwise cause flicker. Single map-level mousemove
+      // (vs. per-layer) avoids the gap when the cursor crosses from a
+      // centroid circle onto the surrounding extent polygon.
+      const hoverPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 12,
+        className: 'fim-hover-popup',
+      });
+      let hoveredSiteId: string | null = null;
+
+      map.on('mousemove', (e) => {
+        const feats = map.queryRenderedFeatures(e.point, { layers: INTERACTIVE_LAYERS });
+        if (feats.length === 0) {
+          if (hoveredSiteId !== null) {
+            hoveredSiteId = null;
+            hoverPopup.remove();
+          }
+          return;
+        }
+        const siteId = String(feats[0].properties?.site_id ?? '');
+        if (!siteId) {
+          if (hoveredSiteId !== null) {
+            hoveredSiteId = null;
+            hoverPopup.remove();
+          }
+          return;
+        }
+        if (siteId === hoveredSiteId) return; // same feature — popup already correct
+
+        hoveredSiteId = siteId;
+        const rec = catalogRef.current.find(r => String(r.site_id) === siteId) ?? feats[0].properties;
+        hoverPopup.setHTML(buildTooltipHtml(rec));
+        if (!hoverPopup.isOpen()) {
+          hoverPopup.addTo(map).trackPointer();
+        }
+      });
+
+      // Clear the tooltip when the cursor leaves the map canvas entirely.
+      map.getCanvas().addEventListener('mouseleave', () => {
+        if (hoveredSiteId !== null) {
+          hoveredSiteId = null;
+          hoverPopup.remove();
+        }
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)

@@ -190,3 +190,15 @@
   border-right: 1px solid #ddd;
   background-color: #f9f9f9;
 }
+
+/* Hover tooltip on map features: must not intercept pointer events,
+   otherwise the popup sits under the cursor and blocks the map's
+   mousemove handler, causing the tooltip to freeze. */
+.fim-hover-popup {
+  pointer-events: none;
+}
+.fim-hover-popup .maplibregl-popup-content {
+  padding: 8px 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
