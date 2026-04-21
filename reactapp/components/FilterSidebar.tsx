@@ -119,6 +119,12 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const huc8FormatOk = isValidHuc8(huc8);
   const huc8InCatalog = huc8FormatOk && availableHuc8s.has(huc8);
 
+  // Return Period only applies to Tier 4 (FEMA BLE); dim & disable otherwise.
+  const tier4Selected = filters.tiers.includes('Tier_4');
+  // Tier 4 is synthetic (100/500-year forecasts) and carries no observation date,
+  // so the date range is meaningless when only Tier 4 is selected.
+  const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
+
   return (
     <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <h2>Filters</h2>
@@ -217,40 +223,54 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
       </div>
 
       {/* ── Date range ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, opacity: onlyTier4 ? 0.4 : 1 }}>
         <label htmlFor="startDate">Start Date:</label>
         <input
           id="startDate"
           type="date"
           value={filters.startDate}
           onChange={handleStartDateChange}
+          disabled={onlyTier4}
           style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
         />
       </div>
 
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, opacity: onlyTier4 ? 0.4 : 1 }}>
         <label htmlFor="endDate">End Date:</label>
         <input
           id="endDate"
           type="date"
           value={filters.endDate}
           onChange={handleEndDateChange}
+          disabled={onlyTier4}
           style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
         />
+        {onlyTier4 && (
+          <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+            Tier 4 is synthetic — no observation date
+          </span>
+        )}
       </div>
 
       {/* ── Return Period ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, opacity: tier4Selected ? 1 : 0.4 }}>
         <label htmlFor="returnPeriod">Return Period:</label>
         <select
           id="returnPeriod"
           value={filters.returnPeriod}
           onChange={handleReturnPeriodChange}
-          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
+          disabled={!tier4Selected}
+          style={{
+            display: 'block', marginTop: 4, fontFamily: 'inherit',
+            cursor: tier4Selected ? 'pointer' : 'default',
+          }}
         >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>
+        <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+          Only applies to Tier 4 (BLE)
+        </span>
       </div>
 
       {/* ── Actions ── */}
