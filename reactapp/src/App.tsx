@@ -1,20 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
-import FilterSidebar, { DEFAULT_FILTERS, type Filters } from '../components/FilterSidebar';
-import Map from '../components/Map';
+import FilterSidebar from '../components/FilterSidebar';
+import { DEFAULT_FILTERS, type Filters } from './types/filters';
+import Map, { type MapHandle } from '../components/Map';
 import FIMTable from '../components/FIMTable';
+import type { FeatureProperties } from './types/catalog';
 import './App.css';
 
 function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
-  const [visibleFeatures, setVisibleFeatures] = useState<any[]>([]);
+  const [visibleFeatures, setVisibleFeatures] = useState<FeatureProperties[]>([]);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [availableHuc8s, setAvailableHuc8s] = useState<Set<string>>(new Set());
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
 
-  const handleFeatureClick = (feature: any | null) => {
+  const mapRef = useRef<MapHandle | null>(null);
+
+  const handleFeatureClick = (feature: FeatureProperties | null) => {
     setSelectedSiteId(feature?.site_id ?? null);
   };
 
@@ -39,6 +43,7 @@ function App() {
 
         <div style={{ flex: '0 0 60%', minHeight: 0 }}>
           <Map
+            ref={mapRef}
             filters={filters}
             onFeaturesChange={setVisibleFeatures}
             onFeatureClick={handleFeatureClick}
@@ -54,6 +59,7 @@ function App() {
             selectedSiteId={selectedSiteId}
             onRowClick={setSelectedSiteId}
             onClearSelection={() => setSelectedSiteId(null)}
+            onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
           />
         </div>
 
