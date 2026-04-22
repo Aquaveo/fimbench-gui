@@ -57,6 +57,13 @@ function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string)
 
   const quality = j['Quality'] ?? (startDate ? 'HWM' : '—');
 
+  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
+  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
+  const returnPeriod: number | null =
+    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
+      ? Number(rpRaw)
+      : null;
+
   return {
     siteId,
     riverBasin:   basin,
@@ -68,6 +75,7 @@ function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string)
     huc8,
     quality,
     platform,
+    returnPeriod,
     tifUrl:  buildTifUrl(s3Prefix, fileName),
     metaUrl: buildMetaUrl(s3Prefix, fileName),
   };
@@ -76,18 +84,19 @@ function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string)
 // ── Sorting ───────────────────────────────────────────────────
 type FIMRecord = ReturnType<typeof parseRecord>;
 
-type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'quality' | 'platform';
+type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'quality' | 'platform' | 'returnPeriod';
 type SortDir = 'asc' | 'desc';
 
 const SORT_TYPE: Record<SortKey, 'text' | 'number' | 'date'> = {
-  riverBasin: 'text',
-  state:      'text',
-  year:       'number',
-  date:       'date',
-  resolution: 'number',
-  huc8:       'text',
-  quality:    'text',
-  platform:   'text',
+  riverBasin:   'text',
+  state:        'text',
+  year:         'number',
+  date:         'date',
+  resolution:   'number',
+  huc8:         'text',
+  quality:      'text',
+  platform:     'text',
+  returnPeriod: 'number',
 };
 
 function compareRecords(a: FIMRecord, b: FIMRecord, key: SortKey, dir: SortDir): number {
@@ -95,6 +104,16 @@ function compareRecords(a: FIMRecord, b: FIMRecord, key: SortKey, dir: SortDir):
   const kind = SORT_TYPE[key];
 
   if (kind === 'number') {
+    // Return period is nullable; unknowns sort last regardless of direction
+    // (same convention used for dates below).
+    if (key === 'returnPeriod') {
+      const na = a.returnPeriod;
+      const nb = b.returnPeriod;
+      if (na == null && nb == null) return 0;
+      if (na == null) return 1;
+      if (nb == null) return -1;
+      return mul * (na - nb);
+    }
     const na = key === 'year'
       ? (a.year === '—' ? -Infinity : Number(a.year))
       : Number(a[key]);
@@ -136,6 +155,8 @@ const COLUMNS: ColDef[] = [
   { label: 'State',         sortKey: 'state',       width: 110, render: r => r.state },
   { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
   { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
+  { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
+    render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
   { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
     render: r => Number(r.resolution).toFixed(2) },
   { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
