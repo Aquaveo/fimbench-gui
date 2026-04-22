@@ -39,6 +39,25 @@ function parseYmd(str: unknown): number | null {
 const HUC8_REGEX = /^\d{8}$/;
 const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
 
+// Scan every record's date_ymd / start_date_ymd / end_date_ymd for valid
+// YYYY-MM-DD strings and return the min/max. Returns null if no valid dates
+// exist (e.g. a catalog full of Tier 4 synthetic events with only return periods).
+function computeDateBounds(records: CatalogRecord[]): { minDate: string; maxDate: string } | null {
+  let min: string | null = null;
+  let max: string | null = null;
+  const consider = (v: unknown) => {
+    if (typeof v !== 'string' || !YMD_REGEX.test(v)) return;
+    if (min === null || v < min) min = v;
+    if (max === null || v > max) max = v;
+  };
+  for (const r of records) {
+    consider(r.date_ymd);
+    consider(r.start_date_ymd);
+    consider(r.end_date_ymd);
+  }
+  return min && max ? { minDate: min, maxDate: max } : null;
+}
+
 // Returns true if the record's return period matches the selected filter.
 // Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
 // records carry this field; everything else is event-based and has no return period.
@@ -216,12 +235,15 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
   }
 }
 
+export type CatalogDateBounds = { minDate: string; maxDate: string };
+
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: FeatureProperties[]) => void;
   onFeatureClick?: (feature: FeatureProperties | null) => void;
   onCatalogStates?: (states: string[]) => void;
   onCatalogHuc8s?: (huc8s: Set<string>) => void;
+  onCatalogDateBounds?: (bounds: CatalogDateBounds) => void;
   selectedSiteId?: string | null;
 };
 
@@ -267,7 +289,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // -----------------------------
 
 const Map = forwardRef<MapHandle, MapProps>(function Map(
-  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId },
+  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, onCatalogDateBounds, selectedSiteId },
   ref
 ) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -575,6 +597,13 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               : r.huc8 ? [String(r.huc8)] : []
           );
           onCatalogHuc8s(new Set(all));
+        }
+
+        // Emit observed date bounds so the parent can seed the date filter with
+        // real catalog coverage instead of hardcoded values.
+        if (onCatalogDateBounds) {
+          const bounds = computeDateBounds(catalogRef.current);
+          if (bounds) onCatalogDateBounds(bounds);
         }
 
         // If map is already loaded, populate the centroid source immediately
