@@ -73,6 +73,13 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
 
   const stateRaw = j['State'];
 
+  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
+  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
+  const returnPeriod: number | null =
+    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
+      ? Number(rpRaw)
+      : null;
+
   return {
     siteId,
     riverBasin:   basin,
