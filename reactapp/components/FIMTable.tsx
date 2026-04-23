@@ -160,24 +160,6 @@ type ColDef = {
   render: (r: FIMRecord) => React.ReactNode;
 };
 
-const COLUMNS: ColDef[] = [
-  { label: 'River / Basin', sortKey: 'riverBasin', width: 180, render: r => r.riverBasin },
-  { label: 'State',         sortKey: 'state',       width: 110, render: r => r.state },
-  { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
-  { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
-  { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
-    render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
-  { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
-    render: r => Number(r.resolution).toFixed(2) },
-  { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
-  { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality },
-  { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
-  { label: 'Download FIM',  width: 90,
-    render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
-  { label: 'Metadata',      width: 80,
-    render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
-];
-
 // ── Types ─────────────────────────────────────────────────────
 type Props = {
   features: FeatureProperties[];
@@ -270,11 +252,23 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
-    ...COLUMNS,
-    {
-      label: 'Zoom',
-      width: 70,
-      render: (r) => (
+    { label: 'River / Basin', sortKey: 'riverBasin',   width: 180, render: r => r.riverBasin },
+    { label: 'State',         sortKey: 'state',        width: 110, render: r => r.state },
+    { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
+    { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
+    { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
+      render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
+    { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
+      render: r => Number(r.resolution).toFixed(2) },
+    { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
+    { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality },
+    { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
+    { label: 'Download FIM',  width: 90,
+      render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Metadata',      width: 80,
+      render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Zoom',          width: 70,
+      render: r => (
         <button
           onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox); }}
           disabled={!r.bbox}
