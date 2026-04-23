@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import type { FeatureProperties, Bbox } from '../src/types/catalog';
 
 // ── Constants ─────────────────────────────────────────────────
 const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
@@ -13,22 +14,27 @@ function buildMetaUrl(s3Prefix: string, fileName: string): string {
   return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName.replace('_BM.tif', '_metadata.json')}`;
 }
 
-// ── Normalize one metadata JSON into a display record ─────────
-function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string) {
-  const basin = Array.isArray(j['River Basin Name'])
-    ? j['River Basin Name'].join(', ')
-    : (j['River Basin Name'] ?? '—');
+const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
+const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
-  const huc8 = Array.isArray(j['HUC8'])
-    ? j['HUC8'].join(', ')
-    : (j['HUC8'] ?? '—');
+// ── Normalize one metadata JSON into a display record ─────────
+function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: string, siteId: string, bbox: Bbox | undefined) {
+  const basinRaw = j['River Basin Name'];
+  const basin = Array.isArray(basinRaw)
+    ? basinRaw.join(', ')
+    : (typeof basinRaw === 'string' ? basinRaw : '—');
+
+  const huc8Raw = j['HUC8'];
+  const huc8 = Array.isArray(huc8Raw)
+    ? huc8Raw.join(', ')
+    : (typeof huc8Raw === 'string' ? huc8Raw : '—');
 
   const fmt = (d: string) =>
     d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : d;
 
-  const rawEvent: string = j['Flooding Event'] ?? '';
-  const startDate: string = j['Start Date of the Flood'] ?? '';
-  const endDate: string   = j['End Date of the Flood'] ?? '';
+  const rawEvent  = asString(j['Flooding Event']);
+  const startDate = asString(j['Start Date of the Flood']);
+  const endDate   = asString(j['End Date of the Flood']);
 
   // Keep a sortable ISO date string alongside the display string
   let year = '—';
@@ -47,15 +53,25 @@ function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string)
     dateSortKey = fmt(startDate);
   }
 
-  let platform: string =
-    j['Full form of the sensor code'] ??
-    j['Sensor'] ??
-    j['Platform'] ??
+  let platform =
+    asString(j['Full form of the sensor code']) ||
+    asString(j['Sensor']) ||
+    asString(j['Platform']) ||
     '';
   if (!platform && j['BLE']) platform = 'Base Level Engineering (FEMA BLE)';
   if (!platform) platform = '—';
 
-  const quality = j['Quality'] ?? (startDate ? 'HWM' : '—');
+  const qualityRaw = j['Quality'];
+  const quality = typeof qualityRaw === 'string' ? qualityRaw : (startDate ? 'HWM' : '—');
+
+  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
+  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
+  const returnPeriod: number | null =
+    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
+      ? Number(rpRaw)
+      : null;
+
+  const stateRaw = j['State'];
 
   // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
   const rpRaw = j['Synthetic Flooding Event (return period (years))'];
@@ -67,15 +83,16 @@ function parseRecord(j: any, s3Prefix: string, fileName: string, siteId: string)
   return {
     siteId,
     riverBasin:   basin,
-    state:        j['State'] ?? '—',
+    state:        typeof stateRaw === 'string' ? stateRaw : '—',
     year,
     date,
     dateSortKey,
-    resolution:   j['Resolution in meter'] ?? 0,
+    resolution:   asNumber(j['Resolution in meter']),
     huc8,
     quality,
     platform,
     returnPeriod,
+    bbox,
     tifUrl:  buildTifUrl(s3Prefix, fileName),
     metaUrl: buildMetaUrl(s3Prefix, fileName),
   };
@@ -170,15 +187,16 @@ const COLUMNS: ColDef[] = [
 
 // ── Types ─────────────────────────────────────────────────────
 type Props = {
-  features: any[];
+  features: FeatureProperties[];
   selectedSiteId?: string | null;
   onRowClick?: (siteId: string) => void;
   onClearSelection?: () => void;
+  onZoomToFeature?: (bbox: Bbox) => void;
 };
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection }: Props) {
+export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection, onZoomToFeature }: Props) {
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
@@ -191,9 +209,16 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
   const sortedRecordsRef    = useRef<FIMRecord[]>([]);       // stable ref so page-nav effect avoids re-running on every sort
 
   useEffect(() => {
-    if (features.length === 0) { setRecords([]); return; }
+    // When features is empty, the render short-circuits to the empty-state
+    // before reading `records`, so no need to clear state here (would trigger
+    // an extra render cycle). Stale records get replaced on the next non-empty
+    // fetch.
+    if (features.length === 0) return;
 
     let cancelled = false;
+    // Features prop change triggers an async fetch — setting loading + resetting
+    // the page as the fetch kicks off is the intended sync with the external prop.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setPage(1);
 
@@ -205,7 +230,7 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
             const res = await fetch(metaUrl);
             if (!res.ok) return null;
             const j = await res.json();
-            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id);
+            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id, f.bbox);
           } catch { return null; }
         })
       );
@@ -250,6 +275,29 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
     lastInternalClickRef.current = siteId;
     onRowClick?.(siteId);
   };
+
+  const allColumns = useMemo<ColDef[]>(() => [
+    ...COLUMNS,
+    {
+      label: 'Zoom',
+      width: 70,
+      render: (r) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox); }}
+          disabled={!r.bbox}
+          style={{
+            ...tableHeaderBtnStyle,
+            opacity: r.bbox ? 1 : 0.4,
+            cursor: r.bbox ? 'pointer' : 'default',
+            padding: '2px 8px',
+          }}
+          title={r.bbox ? 'Zoom map to this feature' : 'No bounding box available'}
+        >
+          Zoom
+        </button>
+      ),
+    },
+  ], [onZoomToFeature]);
 
   const handleHeaderClick = (key: SortKey | undefined) => {
     if (!key) return;
@@ -305,13 +353,13 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
           <colgroup>
-            {COLUMNS.map((col, i) => (
+            {allColumns.map((col, i) => (
               <col key={i} style={{ width: col.width }} />
             ))}
           </colgroup>
           <thead>
             <tr style={{ backgroundColor: '#e8e8e8' }}>
-              {COLUMNS.map((col) => {
+              {allColumns.map((col) => {
                 const isSorted = col.sortKey === sortKey;
                 const sortable = !!col.sortKey;
                 return (
@@ -348,7 +396,7 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
                     fontWeight: isSelected ? 600 : 'normal',
                   }}
                 >
-                  {COLUMNS.map((col) => (
+                  {allColumns.map((col) => (
                     <td
                       key={col.label}
                       style={{ ...tdStyle, textAlign: col.align ?? 'left' }}

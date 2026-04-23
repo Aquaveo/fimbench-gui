@@ -1,14 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-
-export type Filters = {
-  tiers: string[];
-  states: string[];     // multi-select; empty = all states
-  huc8Id: string;       // direct input; empty = no HUC8 filter
-  returnPeriod: string;
-  startDate: string;
-  endDate: string;
-};
+import type { Filters } from '../src/types/filters';
 
 type FilterSidebarProps = {
   filters: Filters;
@@ -20,15 +12,6 @@ type FilterSidebarProps = {
 
 // HUC8 codes are strings — leading zeros are significant, never parse as numbers.
 const isValidHuc8 = (s: string): boolean => /^\d{8}$/.test(s);
-
-export const DEFAULT_FILTERS: Filters = {
-  tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
-  states: [],
-  huc8Id: '',
-  returnPeriod: '100',
-  startDate: '2016-01-03',
-  endDate: '2025-07-04',
-};
 
 const TIER_OPTIONS = [
   { value: 'Tier_1', label: 'Tier 1' },

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import maplibregl, {
   type ExpressionSpecification,
   type LngLatLike,
@@ -6,7 +6,8 @@ import maplibregl, {
   type StyleSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { type Filters } from './FilterSidebar';
+import type { Filters } from '../src/types/filters';
+import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -41,7 +42,7 @@ const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
 // Returns true if the record's return period matches the selected filter.
 // Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
 // records carry this field; everything else is event-based and has no return period.
-function returnPeriodMatches(record: any, selectedPeriod: string): boolean {
+function returnPeriodMatches(record: CatalogRecord, selectedPeriod: string): boolean {
   const rp = record.return_period;
   if (rp == null) return true;
   return String(rp) === selectedPeriod;
@@ -51,7 +52,7 @@ function returnPeriodMatches(record: any, selectedPeriod: string): boolean {
 // Records with no valid date info are included (we don't hide data we can't place in time).
 // All inputs are parsed via parseYmd; malformed or empty values become unconstrained
 // bounds (filter side) or are treated as missing (record side).
-function dateMatches(record: any, startDate: string, endDate: string): boolean {
+function dateMatches(record: CatalogRecord, startDate: string, endDate: string): boolean {
   const filterStart = parseYmd(startDate) ?? -Infinity;
   const filterEnd   = parseYmd(endDate)   ?? Infinity;
 
@@ -80,7 +81,7 @@ function escapeHtml(s: unknown): string {
 
 // Produce the Date/Return-Period line for a catalog record. Tier 4 (FEMA BLE) uses
 // return period; others use date(_ymd) or a start/end range. Missing values → em-dash.
-function dateOrReturnPeriod(rec: any): { label: string; value: string } {
+function dateOrReturnPeriod(rec: Partial<CatalogRecord>): { label: string; value: string } {
   const rp = rec?.return_period;
   if (rp != null && rp !== '') {
     return { label: 'Return Period', value: `${rp}-year` };
@@ -95,8 +96,8 @@ function dateOrReturnPeriod(rec: any): { label: string; value: string } {
   return { label: 'Date', value: '—' };
 }
 
-function buildTooltipHtml(rec: any): string {
-  const tierLabel = TIER_LABELS[rec?.tier] ?? (rec?.tier ?? '—');
+function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
+  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '—';
   const stateStr  = Array.isArray(rec?.state) ? rec.state.join(', ') : (rec?.state || '—');
   const { label, value } = dateOrReturnPeriod(rec);
   return `
@@ -217,11 +218,15 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
 
 type MapProps = {
   filters: Filters;
-  onFeaturesChange?: (features: any[]) => void;
-  onFeatureClick?: (feature: any | null) => void;
+  onFeaturesChange?: (features: FeatureProperties[]) => void;
+  onFeatureClick?: (feature: FeatureProperties | null) => void;
   onCatalogStates?: (states: string[]) => void;
   onCatalogHuc8s?: (huc8s: Set<string>) => void;
   selectedSiteId?: string | null;
+};
+
+export type MapHandle = {
+  zoomToBbox: (bbox: Bbox) => void;
 };
 
 type ViewState = {
@@ -261,14 +266,17 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // Main Component
 // -----------------------------
 
-export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId }: MapProps) {
+const Map = forwardRef<MapHandle, MapProps>(function Map(
+  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId },
+  ref
+) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
   const [basemap, setBasemap] =
     useState<keyof typeof BASEMAPS>('Topographic');
   
-  const catalogRef = useRef<any[]>([]);              // all catalog records, loaded once
+  const catalogRef = useRef<CatalogRecord[]>([]);    // all catalog records, loaded once
   const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
 
@@ -343,7 +351,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
     });
 
     // Debug access
-    // @ts-ignore
+    // @ts-expect-error — expose map on window for manual console debugging
     window.map = map;
 
     mapRef.current = map;
@@ -381,7 +389,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
 
       const extents   = map.queryRenderedFeatures({ layers: ['fim-layer'] });
       const centroids = map.queryRenderedFeatures({ layers: ['centroids-layer'] });
-      const raw = [...extents, ...centroids];
+      const raw = [...centroids, ...extents];
       const seen = new Set<string>();
       const unique = raw.filter(f => {
         const sid = f.properties?.site_id;
@@ -390,7 +398,15 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
         seen.add(sid);
         return true;
       });
-      onFeaturesChange(unique.map(f => f.properties));
+      // MapLibre serializes array properties (e.g. bbox) to JSON strings when
+      // they pass through queryRenderedFeatures. Look bbox up from the catalog
+      // by site_id — authoritative, and covers features that come from the
+      // extent MVT source too.
+      onFeaturesChange(unique.map(f => {
+        const props = f.properties as unknown as FeatureProperties;
+        const rec = catalogRef.current.find(r => r.site_id === props.site_id);
+        return { ...props, bbox: rec?.bbox };
+      }));
     };
     emitFeaturesRef.current = emitFeatures;
 
@@ -453,7 +469,7 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
           if (!map.getLayer(layerId)) continue;
           const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
           if (features.length > 0) {
-            onFeatureClick?.(features[0].properties);
+            onFeatureClick?.(features[0].properties as unknown as FeatureProperties);
             return;
           }
         }
@@ -530,6 +546,11 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
     return () => {
       map.remove();
     };
+    // filters / onFeatureClick / onFeaturesChange are intentionally not deps:
+    // we want the map re-initialized only on basemap switch. Subsequent filter
+    // changes are handled by the dedicated filter-sync effect below; callbacks
+    // are read through refs (emitFeaturesRef, filtersRef) inside event handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basemap]);
 
   useEffect(() => {
@@ -566,7 +587,10 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
-  }, []); // runs once
+    // Intentionally empty deps: catalog is fetched once on mount. `filters` and
+    // the on-catalog callbacks are read via closure at that time only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -634,6 +658,11 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
         if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
       }
     }
+    // Deps enumerate each filter field explicitly so unrelated filter-object
+    // identity changes don't re-fire; onFeatureClick is stable in practice
+    // (App passes setSelectedSiteId / a closure, and re-firing on identity
+    // would cause redundant work on every render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate, filters.returnPeriod]);
 
   useEffect(() => {
@@ -642,6 +671,15 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
     if (!map?.isStyleLoaded()) return;
     applySelectionEmphasis(map, selectedSiteId);
   }, [selectedSiteId]);
+
+  useImperativeHandle(ref, () => ({
+    zoomToBbox: (bbox) => {
+      const map = mapRef.current;
+      if (!map || !Array.isArray(bbox) || bbox.length !== 4) return;
+      const [w, s, e, n] = bbox;
+      map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
+    },
+  }), []);
 
   // -----------------------------
   // UI
@@ -709,7 +747,9 @@ export default function Map({ filters, onFeaturesChange, onFeatureClick, onCatal
       )}
     </div>
   );
-}
+});
+
+export default Map;
 
 
 // import maplibregl, {
