@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
 
 // ── Constants ─────────────────────────────────────────────────
@@ -163,7 +163,7 @@ type ColDef = {
 // ── Types ─────────────────────────────────────────────────────
 type Props = {
   features: FeatureProperties[];
-  selectedSiteId?: string | null;
+  selectedSiteIds?: Set<string>;
   onRowClick?: (siteId: string) => void;
   onClearSelection?: () => void;
   onZoomToFeature?: (bbox: Bbox) => void;
@@ -171,17 +171,14 @@ type Props = {
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection, onZoomToFeature }: Props) {
+export default function FIMTable({ features, selectedSiteIds, onRowClick, onClearSelection, onZoomToFeature }: Props) {
+  const selectedIds = selectedSiteIds ?? new Set<string>();
+  const hasSelection = selectedIds.size > 0;
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  // Refs for scroll-to-selected behaviour
-  const selectedRowRef      = useRef<HTMLTableRowElement | null>(null);
-  const lastInternalClickRef = useRef<string | null>(null);  // tracks table-initiated clicks
-  const sortedRecordsRef    = useRef<FIMRecord[]>([]);       // stable ref so page-nav effect avoids re-running on every sort
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -224,30 +221,7 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
     [records, sortKey, sortDir]
   );
 
-  // Keep ref in sync so page-nav effect can read current records without them as a dep
-  useEffect(() => { sortedRecordsRef.current = sortedRecords; }, [sortedRecords]);
-
-  // When selection originates from the map: navigate to the correct page
-  useEffect(() => {
-    if (!selectedSiteId) return;
-    // Table-initiated clicks don't need a page jump — user is already looking at the row
-    if (lastInternalClickRef.current === selectedSiteId) {
-      lastInternalClickRef.current = null;
-      return;
-    }
-    const idx = sortedRecordsRef.current.findIndex(r => r.siteId === selectedSiteId);
-    if (idx === -1) return;
-    setPage(Math.ceil((idx + 1) / PAGE_SIZE));
-  }, [selectedSiteId]);
-
-  // After the page renders, scroll the selected row into view
-  useEffect(() => {
-    selectedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [selectedSiteId, page]);
-
-  // Wraps the external callback so we can mark the click as table-initiated
   const handleRowClick = (siteId: string) => {
-    lastInternalClickRef.current = siteId;
     onRowClick?.(siteId);
   };
 
@@ -321,8 +295,8 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             onClick={onClearSelection}
-            disabled={!selectedSiteId}
-            style={{ ...tableHeaderBtnStyle, opacity: selectedSiteId ? 1 : 0.4, cursor: selectedSiteId ? 'pointer' : 'default' }}
+            disabled={!hasSelection}
+            style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
           >
             Clear Selection
           </button>
@@ -370,11 +344,10 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
           </thead>
           <tbody>
             {pageRows.map((r, i) => {
-              const isSelected = r.siteId === selectedSiteId;
+              const isSelected = selectedIds.has(r.siteId);
               return (
                 <tr
                   key={i}
-                  ref={isSelected ? selectedRowRef : null}
                   onClick={() => handleRowClick(r.siteId)}
                   style={{
                     backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),

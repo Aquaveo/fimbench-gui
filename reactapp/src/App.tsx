@@ -15,12 +15,32 @@ function App() {
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [availableHuc8s, setAvailableHuc8s] = useState<Set<string>>(new Set());
   const [catalogDateBounds, setCatalogDateBounds] = useState<CatalogDateBounds | null>(null);
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedSiteIds, setSelectedSiteIds] = useState<Set<string>>(() => new Set());
 
   const mapRef = useRef<MapHandle | null>(null);
 
+  const toggleSelection = (siteId: string) => {
+    setSelectedSiteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(siteId)) next.delete(siteId);
+      else next.add(siteId);
+      return next;
+    });
+  };
+
   const handleFeatureClick = (feature: FeatureProperties | null) => {
-    setSelectedSiteId(feature?.site_id ?? null);
+    // null = empty-map click → clear all. Otherwise toggle this feature.
+    if (!feature) setSelectedSiteIds(new Set());
+    else toggleSelection(feature.site_id);
+  };
+
+  const handlePruneSelections = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setSelectedSiteIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
   };
 
   const handleCatalogDateBounds = (bounds: CatalogDateBounds) => {
@@ -69,16 +89,17 @@ function App() {
             onCatalogStates={setAvailableStates}
             onCatalogHuc8s={setAvailableHuc8s}
             onCatalogDateBounds={handleCatalogDateBounds}
-            selectedSiteId={selectedSiteId}
+            onPruneSelections={handlePruneSelections}
+            selectedSiteIds={selectedSiteIds}
           />
         </div>
 
         <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
           <FIMTable
             features={visibleFeatures}
-            selectedSiteId={selectedSiteId}
-            onRowClick={setSelectedSiteId}
-            onClearSelection={() => setSelectedSiteId(null)}
+            selectedSiteIds={selectedSiteIds}
+            onRowClick={toggleSelection}
+            onClearSelection={() => setSelectedSiteIds(new Set())}
             onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
           />
         </div>
