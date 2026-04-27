@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 
@@ -168,6 +170,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const anchorSiteId = React.useRef<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -181,9 +184,6 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     if (features.length === 0) return;
 
     let cancelled = false;
-    // Features prop change triggers an async fetch — setting loading + resetting
-    // the page as the fetch kicks off is the intended sync with the external prop.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setPage(1);
 
@@ -238,6 +238,40 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       onSelectionChange?.(new Set([siteId]));
       anchorSiteId.current = siteId;
     }
+  };
+
+  const handleBulkDownload = async () => {
+    const selected = records.filter(r => selectedIds.has(r.siteId));
+    if (selected.length === 0) return;
+
+    let done = 0;
+    setDownloadProgress({ done, total: selected.length });
+
+    const zip = new JSZip();
+
+    await Promise.all(selected.map(async (r) => {
+      const folder = zip.folder(r.siteId)!;
+
+      await Promise.all([
+        fetch(r.tifUrl).then(res => {
+          if (res.ok) return res.blob().then(b => {
+            folder.file(r.tifUrl.split('/').pop()!, b, { compression: 'STORE' });
+          });
+        }).catch(() => {}),
+        fetch(r.metaUrl).then(res => {
+          if (res.ok) return res.blob().then(b => {
+            folder.file(r.metaUrl.split('/').pop()!, b);
+          });
+        }).catch(() => {}),
+      ]);
+
+      done++;
+      setDownloadProgress({ done, total: selected.length });
+    }));
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, `fim_${selected.length}_records.zip`);
+    setDownloadProgress(null);
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
@@ -308,10 +342,24 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       <div style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong>FIM Records ({records.length})</strong>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {downloadProgress ? (
+            <span style={{ fontSize: 13, color: '#555' }}>
+              Downloading {downloadProgress.done} / {downloadProgress.total}…
+            </span>
+          ) : (
+            <button
+              onClick={handleBulkDownload}
+              disabled={!hasSelection}
+              style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
+              title={hasSelection ? `Download ${selectedIds.size} selected record(s) as a zip` : 'Select rows to enable bulk download'}
+            >
+              Download Selected ({selectedIds.size})
+            </button>
+          )}
           <button
             onClick={onClearSelection}
-            disabled={!hasSelection}
-            style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
+            disabled={!hasSelection || !!downloadProgress}
+            style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !downloadProgress) ? 1 : 0.4, cursor: (hasSelection && !downloadProgress) ? 'pointer' : 'default' }}
           >
             Clear Selection
           </button>
