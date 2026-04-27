@@ -335,7 +335,7 @@ export type CatalogDateBounds = { minDate: string; maxDate: string };
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: FeatureProperties[]) => void;
-  onFeatureClick?: (feature: FeatureProperties | null) => void;
+  onFeatureClick?: (feature: FeatureProperties | null, additive?: boolean) => void;
   onCatalogStates?: (states: string[]) => void;
   onCatalogHuc8s?: (huc8s: Set<string>) => void;
   onCatalogDateBounds?: (bounds: CatalogDateBounds) => void;
@@ -583,7 +583,8 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
           if (features.length > 0) {
             const feat = features[0];
-            onFeatureClick?.(feat.properties as unknown as FeatureProperties);
+            const additive = e.originalEvent.ctrlKey || e.originalEvent.metaKey || e.originalEvent.shiftKey;
+            onFeatureClick?.(feat.properties as unknown as FeatureProperties, additive);
 
             // Anchor to centroid coordinates for Point features; fall back to
             // click position for polygon extents (MVT geometry may be clipped).

@@ -164,14 +164,14 @@ type ColDef = {
 type Props = {
   features: FeatureProperties[];
   selectedSiteIds?: Set<string>;
-  onRowClick?: (siteId: string) => void;
+  onSelectionChange?: (newIds: Set<string>) => void;
   onClearSelection?: () => void;
   onZoomToFeature?: (bbox: Bbox) => void;
 };
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteIds, onRowClick, onClearSelection, onZoomToFeature }: Props) {
+export default function FIMTable({ features, selectedSiteIds, onSelectionChange, onClearSelection, onZoomToFeature }: Props) {
   const selectedIds = selectedSiteIds ?? new Set<string>();
   const hasSelection = selectedIds.size > 0;
   const [records, setRecords] = useState<FIMRecord[]>([]);
@@ -179,6 +179,7 @@ export default function FIMTable({ features, selectedSiteIds, onRowClick, onClea
   const [page, setPage]       = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const anchorSiteId = React.useRef<string | null>(null);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -221,8 +222,30 @@ export default function FIMTable({ features, selectedSiteIds, onRowClick, onClea
     [records, sortKey, sortDir]
   );
 
-  const handleRowClick = (siteId: string) => {
-    onRowClick?.(siteId);
+  const handleRowClick = (siteId: string, e: React.MouseEvent) => {
+    if (e.shiftKey && anchorSiteId.current) {
+      // Range select: find anchor and target in the full sorted list
+      const allIds = sortedRecords.map(r => r.siteId);
+      const anchorIdx = allIds.indexOf(anchorSiteId.current);
+      const targetIdx = allIds.indexOf(siteId);
+      if (anchorIdx !== -1 && targetIdx !== -1) {
+        const [from, to] = anchorIdx <= targetIdx
+          ? [anchorIdx, targetIdx]
+          : [targetIdx, anchorIdx];
+        onSelectionChange?.(new Set(allIds.slice(from, to + 1)));
+      }
+      // Anchor stays unchanged on Shift+click (standard OS behaviour)
+    } else if (e.ctrlKey || e.metaKey) {
+      // Toggle this row while keeping others
+      const next = new Set(selectedIds);
+      if (next.has(siteId)) next.delete(siteId); else next.add(siteId);
+      onSelectionChange?.(next);
+      anchorSiteId.current = siteId;
+    } else {
+      // Plain click → single select
+      onSelectionChange?.(new Set([siteId]));
+      anchorSiteId.current = siteId;
+    }
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
@@ -348,7 +371,7 @@ export default function FIMTable({ features, selectedSiteIds, onRowClick, onClea
               return (
                 <tr
                   key={i}
-                  onClick={() => handleRowClick(r.siteId)}
+                  onClick={(e) => handleRowClick(r.siteId, e)}
                   style={{
                     backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),
                     verticalAlign: 'top',

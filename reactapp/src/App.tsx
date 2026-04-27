@@ -28,10 +28,10 @@ function App() {
     });
   };
 
-  const handleFeatureClick = (feature: FeatureProperties | null) => {
-    // null = empty-map click → clear all. Otherwise toggle this feature.
-    if (!feature) setSelectedSiteIds(new Set());
-    else toggleSelection(feature.site_id);
+  const handleFeatureClick = (feature: FeatureProperties | null, additive = false) => {
+    if (!feature) { setSelectedSiteIds(new Set()); return; }
+    if (additive) toggleSelection(feature.site_id);
+    else setSelectedSiteIds(new Set([feature.site_id]));
   };
 
   const handlePruneSelections = (ids: string[]) => {
@@ -98,7 +98,7 @@ function App() {
           <FIMTable
             features={visibleFeatures}
             selectedSiteIds={selectedSiteIds}
-            onRowClick={toggleSelection}
+            onSelectionChange={setSelectedSiteIds}
             onClearSelection={() => setSelectedSiteIds(new Set())}
             onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
           />
