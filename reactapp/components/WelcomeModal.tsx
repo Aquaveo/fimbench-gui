@@ -109,16 +109,17 @@ const TIERS = [
   { label: 'HWM',          color: '#EC6FA3' },
 ];
 
-// The SVG's arrowhead sits at the top-right of its viewBox (~91% across, ~0% down).
-// At 220×220px, that's ~18px from the right edge and ~1px from the top.
-// Positioning at right:0/top:18 places the tip at approximately right:18px, top:19px —
-// landing on the Documentation link in the header (header padding-right: 20px, link ~25px from top).
+// Arrowhead is at 91.9% across / ~0% down in the viewBox.
+// At width 20vw the tip sits 1.62vw from the SVG's right edge, so right:0 lands it
+// at ~right:1.62vw — matching the header's padding-right (~1.4vw on typical screens).
+// top:2.5vh places the tip at ~2.5vh from the viewport top, matching the Documentation
+// link which is vertically centred in the ~53px header (~3vh on a 900px screen).
 const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
-  top: 18,
+  top: '2.5vh',
   right: 0,
-  width: 220,
-  height: 220,
+  width: '20vw',
+  height: '20vw',
   pointerEvents: 'none',
 };
 
