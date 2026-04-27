@@ -17,6 +17,7 @@ export default function WelcomeModal({ onClose }: Props) {
       {/* Large swirly arrow floating outside the card, tip aimed at the Documentation link */}
       <svg
         viewBox="0 0 367.339 367.34"
+        preserveAspectRatio="none"
         fill="#25C2DF"
         aria-hidden="true"
         style={floatingArrowStyle}
@@ -114,10 +115,10 @@ const TIERS = [
 // Documentation link. top:2.5vh tracks the header centre across screen heights.
 const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
-  top: '25vh',
+  top: '25.1vh',
   right: '10vw',
-  width: '35vw',
-  height: '50vh',
+  width: '42vw',
+  height: '62vh',
   transform: 'rotate(10deg)',
   pointerEvents: 'none',
 };
