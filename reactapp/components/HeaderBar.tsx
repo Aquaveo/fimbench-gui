@@ -14,9 +14,8 @@ export default function HeaderBar() {
         <Link
           to="/docs"
           style={{
-            ...navLinkStyle,
-            color: onDocs ? '#25C2DF' : '#D1EFF6',
-            fontWeight: onDocs ? 600 : 400,
+            ...docLinkStyle,
+            backgroundColor: onDocs ? 'rgba(37,194,223,0.18)' : 'transparent',
           }}
         >
           Documentation
@@ -26,9 +25,16 @@ export default function HeaderBar() {
   );
 }
 
-const navLinkStyle: React.CSSProperties = {
+const docLinkStyle: React.CSSProperties = {
+  display: 'inline-block',
+  border: '2px solid #25C2DF',
+  borderRadius: '999px',
+  padding: '3px 12px',
   fontSize: 13,
+  fontWeight: 600,
+  color: '#25C2DF',
   textDecoration: 'none',
+  lineHeight: 1.5,
 };
 
 const headerStyle: React.CSSProperties = {
