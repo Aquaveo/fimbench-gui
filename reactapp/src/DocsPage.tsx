@@ -281,6 +281,7 @@ const mainStyle: React.CSSProperties = {
   margin: '0 auto',
   padding: '28px 24px 48px',
   boxSizing: 'border-box',
+  background: '#fff',
 };
 
 const backLinkStyle: React.CSSProperties = {
