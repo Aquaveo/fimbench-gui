@@ -447,18 +447,6 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Preserve view state
-    if (mapRef.current) {
-      viewStateRef.current = {
-        center: mapRef.current.getCenter().toArray(),
-        zoom: mapRef.current.getZoom(),
-        bearing: mapRef.current.getBearing(),
-        pitch: mapRef.current.getPitch(),
-      };
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: createStyle(BASEMAPS[basemap]),
@@ -700,6 +688,13 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     });
 
     return () => {
+      // Save view state before destroying so the replacement map restores it.
+      viewStateRef.current = {
+        center: map.getCenter().toArray(),
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+      };
       map.remove();
     };
     // filters / onFeatureClick / onFeaturesChange are intentionally not deps:
