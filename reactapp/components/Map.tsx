@@ -858,7 +858,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         style={{
           position: 'absolute',
           top: 10,
-          right: 10,
+          left: 10,
           padding: 8,
           backgroundColor: 'rgba(255,255,255,0.85)',
           borderRadius: 4,
@@ -880,12 +880,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           </select>
         </label>
       </div>
-      {/* Map legend — bottom right */}
+      {/* Map legend — bottom left */}
       {filters.tiers.length > 0 && (
         <div style={{
           position: 'absolute',
           bottom: 28,
-          right: 10,
+          left: 10,
           padding: '8px 12px',
           backgroundColor: 'rgba(255,255,255,0.88)',
           borderRadius: 4,
