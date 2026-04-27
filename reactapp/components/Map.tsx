@@ -468,6 +468,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       pitch: viewStateRef.current.pitch,
       minZoom: 3,
       maxZoom: 20,
+      attributionControl: false,
     });
 
     // Debug access
