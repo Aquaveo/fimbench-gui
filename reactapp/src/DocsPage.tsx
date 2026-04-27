@@ -295,7 +295,7 @@ const pageTitleStyle: React.CSSProperties = {
   fontSize: 28,
   fontWeight: 700,
   margin: '0 0 20px',
-  color: '#152428',
+  color: '#25C2DF',
 };
 
 const tocBoxStyle: React.CSSProperties = {
