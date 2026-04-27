@@ -106,7 +106,7 @@ const floatingArrowStyle: React.CSSProperties = {
   right: '10vw',
   width: '42vw',
   height: '62vh',
-  transform: 'rotate(50deg)',
+  transform: 'rotate(310deg)',
   pointerEvents: 'none',
 };
 
