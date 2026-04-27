@@ -45,6 +45,19 @@ export default function WelcomeModal({ onClose }: Props) {
             ))}
           </div>
 
+          {/* Docs callout */}
+          <div style={docsCalloutStyle}>
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M 5 31 C 5 14 21 5 31 5" stroke="#25C2DF" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M 25 3 L 31 5 L 27 11" stroke="#25C2DF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <p style={{ margin: 0, fontSize: 13, color: '#333', lineHeight: 1.55 }}>
+              For a full guide to all features, click the{' '}
+              <span style={docCircleStyle}>Documentation</span>
+              {' '}link in the header bar above.
+            </p>
+          </div>
+
           <label style={checkboxLabelStyle}>
             <input
               type="checkbox"
@@ -139,4 +152,22 @@ const tierBadgeStyle = (color: string): React.CSSProperties => ({
 
 const checkboxLabelStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', fontSize: 13, color: '#555', cursor: 'pointer',
+};
+
+const docsCalloutStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 12,
+  background: '#f0fbfd', border: '1px solid #b8ecf5',
+  borderRadius: 6, padding: '10px 14px',
+  marginBottom: 16,
+};
+
+const docCircleStyle: React.CSSProperties = {
+  display: 'inline-block',
+  border: '2px solid #25C2DF',
+  borderRadius: '999px',
+  padding: '0 7px',
+  fontSize: 12,
+  fontWeight: 600,
+  color: '#25C2DF',
+  lineHeight: 1.6,
 };
