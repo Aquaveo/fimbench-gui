@@ -24,9 +24,11 @@ function App() {
 
   const mapRef = useRef<MapHandle | null>(null);
 
-  const handleCloseWelcome = useCallback(() => {
-    try { localStorage.setItem('fimbench.welcomeSeen', '1'); }
-    catch { /* ignore — modal simply re-appears next visit */ }
+  const handleCloseWelcome = useCallback((dontShowAgain: boolean) => {
+    try {
+      if (dontShowAgain) localStorage.setItem('fimbench.welcomeSeen', '1');
+      else localStorage.removeItem('fimbench.welcomeSeen');
+    } catch { /* ignore — modal re-appears next visit if storage is unavailable */ }
     setShowWelcome(false);
   }, []);
 

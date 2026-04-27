@@ -1,22 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-type Props = { onClose: () => void };
+type Props = { onClose: (dontShowAgain: boolean) => void };
 
 export default function WelcomeModal({ onClose }: Props) {
+  const [dontShow, setDontShow] = useState(false);
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(dontShow); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, dontShow]);
 
   return (
-    <div style={backdropStyle} onClick={onClose} role="dialog" aria-modal="true" aria-label="Welcome to FIMBench">
+    <div style={backdropStyle} onClick={() => onClose(dontShow)} role="dialog" aria-modal="true" aria-label="Welcome to FIMBench">
       <div style={cardStyle} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div style={cardHeaderStyle}>
-          <h2 style={titleStyle}>Welcome to FIMBench</h2>
-          <p style={taglineStyle}>Explore and download benchmark Flood Inundation Maps across the U.S.</p>
+          <div>
+            <h2 style={titleStyle}>Welcome to FIMBench</h2>
+            <p style={taglineStyle}>Explore and download benchmark Flood Inundation Maps across the U.S.</p>
+          </div>
+          <button style={closeBtnStyle} onClick={() => onClose(dontShow)} aria-label="Close">✕</button>
         </div>
 
         {/* Body */}
@@ -39,14 +44,16 @@ export default function WelcomeModal({ onClose }: Props) {
               <span key={t.label} style={tierBadgeStyle(t.color)}>{t.label}</span>
             ))}
           </div>
-        </div>
 
-        {/* Footer */}
-        <div style={footerStyle}>
-          <p style={dismissNoteStyle}>This message won&apos;t appear again after you close it.</p>
-          <button style={btnStyle} onClick={onClose} autoFocus>
-            Get Started
-          </button>
+          <label style={checkboxLabelStyle}>
+            <input
+              type="checkbox"
+              checked={dontShow}
+              onChange={e => setDontShow(e.target.checked)}
+              style={{ marginRight: 6 }}
+            />
+            Don&apos;t show on startup
+          </label>
         </div>
 
       </div>
@@ -55,11 +62,11 @@ export default function WelcomeModal({ onClose }: Props) {
 }
 
 const TIERS = [
-  { label: 'Tier 1',           color: '#E74C3C' },
-  { label: 'Tier 2',           color: '#F39C12' },
-  { label: 'Tier 3',           color: '#2ECC71' },
-  { label: 'Tier 4 (BLE)',     color: '#9B59B6' },
-  { label: 'HWM',              color: '#EC6FA3' },
+  { label: 'Tier 1',       color: '#E74C3C' },
+  { label: 'Tier 2',       color: '#F39C12' },
+  { label: 'Tier 3',       color: '#2ECC71' },
+  { label: 'Tier 4 (BLE)', color: '#9B59B6' },
+  { label: 'HWM',          color: '#EC6FA3' },
 ];
 
 const backdropStyle: React.CSSProperties = {
@@ -82,7 +89,11 @@ const cardStyle: React.CSSProperties = {
 
 const cardHeaderStyle: React.CSSProperties = {
   background: '#152428',
-  padding: '20px 24px 16px',
+  padding: '18px 20px 14px 24px',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 12,
 };
 
 const titleStyle: React.CSSProperties = {
@@ -93,8 +104,20 @@ const taglineStyle: React.CSSProperties = {
   margin: '4px 0 0', fontSize: 13, color: '#D1EFF6',
 };
 
+const closeBtnStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: '#D1EFF6',
+  fontSize: 18,
+  lineHeight: 1,
+  cursor: 'pointer',
+  padding: '2px 4px',
+  flexShrink: 0,
+  marginTop: 2,
+};
+
 const bodyStyle: React.CSSProperties = {
-  padding: '20px 24px 8px',
+  padding: '20px 24px 22px',
 };
 
 const introStyle: React.CSSProperties = {
@@ -106,7 +129,7 @@ const listStyle: React.CSSProperties = {
 };
 
 const tierLegendStyle: React.CSSProperties = {
-  display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8,
+  display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16,
 };
 
 const tierBadgeStyle = (color: string): React.CSSProperties => ({
@@ -114,19 +137,6 @@ const tierBadgeStyle = (color: string): React.CSSProperties => ({
   backgroundColor: color, color: '#fff', fontSize: 12, fontWeight: 600,
 });
 
-const footerStyle: React.CSSProperties = {
-  padding: '12px 24px 20px',
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  borderTop: '1px solid #eee',
-};
-
-const dismissNoteStyle: React.CSSProperties = {
-  margin: 0, fontSize: 11, color: '#888',
-};
-
-const btnStyle: React.CSSProperties = {
-  padding: '8px 22px', fontSize: 14, fontWeight: 600,
-  fontFamily: 'inherit', cursor: 'pointer',
-  backgroundColor: '#25C2DF', color: '#fff',
-  border: 'none', borderRadius: 5,
+const checkboxLabelStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', fontSize: 13, color: '#555', cursor: 'pointer',
 };
