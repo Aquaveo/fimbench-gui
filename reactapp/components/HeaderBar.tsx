@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link, useMatch } from 'react-router-dom';
 
 export default function HeaderBar() {
   const onDocs = !!useMatch('/docs');
+  const [hovered, setHovered] = useState(false);
+  const filled = onDocs || hovered;
   return (
     <header style={headerStyle}>
       <div>
@@ -15,8 +18,11 @@ export default function HeaderBar() {
           to="/docs"
           style={{
             ...docLinkStyle,
-            backgroundColor: onDocs ? 'rgba(37,194,223,0.18)' : 'transparent',
+            backgroundColor: filled ? '#25C2DF' : 'transparent',
+            color: filled ? '#152428' : '#25C2DF',
           }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
           Documentation
         </Link>
