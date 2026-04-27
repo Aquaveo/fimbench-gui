@@ -102,7 +102,7 @@ const TIERS = [
 
 const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
-  top: '15vh',
+  top: '17vh',
   right: '4vw',
   width: '42vw',
   height: '62vh',
