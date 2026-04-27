@@ -116,8 +116,8 @@ const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
   top: '2.5vh',
   right: 0,
-  width: '10vw',
-  height: '15vh',
+  width: '35vw',
+  height: '50vh',
   pointerEvents: 'none',
 };
 
