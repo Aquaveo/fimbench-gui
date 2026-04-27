@@ -114,10 +114,11 @@ const TIERS = [
 // Documentation link. top:2.5vh tracks the header centre across screen heights.
 const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
-  top: '2.5vh',
-  right: 0,
+  top: '25vh',
+  right: '10vw',
   width: '35vw',
   height: '50vh',
+  transform: 'rotate(10deg)',
   pointerEvents: 'none',
 };
 
