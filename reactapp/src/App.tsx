@@ -98,7 +98,10 @@ function App() {
           <FIMTable
             features={visibleFeatures}
             selectedSiteIds={selectedSiteIds}
-            onSelectionChange={setSelectedSiteIds}
+            onSelectionChange={(newIds) => {
+              setSelectedSiteIds(newIds);
+              mapRef.current?.clearPopup?.();
+            }}
             onClearSelection={() => setSelectedSiteIds(new Set())}
             onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
           />

@@ -1,18 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
-
-// ── Constants ─────────────────────────────────────────────────
-const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
-
-function toMinioPath(s3Prefix: string): string {
-  return s3Prefix.replace(/^FIM_Database\//, '');
-}
-function buildTifUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName}`;
-}
-function buildMetaUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName.replace('_BM.tif', '_metadata.json')}`;
-}
+import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 
 const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
 const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
@@ -186,6 +174,10 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     // before reading `records`, so no need to clear state here (would trigger
     // an extra render cycle). Stale records get replaced on the next non-empty
     // fetch.
+    // Reset shift-anchor whenever the visible feature set changes so stale
+    // anchor IDs from a previous viewport don't produce unexpected ranges.
+    anchorSiteId.current = null;
+
     if (features.length === 0) return;
 
     let cancelled = false;
@@ -370,7 +362,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
               const isSelected = selectedIds.has(r.siteId);
               return (
                 <tr
-                  key={i}
+                  key={r.siteId}
                   onClick={(e) => handleRowClick(r.siteId, e)}
                   style={{
                     backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),

@@ -8,6 +8,8 @@ import maplibregl, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Filters } from '../src/types/filters';
 import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
+import { isValidHuc8 } from '../src/types/catalog';
+import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -33,11 +35,6 @@ function parseYmd(str: unknown): number | null {
   const ts = new Date(str).getTime();
   return Number.isNaN(ts) ? null : ts;
 }
-
-// HUC8 codes are strings (may have leading zeros — do NOT parse as numbers).
-// Exactly 8 digit characters.
-const HUC8_REGEX = /^\d{8}$/;
-const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
 
 // Scan every record's date_ymd / start_date_ymd / end_date_ymd for valid
 // YYYY-MM-DD strings and return the min/max. Returns null if no valid dates
@@ -171,16 +168,11 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const { label, value } = dateOrReturnPeriod(rec);
   const hasDate = value !== '—';
 
-  // Build download URLs — same logic as FIMTable.tsx
+  // Build download URLs via shared utility (same source of truth as FIMTable)
   const s3Prefix = typeof rec?.s3_prefix === 'string' ? rec.s3_prefix : '';
   const fileName = typeof rec?.file_name  === 'string' ? rec.file_name  : '';
-  const minioPath = s3Prefix.replace(/^FIM_Database\//, '');
-  const tifUrl  = s3Prefix && fileName
-    ? `http://127.0.0.1:9000/fimbench/${minioPath}/${fileName}`
-    : '';
-  const metaUrl = s3Prefix && fileName
-    ? `http://127.0.0.1:9000/fimbench/${minioPath}/${fileName.replace('_BM.tif', '_metadata.json')}`
-    : '';
+  const tifUrl  = s3Prefix && fileName ? buildTifUrl(s3Prefix, fileName)  : '';
+  const metaUrl = s3Prefix && fileName ? buildMetaUrl(s3Prefix, fileName) : '';
 
   // Only renders a table row when val is non-empty — no '—' placeholders.
   const row = (k: string, v: string) =>
@@ -283,6 +275,18 @@ const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
   ZOOM_CROSSFADE_END,   0.6,
 ];
 
+// Tier 4 (FEMA BLE) renders at the bottom of the extent stack; HWM at the top.
+// Selected features are given a higher key so they always float above everything.
+const TIER_SORT_EXPR: ExpressionSpecification = [
+  'match', ['get', 'tier'],
+  'Tier_4', 1,
+  'Tier_3', 2,
+  'Tier_2', 3,
+  'Tier_1', 4,
+  'HWM',    5,
+  0,
+];
+
 // Applies (or resets) selection-emphasis paint properties on both layers.
 // Called both from the selectedSiteIds useEffect and inside map.on('load')
 // so that basemap switches re-apply the current selection state.
@@ -298,6 +302,8 @@ function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
     map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
     map.setPaintProperty('fim-layer', 'fill-outline-color', '#003B8E');
     map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', TIER_SORT_EXPR);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', TIER_SORT_EXPR);
   } else {
     const isSelected: ExpressionSpecification = ['in', ['get', 'site_id'], ['literal', [...siteIds]]];
 
@@ -327,6 +333,13 @@ function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
       EXTENT_OPACITY_EXPR,
       ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
     ]);
+    // Selected features float above all tier-based ordering on both layers
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', [
+      'case', isSelected, 10, TIER_SORT_EXPR,
+    ]);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', [
+      'case', isSelected, 10, TIER_SORT_EXPR,
+    ]);
   }
 }
 
@@ -347,6 +360,7 @@ type MapProps = {
 
 export type MapHandle = {
   zoomToBbox: (bbox: Bbox) => void;
+  clearPopup: () => void;
 };
 
 type ViewState = {
@@ -399,6 +413,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const catalogRef = useRef<CatalogRecord[]>([]);    // all catalog records, loaded once
   const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
+  const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
 
   const filtersRef = useRef(filters);
 
@@ -459,9 +474,11 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       attributionControl: false,
     });
 
-    // Debug access
-    // @ts-expect-error — expose map on window for manual console debugging
-    window.map = map;
+    // Debug access — dev only, stripped from production builds
+    if (import.meta.env.DEV) {
+      // @ts-expect-error — expose map on window for manual console debugging
+      window.map = map;
+    }
 
     mapRef.current = map;
 
@@ -531,6 +548,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         id: 'centroids-layer',
         type: 'circle',
         source: 'centroids',
+        layout: {
+          'circle-sort-key': TIER_SORT_EXPR,
+        },
         paint: {
           'circle-radius': 7,
           'circle-color': TIER_COLOR_EXPR,
@@ -559,6 +579,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           source: 'fim-tiles',
           'source-layer': 'fim_extents',
           filter: ['in', ['get', 'tier'], ['literal', filters.tiers]],
+          layout: {
+            'fill-sort-key': TIER_SORT_EXPR,
+          },
           paint: {
             'fill-color': '#0067E1',
             'fill-opacity': EXTENT_OPACITY_EXPR,
@@ -575,8 +598,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 
       // Click popup — recreated on each click so the anchor direction can be
       // recalculated. closeOnClick:false means we manage dismissal manually.
-      let currentClickPopup: maplibregl.Popup | null = null;
-
+      // currentClickPopupRef is component-level so the cleanup can reach it.
       map.on('click', (e) => {
         for (const layerId of INTERACTIVE_LAYERS) {
           if (!map.getLayer(layerId)) continue;
@@ -603,8 +625,8 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
             const siteId = String(feat.properties?.site_id ?? '');
             const rec = catalogRef.current.find(r => String(r.site_id) === siteId) ?? feat.properties;
 
-            currentClickPopup?.remove();
-            currentClickPopup = new maplibregl.Popup({
+            currentClickPopupRef.current?.remove();
+            currentClickPopupRef.current = new maplibregl.Popup({
               closeButton: true,
               closeOnClick: false,
               offset: 15,
@@ -612,12 +634,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               className: 'fim-click-popup',
               anchor,
             });
-            currentClickPopup.setLngLat(coords).setHTML(buildClickPopupHtml(rec)).addTo(map);
+            currentClickPopupRef.current.setLngLat(coords).setHTML(buildClickPopupHtml(rec)).addTo(map);
             return;
           }
         }
-        currentClickPopup?.remove();
-        currentClickPopup = null;
+        currentClickPopupRef.current?.remove();
+        currentClickPopupRef.current = null;
         onFeatureClick?.(null);
       });
 
@@ -696,6 +718,10 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         bearing: map.getBearing(),
         pitch: map.getPitch(),
       };
+      // Explicitly dismiss the click popup before removing the map so it
+      // doesn't linger as a detached DOM node between basemap switches.
+      currentClickPopupRef.current?.remove();
+      currentClickPopupRef.current = null;
       map.remove();
     };
     // filters / onFeatureClick / onFeaturesChange are intentionally not deps:
@@ -740,7 +766,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filters));
+          src?.setData(buildCentroidGeoJSON(filtersRef.current));
           // Emit features once the new centroid data has been rendered
           map.once('idle', () => emitFeaturesRef.current?.());
         }
@@ -837,9 +863,15 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   useImperativeHandle(ref, () => ({
     zoomToBbox: (bbox) => {
       const map = mapRef.current;
-      if (!map || !Array.isArray(bbox) || bbox.length !== 4) return;
+      if (!map || !map.isStyleLoaded()) return;
+      if (!Array.isArray(bbox) || bbox.length !== 4) return;
       const [w, s, e, n] = bbox;
+      if (!Number.isFinite(w) || !Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(n)) return;
       map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
+    },
+    clearPopup: () => {
+      currentClickPopupRef.current?.remove();
+      currentClickPopupRef.current = null;
     },
   }), []);
 
@@ -912,115 +944,3 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 });
 
 export default Map;
-
-
-// import maplibregl, {
-//   type LngLatLike,
-//   type RasterSourceSpecification,
-//   type StyleSpecification,
-// } from 'maplibre-gl';
-// import 'maplibre-gl/dist/maplibre-gl.css';
-
-
-// import { useState, useRef } from 'react';
-// import DeckGL from '@deck.gl/react';
-// import { MVTLayer } from '@deck.gl/geo-layers';
-// import 'maplibre-gl/dist/maplibre-gl.css';
-// import { Map as MapLibre } from 'react-map-gl/maplibre';
-// import { type Filters } from './FilterSidebar';
-
-// // -----------------------------
-// // Basemaps
-// // -----------------------------
-// const BASEMAPS = {
-//   Street:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-//   Topographic:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-//   Satellite:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-// };
-
-// type MapProps = {
-//   filters: Filters;
-// };
-
-// const DEFAULT_VIEW = {
-//   longitude: -98,
-//   latitude: 29.9,
-//   zoom: 6,
-//   bearing: 0,
-//   pitch: 0,
-// };
-
-// function getMapStyle(basemapUrl: string) {
-//   return {
-//     version: 8 as const,
-//     sources: { basemap: { type: 'raster' as const, tiles: [basemapUrl], tileSize: 256 } },
-//     layers: [{ id: 'basemap-layer', type: 'raster' as const, source: 'basemap' }],
-//   };
-// }
-
-// // -----------------------------
-// // Main Component
-// // -----------------------------
-// export default function Map(_: MapProps) {
-//   const [viewState, setViewState] = useState(DEFAULT_VIEW);
-//   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('Topographic');
-
-//   const layers = [
-//     new MVTLayer({
-//       id: 'fim-layer',
-//       data: 'https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/tiles/{z}/{x}/{y}.pbf',
-//       binary: true,
-//       minZoom: 3,
-//       maxZoom: 14,
-//       filled: true,
-//       getFillColor: [255, 0, 0, 128],
-//       stroked: false,
-//     }),
-//   ];
-
-//   // -----------------------------
-//   // UI
-//   // -----------------------------
-//   return (
-//     <div style={{ flex: 1, position: 'relative' }}>
-//       <DeckGL
-//         viewState={viewState}
-//         onViewStateChange={({ viewState }) => setViewState(viewState as typeof DEFAULT_VIEW)}
-//         controller={true}
-//         layers={layers}
-//       >
-//         <MapLibre mapStyle={getMapStyle(BASEMAPS[basemap])} />
-//       </DeckGL>
-
-//       {/* Basemap selector */}
-//       <div
-//         style={{
-//           position: 'absolute',
-//           top: 10,
-//           right: 10,
-//           padding: 8,
-//           backgroundColor: 'rgba(255,255,255,0.85)',
-//           borderRadius: 4,
-//           zIndex: 1,
-//         }}
-//       >
-//         <label>
-//           Basemap:{' '}
-//           <select
-//             value={basemap}
-//             onChange={(e) => setBasemap(e.target.value as keyof typeof BASEMAPS)}
-//           >
-//             {Object.keys(BASEMAPS).map((name) => (
-//               <option key={name} value={name}>
-//                 {name}
-//               </option>
-//             ))}
-//           </select>
-//         </label>
-//       </div>
-//     </div>
-//   );
-// }

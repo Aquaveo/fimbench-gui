@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Filters } from '../src/types/filters';
+import { isValidHuc8 } from '../src/types/catalog';
 
 type FilterSidebarProps = {
   filters: Filters;
@@ -9,9 +10,6 @@ type FilterSidebarProps = {
   availableStates: string[];
   availableHuc8s: Set<string>;
 };
-
-// HUC8 codes are strings — leading zeros are significant, never parse as numbers.
-const isValidHuc8 = (s: string): boolean => /^\d{8}$/.test(s);
 
 const TIER_OPTIONS = [
   { value: 'Tier_1', label: 'Tier 1' },

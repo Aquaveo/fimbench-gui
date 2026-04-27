@@ -1,3 +1,5 @@
+import type React from 'react';
+
 const LOGO_BASE = '/static/fimbench_gui/images';
 
 export default function Footer() {
