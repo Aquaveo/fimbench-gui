@@ -1,4 +1,7 @@
+import { Link, useMatch } from 'react-router-dom';
+
 export default function HeaderBar() {
+  const onDocs = !!useMatch('/docs');
   return (
     <header style={headerStyle}>
       <div>
@@ -7,9 +10,26 @@ export default function HeaderBar() {
           Explore and download benchmark Flood Inundation Maps across the U.S.
         </p>
       </div>
+      <nav>
+        <Link
+          to="/docs"
+          style={{
+            ...navLinkStyle,
+            color: onDocs ? '#25C2DF' : '#D1EFF6',
+            fontWeight: onDocs ? 600 : 400,
+          }}
+        >
+          Documentation
+        </Link>
+      </nav>
     </header>
   );
 }
+
+const navLinkStyle: React.CSSProperties = {
+  fontSize: 13,
+  textDecoration: 'none',
+};
 
 const headerStyle: React.CSSProperties = {
   display: 'flex',
