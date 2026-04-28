@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
@@ -170,6 +170,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const anchorSiteId = React.useRef<string | null>(null);
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
@@ -213,6 +214,22 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     () => [...records].sort((a, b) => compareRecords(a, b, sortKey, sortDir)),
     [records, sortKey, sortDir]
   );
+
+  // When a single item is selected (e.g. from a map centroid click), jump to its page.
+  useEffect(() => {
+    if (!selectedSiteIds || selectedSiteIds.size !== 1) return;
+    const siteId = [...selectedSiteIds][0];
+    const idx = sortedRecords.findIndex(r => r.siteId === siteId);
+    if (idx === -1) return;
+    setPage(Math.ceil((idx + 1) / PAGE_SIZE));
+  }, [selectedSiteIds, sortedRecords]);
+
+  // After the correct page renders, scroll that row into view.
+  useEffect(() => {
+    if (!selectedSiteIds || selectedSiteIds.size !== 1) return;
+    const siteId = [...selectedSiteIds][0];
+    rowRefs.current.get(siteId)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [page, selectedSiteIds]);
 
   const handleRowClick = (siteId: string, e: React.MouseEvent) => {
     if (e.shiftKey && anchorSiteId.current) {
@@ -411,6 +428,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
               return (
                 <tr
                   key={r.siteId}
+                  ref={el => { if (el) rowRefs.current.set(r.siteId, el); else rowRefs.current.delete(r.siteId); }}
                   onClick={(e) => handleRowClick(r.siteId, e)}
                   style={{
                     backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),

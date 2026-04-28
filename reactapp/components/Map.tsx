@@ -228,7 +228,7 @@ const BASEMAPS = {
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
 
-const CATALOG_URL = 'http://127.0.0.1:9000/fimbench/FIM_Viz/catalog_core.json';
+const CATALOG_URL = 'https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/catalog_core.json';
 const ZOOM_CROSSFADE_START = 7;
 const ZOOM_CROSSFADE_END   = 8;
 
@@ -565,7 +565,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       if (!map.getSource('fim-tiles')) {
         map.addSource('fim-tiles', {
           type: 'vector',
-          tiles: ['http://127.0.0.1:8000/apps/fimbench-gui/tile-proxy/{z}/{x}/{y}.pbf'],
+          tiles: ['https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/tiles/{z}/{x}/{y}.pbf'],
           minzoom: 3,
           maxzoom: 14,
         });
@@ -762,13 +762,21 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           if (bounds) onCatalogDateBounds(bounds);
         }
 
-        // If map is already loaded, populate the centroid source immediately
+        // Populate the centroid source once catalog is loaded.
+        // If the map style is already loaded, update immediately.
+        // If the map is still initializing, wait for its 'load' event —
+        // otherwise the setData call is a no-op (source doesn't exist yet).
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
           src?.setData(buildCentroidGeoJSON(filtersRef.current));
-          // Emit features once the new centroid data has been rendered
           map.once('idle', () => emitFeaturesRef.current?.());
+        } else if (map) {
+          map.once('load', () => {
+            const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
+            src?.setData(buildCentroidGeoJSON(filtersRef.current));
+            map.once('idle', () => emitFeaturesRef.current?.());
+          });
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
