@@ -1,18 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
-
-// ── Constants ─────────────────────────────────────────────────
-const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
-
-function toMinioPath(s3Prefix: string): string {
-  return s3Prefix.replace(/^FIM_Database\//, '');
-}
-function buildTifUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName}`;
-}
-function buildMetaUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName.replace('_BM.tif', '_metadata.json')}`;
-}
+import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 
 const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
 const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
@@ -72,13 +60,6 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
       : null;
 
   const stateRaw = j['State'];
-
-  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
-  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
-  const returnPeriod: number | null =
-    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
-      ? Number(rpRaw)
-      : null;
 
   return {
     siteId,
@@ -167,52 +148,36 @@ type ColDef = {
   render: (r: FIMRecord) => React.ReactNode;
 };
 
-const COLUMNS: ColDef[] = [
-  { label: 'River / Basin', sortKey: 'riverBasin', width: 180, render: r => r.riverBasin },
-  { label: 'State',         sortKey: 'state',       width: 110, render: r => r.state },
-  { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
-  { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
-  { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
-    render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
-  { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
-    render: r => Number(r.resolution).toFixed(2) },
-  { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
-  { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality },
-  { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
-  { label: 'Download FIM',  width: 90,
-    render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
-  { label: 'Metadata',      width: 80,
-    render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
-];
-
 // ── Types ─────────────────────────────────────────────────────
 type Props = {
   features: FeatureProperties[];
-  selectedSiteId?: string | null;
-  onRowClick?: (siteId: string) => void;
+  selectedSiteIds?: Set<string>;
+  onSelectionChange?: (newIds: Set<string>) => void;
   onClearSelection?: () => void;
   onZoomToFeature?: (bbox: Bbox) => void;
 };
 const PAGE_SIZE = 20;
 
 // ── Component ─────────────────────────────────────────────────
-export default function FIMTable({ features, selectedSiteId, onRowClick, onClearSelection, onZoomToFeature }: Props) {
+export default function FIMTable({ features, selectedSiteIds, onSelectionChange, onClearSelection, onZoomToFeature }: Props) {
+  const selectedIds = selectedSiteIds ?? new Set<string>();
+  const hasSelection = selectedIds.size > 0;
   const [records, setRecords] = useState<FIMRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage]       = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  // Refs for scroll-to-selected behaviour
-  const selectedRowRef      = useRef<HTMLTableRowElement | null>(null);
-  const lastInternalClickRef = useRef<string | null>(null);  // tracks table-initiated clicks
-  const sortedRecordsRef    = useRef<FIMRecord[]>([]);       // stable ref so page-nav effect avoids re-running on every sort
+  const anchorSiteId = React.useRef<string | null>(null);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
     // before reading `records`, so no need to clear state here (would trigger
     // an extra render cycle). Stale records get replaced on the next non-empty
     // fetch.
+    // Reset shift-anchor whenever the visible feature set changes so stale
+    // anchor IDs from a previous viewport don't produce unexpected ranges.
+    anchorSiteId.current = null;
+
     if (features.length === 0) return;
 
     let cancelled = false;
@@ -249,39 +214,50 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
     [records, sortKey, sortDir]
   );
 
-  // Keep ref in sync so page-nav effect can read current records without them as a dep
-  useEffect(() => { sortedRecordsRef.current = sortedRecords; }, [sortedRecords]);
-
-  // When selection originates from the map: navigate to the correct page
-  useEffect(() => {
-    if (!selectedSiteId) return;
-    // Table-initiated clicks don't need a page jump — user is already looking at the row
-    if (lastInternalClickRef.current === selectedSiteId) {
-      lastInternalClickRef.current = null;
-      return;
+  const handleRowClick = (siteId: string, e: React.MouseEvent) => {
+    if (e.shiftKey && anchorSiteId.current) {
+      // Range select: find anchor and target in the full sorted list
+      const allIds = sortedRecords.map(r => r.siteId);
+      const anchorIdx = allIds.indexOf(anchorSiteId.current);
+      const targetIdx = allIds.indexOf(siteId);
+      if (anchorIdx !== -1 && targetIdx !== -1) {
+        const [from, to] = anchorIdx <= targetIdx
+          ? [anchorIdx, targetIdx]
+          : [targetIdx, anchorIdx];
+        onSelectionChange?.(new Set(allIds.slice(from, to + 1)));
+      }
+      // Anchor stays unchanged on Shift+click (standard OS behaviour)
+    } else if (e.ctrlKey || e.metaKey) {
+      // Toggle this row while keeping others
+      const next = new Set(selectedIds);
+      if (next.has(siteId)) next.delete(siteId); else next.add(siteId);
+      onSelectionChange?.(next);
+      anchorSiteId.current = siteId;
+    } else {
+      // Plain click → single select
+      onSelectionChange?.(new Set([siteId]));
+      anchorSiteId.current = siteId;
     }
-    const idx = sortedRecordsRef.current.findIndex(r => r.siteId === selectedSiteId);
-    if (idx === -1) return;
-    setPage(Math.ceil((idx + 1) / PAGE_SIZE));
-  }, [selectedSiteId]);
-
-  // After the page renders, scroll the selected row into view
-  useEffect(() => {
-    selectedRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [selectedSiteId, page]);
-
-  // Wraps the external callback so we can mark the click as table-initiated
-  const handleRowClick = (siteId: string) => {
-    lastInternalClickRef.current = siteId;
-    onRowClick?.(siteId);
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
-    ...COLUMNS,
-    {
-      label: 'Zoom',
-      width: 70,
-      render: (r) => (
+    { label: 'River / Basin', sortKey: 'riverBasin',   width: 180, render: r => r.riverBasin },
+    { label: 'State',         sortKey: 'state',        width: 110, render: r => r.state },
+    { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
+    { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
+    { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
+      render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
+    { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
+      render: r => Number(r.resolution).toFixed(2) },
+    { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
+    { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality },
+    { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
+    { label: 'Download FIM',  width: 90,
+      render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Metadata',      width: 80,
+      render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Zoom',          width: 70,
+      render: r => (
         <button
           onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox); }}
           disabled={!r.bbox}
@@ -334,8 +310,8 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             onClick={onClearSelection}
-            disabled={!selectedSiteId}
-            style={{ ...tableHeaderBtnStyle, opacity: selectedSiteId ? 1 : 0.4, cursor: selectedSiteId ? 'pointer' : 'default' }}
+            disabled={!hasSelection}
+            style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
           >
             Clear Selection
           </button>
@@ -383,12 +359,11 @@ export default function FIMTable({ features, selectedSiteId, onRowClick, onClear
           </thead>
           <tbody>
             {pageRows.map((r, i) => {
-              const isSelected = r.siteId === selectedSiteId;
+              const isSelected = selectedIds.has(r.siteId);
               return (
                 <tr
-                  key={i}
-                  ref={isSelected ? selectedRowRef : null}
-                  onClick={() => handleRowClick(r.siteId)}
+                  key={r.siteId}
+                  onClick={(e) => handleRowClick(r.siteId, e)}
                   style={{
                     backgroundColor: isSelected ? '#cce3ff' : (i % 2 === 0 ? '#fff' : '#f9f9f9'),
                     verticalAlign: 'top',

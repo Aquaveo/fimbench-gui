@@ -1,5 +1,8 @@
 export type Bbox = [number, number, number, number];
 
+// HUC8 codes are exactly 8 digits; leading zeros are significant — never parse as numbers.
+export const isValidHuc8 = (s: string): boolean => /^\d{8}$/.test(s);
+
 export type CatalogRecord = {
   id?: string;
   site_id: string;

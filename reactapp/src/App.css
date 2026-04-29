@@ -197,11 +197,15 @@
 .fim-hover-popup {
   pointer-events: none;
 }
+.fim-hover-popup .maplibregl-popup-content,
+.fim-click-popup .maplibregl-popup-content {
+  font-family: "Alan Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 .fim-hover-popup .maplibregl-popup-content {
   padding: 8px 10px;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  font-family: "Alan Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* Left-pointing callout triangle on the tier info tooltip.

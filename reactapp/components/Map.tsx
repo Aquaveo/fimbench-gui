@@ -8,6 +8,8 @@ import maplibregl, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Filters } from '../src/types/filters';
 import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
+import { isValidHuc8 } from '../src/types/catalog';
+import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -34,10 +36,24 @@ function parseYmd(str: unknown): number | null {
   return Number.isNaN(ts) ? null : ts;
 }
 
-// HUC8 codes are strings (may have leading zeros — do NOT parse as numbers).
-// Exactly 8 digit characters.
-const HUC8_REGEX = /^\d{8}$/;
-const isValidHuc8 = (s: string): boolean => HUC8_REGEX.test(s);
+// Scan every record's date_ymd / start_date_ymd / end_date_ymd for valid
+// YYYY-MM-DD strings and return the min/max. Returns null if no valid dates
+// exist (e.g. a catalog full of Tier 4 synthetic events with only return periods).
+function computeDateBounds(records: CatalogRecord[]): { minDate: string; maxDate: string } | null {
+  let min: string | null = null;
+  let max: string | null = null;
+  const consider = (v: unknown) => {
+    if (typeof v !== 'string' || !YMD_REGEX.test(v)) return;
+    if (min === null || v < min) min = v;
+    if (max === null || v > max) max = v;
+  };
+  for (const r of records) {
+    consider(r.date_ymd);
+    consider(r.start_date_ymd);
+    consider(r.end_date_ymd);
+  }
+  return min && max ? { minDate: min, maxDate: max } : null;
+}
 
 // Returns true if the record's return period matches the selected filter.
 // Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
@@ -96,16 +112,106 @@ function dateOrReturnPeriod(rec: Partial<CatalogRecord>): { label: string; value
   return { label: 'Date', value: '—' };
 }
 
+// Coerce basin/state/huc8 (string | string[] | undefined) to a display string,
+// returning '' (not '—') so callers can treat falsy as "omit this row".
+function toDisplayStr(v: string | string[] | undefined): string {
+  if (Array.isArray(v)) return v.join(', ');
+  return typeof v === 'string' ? v : '';
+}
+
+// Inlined download icon (from public/download-icon_svg-vector_svgrepo-com.svg).
+// stroke="currentColor" means the icon automatically inherits the button's CSS
+// text color, so it stays correct whether the button uses dark or white text.
+const DOWNLOAD_ICON_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// Returns '#ffffff' or '#152428' depending on whether the hex background color
+// is dark or light, using the YIQ perceived-brightness formula.
+function buttonTextColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? '#152428' : '#ffffff';
+}
+
+const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMBench" header text
+
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
-  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '—';
-  const stateStr  = Array.isArray(rec?.state) ? rec.state.join(', ') : (rec?.state || '—');
+  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
+  const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
+  const stateStr  = toDisplayStr(rec?.state);
+  const huc8Str   = toDisplayStr(rec?.huc8);
   const { label, value } = dateOrReturnPeriod(rec);
+  const hasDate = value !== '—';
+
+  // Only renders a line when val is non-empty — no '—' placeholders.
+  const line = (lbl: string, val: string) =>
+    val ? `<div><strong>${escapeHtml(lbl)}:</strong> ${escapeHtml(val)}</div>` : '';
+
   return `
     <div style="font-size:12px;line-height:1.45;min-width:180px">
-      <div><strong>FIM ID:</strong> ${escapeHtml(rec?.site_id)}</div>
-      <div><strong>Tier:</strong> ${escapeHtml(tierLabel)}</div>
-      <div><strong>State:</strong> ${escapeHtml(stateStr)}</div>
-      <div><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</div>
+      ${line('Tier',   tierLabel)}
+      ${line('Basin',  basinStr)}
+      ${line('State',  stateStr)}
+      ${line('HUC8',   huc8Str)}
+      ${hasDate ? line(label, value) : ''}
+    </div>
+  `;
+}
+
+function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
+  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
+  const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
+  const stateStr  = toDisplayStr(rec?.state);
+  const huc8Str   = toDisplayStr(rec?.huc8);
+  const qualStr   = typeof rec?.quality === 'string' ? rec.quality : '';
+  const resStr    = rec?.resolution_m != null ? `${rec.resolution_m} m` : '';
+  const { label, value } = dateOrReturnPeriod(rec);
+  const hasDate = value !== '—';
+
+  // Build download URLs via shared utility (same source of truth as FIMTable)
+  const s3Prefix = typeof rec?.s3_prefix === 'string' ? rec.s3_prefix : '';
+  const fileName = typeof rec?.file_name  === 'string' ? rec.file_name  : '';
+  const tifUrl  = s3Prefix && fileName ? buildTifUrl(s3Prefix, fileName)  : '';
+  const metaUrl = s3Prefix && fileName ? buildMetaUrl(s3Prefix, fileName) : '';
+
+  // Only renders a table row when val is non-empty — no '—' placeholders.
+  const row = (k: string, v: string) =>
+    v ? `<tr>
+           <td style="color:#000;font-weight:600;padding:2px 10px 2px 0;white-space:nowrap">${escapeHtml(k)}</td>
+           <td>${escapeHtml(v)}</td>
+         </tr>` : '';
+
+  const mkBtnStyle = (bg: string, color: string) => [
+    'display:inline-flex', 'align-items:center', 'gap:5px',
+    'padding:4px 10px', 'font-size:12px', 'font-family:inherit',
+    'border:1px solid #ccc', 'border-radius:4px',
+    `background:${bg}`, `color:${color}`,
+    'cursor:pointer', 'text-decoration:none', 'font-weight:500',
+  ].join(';');
+
+  const fimColor  = buttonTextColor(FIM_DOWNLOAD_COLOR);
+  const fimStyle  = mkBtnStyle(FIM_DOWNLOAD_COLOR, fimColor);
+  const metaStyle = mkBtnStyle('#f0f0f0', '#222222');
+
+  const btn = (href: string, label: string, style: string) =>
+    `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer" style="${style}">${DOWNLOAD_ICON_SVG}${escapeHtml(label)}</a>`;
+
+  return `
+    <div style="font-size:13px;line-height:1.5;min-width:220px">
+      <table style="border-collapse:collapse;width:100%">
+        ${row('Tier',       tierLabel)}
+        ${row('Basin',      basinStr)}
+        ${row('State',      stateStr)}
+        ${row('Quality',    qualStr)}
+        ${row('HUC8',       huc8Str)}
+        ${row('Resolution', resStr)}
+        ${hasDate ? row(label, value) : ''}
+      </table>
+      ${tifUrl || metaUrl ? `
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        ${tifUrl  ? btn(tifUrl,  'Download FIM',      fimStyle)  : ''}
+        ${metaUrl ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
+      </div>` : ''}
     </div>
   `;
 }
@@ -169,13 +275,25 @@ const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
   ZOOM_CROSSFADE_END,   0.6,
 ];
 
+// Tier 4 (FEMA BLE) renders at the bottom of the extent stack; HWM at the top.
+// Selected features are given a higher key so they always float above everything.
+const TIER_SORT_EXPR: ExpressionSpecification = [
+  'match', ['get', 'tier'],
+  'Tier_4', 1,
+  'Tier_3', 2,
+  'Tier_2', 3,
+  'Tier_1', 4,
+  'HWM',    5,
+  0,
+];
+
 // Applies (or resets) selection-emphasis paint properties on both layers.
-// Called both from the selectedSiteId useEffect and inside map.on('load')
+// Called both from the selectedSiteIds useEffect and inside map.on('load')
 // so that basemap switches re-apply the current selection state.
-function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | undefined) {
+function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
   if (!map.getLayer('centroids-layer') || !map.getLayer('fim-layer')) return;
 
-  if (!siteId) {
+  if (siteIds.size === 0) {
     // Reset to default — no active selection
     map.setPaintProperty('centroids-layer', 'circle-color', TIER_COLOR_EXPR);
     map.setPaintProperty('centroids-layer', 'circle-opacity', CENTROID_OPACITY_EXPR);
@@ -184,8 +302,10 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
     map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
     map.setPaintProperty('fim-layer', 'fill-outline-color', '#003B8E');
     map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', TIER_SORT_EXPR);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', TIER_SORT_EXPR);
   } else {
-    const isSelected: ExpressionSpecification = ['==', ['get', 'site_id'], siteId];
+    const isSelected: ExpressionSpecification = ['in', ['get', 'site_id'], ['literal', [...siteIds]]];
 
     // Centroids: selected stays in tier color and grows slightly; others fade to gray
     map.setPaintProperty('centroids-layer', 'circle-color', [
@@ -213,20 +333,34 @@ function applySelectionEmphasis(map: maplibregl.Map, siteId: string | null | und
       EXTENT_OPACITY_EXPR,
       ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
     ]);
+    // Selected features float above all tier-based ordering on both layers
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', [
+      'case', isSelected, 10, TIER_SORT_EXPR,
+    ]);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', [
+      'case', isSelected, 10, TIER_SORT_EXPR,
+    ]);
   }
 }
+
+export type CatalogDateBounds = { minDate: string; maxDate: string };
 
 type MapProps = {
   filters: Filters;
   onFeaturesChange?: (features: FeatureProperties[]) => void;
-  onFeatureClick?: (feature: FeatureProperties | null) => void;
+  onFeatureClick?: (feature: FeatureProperties | null, additive?: boolean) => void;
   onCatalogStates?: (states: string[]) => void;
   onCatalogHuc8s?: (huc8s: Set<string>) => void;
-  selectedSiteId?: string | null;
+  onCatalogDateBounds?: (bounds: CatalogDateBounds) => void;
+  // Fires when filter changes cause one or more currently-selected features
+  // to drop out of view. Parent should remove those ids from its selection set.
+  onPruneSelections?: (idsToRemove: string[]) => void;
+  selectedSiteIds?: Set<string>;
 };
 
 export type MapHandle = {
   zoomToBbox: (bbox: Bbox) => void;
+  clearPopup: () => void;
 };
 
 type ViewState = {
@@ -267,7 +401,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // -----------------------------
 
 const Map = forwardRef<MapHandle, MapProps>(function Map(
-  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, selectedSiteId },
+  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, onCatalogDateBounds, onPruneSelections, selectedSiteIds },
   ref
 ) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -277,8 +411,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     useState<keyof typeof BASEMAPS>('Topographic');
   
   const catalogRef = useRef<CatalogRecord[]>([]);    // all catalog records, loaded once
-  const selectedSiteIdRef = useRef(selectedSiteId);  // readable inside map.on('load') closure
+  const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
+  const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
 
   const filtersRef = useRef(filters);
 
@@ -327,18 +462,6 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Preserve view state
-    if (mapRef.current) {
-      viewStateRef.current = {
-        center: mapRef.current.getCenter().toArray(),
-        zoom: mapRef.current.getZoom(),
-        bearing: mapRef.current.getBearing(),
-        pitch: mapRef.current.getPitch(),
-      };
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: createStyle(BASEMAPS[basemap]),
@@ -348,11 +471,14 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       pitch: viewStateRef.current.pitch,
       minZoom: 3,
       maxZoom: 20,
+      attributionControl: false,
     });
 
-    // Debug access
-    // @ts-expect-error — expose map on window for manual console debugging
-    window.map = map;
+    // Debug access — dev only, stripped from production builds
+    if (import.meta.env.DEV) {
+      // @ts-expect-error — expose map on window for manual console debugging
+      window.map = map;
+    }
 
     mapRef.current = map;
 
@@ -422,6 +548,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         id: 'centroids-layer',
         type: 'circle',
         source: 'centroids',
+        layout: {
+          'circle-sort-key': TIER_SORT_EXPR,
+        },
         paint: {
           'circle-radius': 7,
           'circle-color': TIER_COLOR_EXPR,
@@ -450,6 +579,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           source: 'fim-tiles',
           'source-layer': 'fim_extents',
           filter: ['in', ['get', 'tier'], ['literal', filters.tiers]],
+          layout: {
+            'fill-sort-key': TIER_SORT_EXPR,
+          },
           paint: {
             'fill-color': '#0067E1',
             'fill-opacity': EXTENT_OPACITY_EXPR,
@@ -464,15 +596,50 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       // or other interactive layers, prepend/append to this array.
       const INTERACTIVE_LAYERS = ['centroids-layer', 'fim-layer'];
 
+      // Click popup — recreated on each click so the anchor direction can be
+      // recalculated. closeOnClick:false means we manage dismissal manually.
+      // currentClickPopupRef is component-level so the cleanup can reach it.
       map.on('click', (e) => {
         for (const layerId of INTERACTIVE_LAYERS) {
           if (!map.getLayer(layerId)) continue;
           const features = map.queryRenderedFeatures(e.point, { layers: [layerId] });
           if (features.length > 0) {
-            onFeatureClick?.(features[0].properties as unknown as FeatureProperties);
+            const feat = features[0];
+            const additive = e.originalEvent.ctrlKey || e.originalEvent.metaKey || e.originalEvent.shiftKey;
+            onFeatureClick?.(feat.properties as unknown as FeatureProperties, additive);
+
+            // Anchor to centroid coordinates for Point features; fall back to
+            // click position for polygon extents (MVT geometry may be clipped).
+            const coords: [number, number] =
+              feat.geometry.type === 'Point'
+                ? (feat.geometry.coordinates as [number, number])
+                : [e.lngLat.lng, e.lngLat.lat];
+
+            // map.project() is a cheap matrix multiply — no layout work.
+            // Compare pixel Y against the canvas midpoint to pick the side
+            // with more space: top half → anchor:'top' (body below the point),
+            // bottom half → anchor:'bottom' (body above the point).
+            const py = map.project(coords).y;
+            const anchor = py < map.getCanvas().offsetHeight / 2 ? 'top' : 'bottom';
+
+            const siteId = String(feat.properties?.site_id ?? '');
+            const rec = catalogRef.current.find(r => String(r.site_id) === siteId) ?? feat.properties;
+
+            currentClickPopupRef.current?.remove();
+            currentClickPopupRef.current = new maplibregl.Popup({
+              closeButton: true,
+              closeOnClick: false,
+              offset: 15,
+              maxWidth: '300px',
+              className: 'fim-click-popup',
+              anchor,
+            });
+            currentClickPopupRef.current.setLngLat(coords).setHTML(buildClickPopupHtml(rec)).addTo(map);
             return;
           }
         }
+        currentClickPopupRef.current?.remove();
+        currentClickPopupRef.current = null;
         onFeatureClick?.(null);
       });
 
@@ -536,7 +703,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)
-      applySelectionEmphasis(map, selectedSiteIdRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -544,6 +711,17 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     });
 
     return () => {
+      // Save view state before destroying so the replacement map restores it.
+      viewStateRef.current = {
+        center: map.getCenter().toArray(),
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+      };
+      // Explicitly dismiss the click popup before removing the map so it
+      // doesn't linger as a detached DOM node between basemap switches.
+      currentClickPopupRef.current?.remove();
+      currentClickPopupRef.current = null;
       map.remove();
     };
     // filters / onFeatureClick / onFeaturesChange are intentionally not deps:
@@ -577,11 +755,18 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           onCatalogHuc8s(new Set(all));
         }
 
+        // Emit observed date bounds so the parent can seed the date filter with
+        // real catalog coverage instead of hardcoded values.
+        if (onCatalogDateBounds) {
+          const bounds = computeDateBounds(catalogRef.current);
+          if (bounds) onCatalogDateBounds(bounds);
+        }
+
         // If map is already loaded, populate the centroid source immediately
         const map = mapRef.current;
         if (map?.isStyleLoaded()) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filters));
+          src?.setData(buildCentroidGeoJSON(filtersRef.current));
           // Emit features once the new centroid data has been rendered
           map.once('idle', () => emitFeaturesRef.current?.());
         }
@@ -638,12 +823,13 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         .setData(buildCentroidGeoJSON(filters));
     }
 
-    // Clear selection if the selected feature no longer passes filters
-    if (selectedSiteIdRef.current) {
-      const rec = catalogRef.current.find(
-        r => r.site_id === selectedSiteIdRef.current
-      );
-      if (rec) {
+    // Prune any selected features that no longer pass the updated filters.
+    const currentIds = selectedSiteIdsRef.current;
+    if (currentIds.size > 0) {
+      const toPrune: string[] = [];
+      for (const id of currentIds) {
+        const rec = catalogRef.current.find(r => r.site_id === id);
+        if (!rec) continue;
         const tierOk = tiers.includes(rec.tier);
         const rpOk   = returnPeriodMatches(rec, returnPeriod);
         const stateOk = isHucMode || stateMatches(rec.state, states);
@@ -655,8 +841,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
             : rec.huc8 ? [String(rec.huc8)] : [];
           huc8Ok = huc8s.some(h => h === huc8Id);
         }
-        if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) onFeatureClick?.(null);
+        if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) toPrune.push(id);
       }
+      if (toPrune.length > 0) onPruneSelections?.(toPrune);
     }
     // Deps enumerate each filter field explicitly so unrelated filter-object
     // identity changes don't re-fire; onFeatureClick is stable in practice
@@ -666,18 +853,25 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   }, [filters.tiers, filters.states, filters.huc8Id, filters.startDate, filters.endDate, filters.returnPeriod]);
 
   useEffect(() => {
-    selectedSiteIdRef.current = selectedSiteId ?? null;
+    const ids = selectedSiteIds ?? new Set<string>();
+    selectedSiteIdsRef.current = ids;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, selectedSiteId);
-  }, [selectedSiteId]);
+    applySelectionEmphasis(map, ids);
+  }, [selectedSiteIds]);
 
   useImperativeHandle(ref, () => ({
     zoomToBbox: (bbox) => {
       const map = mapRef.current;
-      if (!map || !Array.isArray(bbox) || bbox.length !== 4) return;
+      if (!map || !map.isStyleLoaded()) return;
+      if (!Array.isArray(bbox) || bbox.length !== 4) return;
       const [w, s, e, n] = bbox;
+      if (!Number.isFinite(w) || !Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(n)) return;
       map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
+    },
+    clearPopup: () => {
+      currentClickPopupRef.current?.remove();
+      currentClickPopupRef.current = null;
     },
   }), []);
 
@@ -693,7 +887,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         style={{
           position: 'absolute',
           top: 10,
-          right: 10,
+          left: 10,
           padding: 8,
           backgroundColor: 'rgba(255,255,255,0.85)',
           borderRadius: 4,
@@ -715,12 +909,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           </select>
         </label>
       </div>
-      {/* Map legend — bottom right */}
+      {/* Map legend — bottom left */}
       {filters.tiers.length > 0 && (
         <div style={{
           position: 'absolute',
           bottom: 28,
-          right: 10,
+          left: 10,
           padding: '8px 12px',
           backgroundColor: 'rgba(255,255,255,0.88)',
           borderRadius: 4,
@@ -750,115 +944,3 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 });
 
 export default Map;
-
-
-// import maplibregl, {
-//   type LngLatLike,
-//   type RasterSourceSpecification,
-//   type StyleSpecification,
-// } from 'maplibre-gl';
-// import 'maplibre-gl/dist/maplibre-gl.css';
-
-
-// import { useState, useRef } from 'react';
-// import DeckGL from '@deck.gl/react';
-// import { MVTLayer } from '@deck.gl/geo-layers';
-// import 'maplibre-gl/dist/maplibre-gl.css';
-// import { Map as MapLibre } from 'react-map-gl/maplibre';
-// import { type Filters } from './FilterSidebar';
-
-// // -----------------------------
-// // Basemaps
-// // -----------------------------
-// const BASEMAPS = {
-//   Street:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-//   Topographic:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-//   Satellite:
-//     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-// };
-
-// type MapProps = {
-//   filters: Filters;
-// };
-
-// const DEFAULT_VIEW = {
-//   longitude: -98,
-//   latitude: 29.9,
-//   zoom: 6,
-//   bearing: 0,
-//   pitch: 0,
-// };
-
-// function getMapStyle(basemapUrl: string) {
-//   return {
-//     version: 8 as const,
-//     sources: { basemap: { type: 'raster' as const, tiles: [basemapUrl], tileSize: 256 } },
-//     layers: [{ id: 'basemap-layer', type: 'raster' as const, source: 'basemap' }],
-//   };
-// }
-
-// // -----------------------------
-// // Main Component
-// // -----------------------------
-// export default function Map(_: MapProps) {
-//   const [viewState, setViewState] = useState(DEFAULT_VIEW);
-//   const [basemap, setBasemap] = useState<keyof typeof BASEMAPS>('Topographic');
-
-//   const layers = [
-//     new MVTLayer({
-//       id: 'fim-layer',
-//       data: 'https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/tiles/{z}/{x}/{y}.pbf',
-//       binary: true,
-//       minZoom: 3,
-//       maxZoom: 14,
-//       filled: true,
-//       getFillColor: [255, 0, 0, 128],
-//       stroked: false,
-//     }),
-//   ];
-
-//   // -----------------------------
-//   // UI
-//   // -----------------------------
-//   return (
-//     <div style={{ flex: 1, position: 'relative' }}>
-//       <DeckGL
-//         viewState={viewState}
-//         onViewStateChange={({ viewState }) => setViewState(viewState as typeof DEFAULT_VIEW)}
-//         controller={true}
-//         layers={layers}
-//       >
-//         <MapLibre mapStyle={getMapStyle(BASEMAPS[basemap])} />
-//       </DeckGL>
-
-//       {/* Basemap selector */}
-//       <div
-//         style={{
-//           position: 'absolute',
-//           top: 10,
-//           right: 10,
-//           padding: 8,
-//           backgroundColor: 'rgba(255,255,255,0.85)',
-//           borderRadius: 4,
-//           zIndex: 1,
-//         }}
-//       >
-//         <label>
-//           Basemap:{' '}
-//           <select
-//             value={basemap}
-//             onChange={(e) => setBasemap(e.target.value as keyof typeof BASEMAPS)}
-//           >
-//             {Object.keys(BASEMAPS).map((name) => (
-//               <option key={name} value={name}>
-//                 {name}
-//               </option>
-//             ))}
-//           </select>
-//         </label>
-//       </div>
-//     </div>
-//   );
-// }
