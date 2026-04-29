@@ -379,17 +379,34 @@ export default function DocsPage() {
         {/* ── 1. Overview ── */}
         <section id="overview" style={sectionStyle}>
           <h2 style={h2Style}>1. Overview</h2>
+
+          <h3 style={h3Style}>Flood Inundation Mapping Benchmark (FIMBench) Repository</h3>
           <p>
-            [PLACEHOLDER: Provide a 2–3 paragraph overview of FIMBench — what it is,
-            why it was created, and who the intended audience is. Describe the catalog
-            at a high level: how many records it contains, what geographic coverage it
-            has, and what types of flood events are represented.]
+            This repository hosts <strong>benchmark Flood Inundation Maps (FIMs)</strong> sourced
+            from <strong>remote sensing imagery</strong>, <strong>aerial observations</strong>, and{' '}
+            <strong>high-fidelity hydrodynamic model predictions</strong>. The complete FIM inventory
+            is categorized into <strong>four quality-based tiers</strong> (Fig. 1), along with an
+            additional class of <strong>High Water Mark (HWM)</strong>–derived maps. All benchmark
+            datasets are stored in an <strong>AWS S3 bucket</strong>, accessible through an{' '}
+            <strong>open API</strong> for seamless integration into workflows.
           </p>
-          <p>
-            [PLACEHOLDER: Mention the project sponsors and partner institutions
-            (CIROH, University of Alabama, BYU, Aquaveo). Briefly note the relationship
-            to NOAA's National Water Model and the broader goal of operational flood
-            inundation forecasting.]
+
+          <h4 style={h4Style}>Each folder in the S3 bucket contains:</h4>
+          <ul style={specListStyle}>
+            <li><strong>Flood inundation raster</strong> (GeoTIFF: <code>.tif</code>)</li>
+            <li><strong>Bounding box vector layer</strong> for the flood domain (GeoPackage: <code>.gpkg</code>)</li>
+            <li><strong>Metadata file</strong> describing acquisition and dataset details (JSON: <code>.json</code>)</li>
+          </ul>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
+              alt="Structure of FIMBench"
+              style={{ maxWidth: '45rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 1: Structure of FIMBench
           </p>
         </section>
 
@@ -614,24 +631,58 @@ export default function DocsPage() {
 
           <h3 style={h3Style}>Why are some records missing dates?</h3>
           <p>
-            [PLACEHOLDER: Explain why some records have no observation date — e.g.,
-            Tier 4 (BLE) records are synthetic and carry no event date; some older
-            records may have incomplete metadata.]
+            Tier 4 (FEMA BLE) records represent synthetic flood scenarios (100-year and
+            500-year return periods) derived from hydrodynamic modeling — they are not
+            tied to a real observed event and therefore carry no event date. These records
+            are excluded from the date range filter automatically. Some older Tier 1–3
+            records may also have incomplete metadata if the acquisition date was not
+            captured at the time of processing.
           </p>
 
           <h3 style={h3Style}>Why does my HUC8 filter return no results?</h3>
           <p>
-            [PLACEHOLDER: Explain that the catalog only covers watersheds where FIM
-            data has been collected. Not all HUC8 units are represented. Suggest using
-            the map and state filter to explore available coverage.]
+            The catalog only includes watersheds where FIM data has been actively collected.
+            Coverage is event-driven — a HUC8 will only appear if a qualifying flood event
+            was observed there and processed into a benchmark FIM. Not every HUC8 in the
+            contiguous US is represented. Use the map or the State filter to explore which
+            areas currently have coverage, then narrow down by HUC8.
+          </p>
+
+          <h3 style={h3Style}>Does the Return Period filter apply to all tiers?</h3>
+          <p>
+            No — the Return Period filter (100-year, 500-year) only applies to{' '}
+            <strong>Tier 4 (FEMA BLE)</strong> records, which are the only tier derived
+            from synthetic design storms with defined recurrence intervals. Selecting a
+            return period while other tiers are checked will not affect those results.
           </p>
 
           <h3 style={h3Style}>Known Limitations</h3>
-          <p>
-            [PLACEHOLDER: List known limitations of the catalog and/or the application.
-            Examples: coverage gaps, sensor-specific artifacts, latency between event
-            and catalog availability, file size constraints for bulk download, etc.]
-          </p>
+          <ul style={specListStyle}>
+            <li>
+              <strong>Incomplete coverage:</strong> Data collection is ongoing and
+              event-driven. Large portions of the US have no benchmark FIM available yet.
+            </li>
+            <li>
+              <strong>Cloud cover and sensor gaps (Tiers 2 & 3):</strong> SAR and
+              optical imagery can be affected by cloud cover, vegetation canopy, or
+              off-nadir acquisition angles, which may reduce flood extent accuracy.
+            </li>
+            <li>
+              <strong>Tier 4 is synthetic:</strong> FEMA BLE maps represent modeled
+              design events, not observed floods. They should not be compared directly
+              to real-event FIMs from other tiers without careful consideration of
+              recurrence interval and boundary conditions.
+            </li>
+            <li>
+              <strong>Catalog latency:</strong> There is typically a lag between a flood
+              event occurring and its benchmark FIM appearing in the catalog, due to
+              imagery acquisition, processing, and quality review time.
+            </li>
+            <li>
+              <strong>Metadata completeness:</strong> Some older records may have
+              partial metadata (missing dates, resolution, or HUC8 assignments).
+            </li>
+          </ul>
         </section>
 
         <hr style={hrStyle} />
@@ -766,6 +817,13 @@ const h3Style: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 700,
   margin: '20px 0 8px',
+  color: '#2a3a3e',
+};
+
+const h4Style: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 700,
+  margin: '16px 0 6px',
   color: '#2a3a3e',
 };
 
