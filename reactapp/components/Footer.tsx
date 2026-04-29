@@ -12,23 +12,29 @@ export default function Footer() {
           <img
             src={`${LOGO_BASE}/1_CIROH-Horizontal-Logo_AI-Canva-470x125px.png`}
             alt="CIROH"
-            style={cirohLogoStyle}
+            style={logoStyle}
           />
 
           <img
-            src={`${LOGO_BASE}/2_UA-University-of-Alabama_Logo.png`}
+            src={`${LOGO_BASE}/2_NOAA_logo_mobile.svg.png`}
+            alt="NOAA"
+            style={logoStyle}
+          />
+
+          <img
+            src={`${LOGO_BASE}/3_UA-University-of-Alabama_Logo.png`}
             alt="University of Alabama"
             style={logoStyle}
           />
 
           <img
-            src={`${LOGO_BASE}/3_BYU-Brigham-Young-University_Logo.png`}
+            src={`${LOGO_BASE}/4_BYU-Brigham-Young-University_Logo.png`}
             alt="Brigham Young University"
             style={logoStyle}
           />
 
           <img
-            src={`${LOGO_BASE}/4_Aquaveo_Logo.png`}
+            src={`${LOGO_BASE}/5_Aquaveo_Logo.png`}
             alt="Aquaveo"
             style={logoStyle}
           />
@@ -95,16 +101,6 @@ const attributionStyle: React.CSSProperties = {
   fontSize: '0.625rem',
   color: '#4a5a60',
   textAlign: 'center',
-};
-
-/* =======================
-   Logos
-======================= */
-
-const cirohLogoStyle: React.CSSProperties = {
-  height: '2.25rem',
-  objectFit: 'contain',
-  display: 'block',
 };
 
 const logoStyle: React.CSSProperties = {
