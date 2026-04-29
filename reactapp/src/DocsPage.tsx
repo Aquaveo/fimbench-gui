@@ -640,12 +640,22 @@ export default function DocsPage() {
         <section id="contact" style={sectionStyle}>
           <h2 style={h2Style}>6. Contact & Attribution</h2>
           <p>
-            [PLACEHOLDER: Provide contact information or a link to a project page /
-            GitHub repository for bug reports and questions.]
+            This FIM benchmark viewer is built to explore the available benchmark FIM and
+            is seamlessly integrated with the open-source{' '}
+            <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">fimeval</a>{' '}
+            framework by SDML.
+            More detailed information about installation, documentation, and contribution,
+            see the <strong>FIMeval GitHub Repo:</strong>{' '}
+            <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">https://github.com/sdmlua/fimeval</a>
           </p>
           <p>
-            [PLACEHOLDER: List full attribution for data providers, partner institutions,
-            and open-source software used (MapLibre GL JS, React, Vite, JSZip, etc.).]
+            <strong>For more information:</strong><br />
+            Contact:{' '}
+            <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
+            {' | '}
+            <a href="mailto:sdhital@crimson.ua.edu">Supath Dhital</a>
+            {' | '}
+            <a href="mailto:ddevi@ua.edu">Dipsikha Devi</a>
           </p>
         </section>
 
