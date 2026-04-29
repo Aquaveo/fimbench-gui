@@ -16,8 +16,8 @@ const TOC: { id: string; label: string; sub?: { id: string; label: string }[] }[
       { id: 'hwm',    label: 'High Water Mark (HWM)' },
     ],
   },
-  { id: 'data-sources', label: 'Data Sources & Methodology' },
-  { id: 'faq',          label: 'FAQ & Known Limitations' },
+  { id: 'data-sources', label: 'File Structure & Naming Conventions' },
+  { id: 'faq',          label: 'FAQs & Known Limitations' },
   { id: 'contact',      label: 'Contact & Attribution' },
 ];
 
@@ -359,6 +359,8 @@ export default function DocsPage() {
         <main style={mainStyle}>
           <style>{`
             details > summary::-webkit-details-marker { display: none; }
+            a.back-link { text-decoration: none; }
+            a.back-link:hover { text-decoration: underline; }
             details > summary::before {
               content: '';
               display: inline-block;
@@ -372,7 +374,7 @@ export default function DocsPage() {
               background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath fill='%23152428' d='M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 380.8c9.4 10.9 27.5 10.9 37 0L858.9 335c12.2-14.2 1.2-35-18.5-35'/%3E%3C/svg%3E");
             }
           `}</style>
-          <Link to="/" style={backLinkStyle}>← Back to Map</Link>
+          <Link to="/" style={backLinkStyle} className="back-link">← Back to Map</Link>
 
           <h1 style={pageTitleStyle}>FIMBench Documentation</h1>
 
@@ -603,86 +605,150 @@ export default function DocsPage() {
 
         <hr style={hrStyle} />
 
-        {/* ── 4. Data Sources & Methodology ── */}
+        {/* ── 4. File Structure & Naming Conventions ── */}
         <section id="data-sources" style={sectionStyle}>
-          <h2 style={h2Style}>4. Data Sources & Methodology</h2>
+          <h2 style={h2Style}>4. File Structure & Naming Conventions</h2>
+
+          <h4 style={h4Style}>FIMbench Folder Structure</h4>
+          <ul style={specListStyle}>
+            <li>
+              The folder structure in the database S3 Bucket is organized by quality
+              levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and HWM-FIM (Fig. 2).
+            </li>
+            <li>
+              Under each Level folder, there are subfolders consisting of flood maps
+              for different case studies.
+            </li>
+            <li>
+              The naming convention of these subfolders is based on the date of the
+              flood event, followed by the coordinates of the centroid of the flood
+              map (e.g. <code>20161009T150712_0775815W352133N</code>).
+            </li>
+          </ul>
+
+          <h4 style={h4Style}>File Naming Convention</h4>
           <p>
-            [PLACEHOLDER: Describe where the underlying data comes from — satellite
-            providers, NOAA, FEMA, USGS, etc. Explain the general processing pipeline:
-            imagery acquisition → flood extent delineation → quality review →
-            catalog ingestion.]
+            The benchmark raster filenames encode key metadata, including location, data
+            type, resolution, and the date and time of the flood event. The following
+            naming convention is used:
           </p>
-          <p>
-            [PLACEHOLDER: Describe the catalog structure and the MinIO/S3 data store.
-            Explain what files are available for each record (GeoTIFF, metadata JSON)
-            and what information the metadata JSON contains.]
-          </p>
-          <p>
-            [PLACEHOLDER: Link to or cite any peer-reviewed publications or technical
-            reports that describe the methodology in detail.]
+          <ul style={specListStyle}>
+            <li>
+              <strong>SS:</strong> Sensor Name
+              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <li><code>S1</code> – Sentinel-1</li>
+                <li><code>AI</code> – Aerial Imagery</li>
+                <li><code>BLE</code> – Base Level Engineering</li>
+              </ul>
+            </li>
+            <li>
+              <strong>SR:</strong> Spatial resolution of the imagery
+              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <li><code>10m</code> for 10 meters</li>
+                <li><code>0_5m</code> for 50 centimeters</li>
+              </ul>
+            </li>
+            <li>
+              <strong>YYYYMMDD:</strong> Acquisition date — year, month, and day of
+              the flood event
+            </li>
+            <li>
+              <strong>TT:</strong> Time of acquisition in UTC
+            </li>
+            <li>
+              <strong>UU:</strong> Unique Identifier of the location
+              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <li>
+                  Latitude and longitude (formatted as W/E + N/S) of the centroid
+                  for actual flood events
+                </li>
+                <li>HUC-8 ID for BLE flood maps</li>
+              </ul>
+            </li>
+            <li><strong>BM:</strong> Indicates Benchmark</li>
+          </ul>
+          <p style={{ margin: '12px 0 4px' }}>
+            <strong>Example:</strong>{' '}
+            <code>S1A_10m_20190527T002655_953144W310436N_BM.tif</code>
           </p>
         </section>
 
         <hr style={hrStyle} />
 
-        {/* ── 5. FAQ & Known Limitations ── */}
+        {/* ── 5. FAQs & Known Limitations ── */}
         <section id="faq" style={sectionStyle}>
-          <h2 style={h2Style}>5. FAQ & Known Limitations</h2>
+          <h2 style={h2Style}>5. FAQs & Known Limitations</h2>
 
-          <h3 style={h3Style}>Why are some records missing dates?</h3>
-          <p>
-            Tier 4 (FEMA BLE) records represent synthetic flood scenarios (100-year and
-            500-year return periods) derived from hydrodynamic modeling — they are not
-            tied to a real observed event and therefore carry no event date. These records
-            are excluded from the date range filter automatically. Some older Tier 1–3
-            records may also have incomplete metadata if the acquisition date was not
-            captured at the time of processing.
-          </p>
+          <details style={detailsStyle}>
+            <summary style={summaryStyle}>Why are some records missing dates?</summary>
+            <div style={detailsBodyStyle}>
+              <p>
+                Tier 4 (FEMA BLE) records represent synthetic flood scenarios (100-year and
+                500-year return periods) derived from hydrodynamic modeling — they are not
+                tied to a real observed event and therefore carry no event date. These records
+                are excluded from the date range filter automatically. Some older Tier 1–3
+                records may also have incomplete metadata if the acquisition date was not
+                captured at the time of processing.
+              </p>
+            </div>
+          </details>
 
-          <h3 style={h3Style}>Why does my HUC8 filter return no results?</h3>
-          <p>
-            The catalog only includes watersheds where FIM data has been actively collected.
-            Coverage is event-driven — a HUC8 will only appear if a qualifying flood event
-            was observed there and processed into a benchmark FIM. Not every HUC8 in the
-            contiguous US is represented. Use the map or the State filter to explore which
-            areas currently have coverage, then narrow down by HUC8.
-          </p>
+          <details style={detailsStyle}>
+            <summary style={summaryStyle}>Why does my HUC8 filter return no results?</summary>
+            <div style={detailsBodyStyle}>
+              <p>
+                The catalog only includes watersheds where FIM data has been actively collected.
+                Coverage is event-driven — a HUC8 will only appear if a qualifying flood event
+                was observed there and processed into a benchmark FIM. Not every HUC8 in the
+                contiguous US is represented. Use the map or the State filter to explore which
+                areas currently have coverage, then narrow down by HUC8.
+              </p>
+            </div>
+          </details>
 
-          <h3 style={h3Style}>Does the Return Period filter apply to all tiers?</h3>
-          <p>
-            No — the Return Period filter (100-year, 500-year) only applies to{' '}
-            <strong>Tier 4 (FEMA BLE)</strong> records, which are the only tier derived
-            from synthetic design storms with defined recurrence intervals. Selecting a
-            return period while other tiers are checked will not affect those results.
-          </p>
+          <details style={detailsStyle}>
+            <summary style={summaryStyle}>Does the Return Period filter apply to all tiers?</summary>
+            <div style={detailsBodyStyle}>
+              <p>
+                No — the Return Period filter (100-year, 500-year) only applies to{' '}
+                <strong>Tier 4 (FEMA BLE)</strong> records, which are the only tier derived
+                from synthetic design storms with defined recurrence intervals. Selecting a
+                return period while other tiers are checked will not affect those results.
+              </p>
+            </div>
+          </details>
 
-          <h3 style={h3Style}>Known Limitations</h3>
-          <ul style={specListStyle}>
-            <li>
-              <strong>Incomplete coverage:</strong> Data collection is ongoing and
-              event-driven. Large portions of the US have no benchmark FIM available yet.
-            </li>
-            <li>
-              <strong>Cloud cover and sensor gaps (Tiers 2 & 3):</strong> SAR and
-              optical imagery can be affected by cloud cover, vegetation canopy, or
-              off-nadir acquisition angles, which may reduce flood extent accuracy.
-            </li>
-            <li>
-              <strong>Tier 4 is synthetic:</strong> FEMA BLE maps represent modeled
-              design events, not observed floods. They should not be compared directly
-              to real-event FIMs from other tiers without careful consideration of
-              recurrence interval and boundary conditions.
-            </li>
-            <li>
-              <strong>Catalog latency:</strong> There is typically a lag between a flood
-              event occurring and its benchmark FIM appearing in the catalog, due to
-              imagery acquisition, processing, and quality review time.
-            </li>
-            <li>
-              <strong>Metadata completeness:</strong> Some older records may have
-              partial metadata (missing dates, resolution, or HUC8 assignments).
-            </li>
-          </ul>
+          <details style={detailsStyle}>
+            <summary style={summaryStyle}>Known Limitations</summary>
+            <div style={detailsBodyStyle}>
+              <ul style={specListStyle}>
+                <li>
+                  <strong>Incomplete coverage:</strong> Data collection is ongoing and
+                  event-driven. Large portions of the US have no benchmark FIM available yet.
+                </li>
+                <li>
+                  <strong>Cloud cover and sensor gaps (Tiers 2 & 3):</strong> SAR and
+                  optical imagery can be affected by cloud cover, vegetation canopy, or
+                  off-nadir acquisition angles, which may reduce flood extent accuracy.
+                </li>
+                <li>
+                  <strong>Tier 4 is synthetic:</strong> FEMA BLE maps represent modeled
+                  design events, not observed floods. They should not be compared directly
+                  to real-event FIMs from other tiers without careful consideration of
+                  recurrence interval and boundary conditions.
+                </li>
+                <li>
+                  <strong>Catalog latency:</strong> There is typically a lag between a flood
+                  event occurring and its benchmark FIM appearing in the catalog, due to
+                  imagery acquisition, processing, and quality review time.
+                </li>
+                <li>
+                  <strong>Metadata completeness:</strong> Some older records may have
+                  partial metadata (missing dates, resolution, or HUC8 assignments).
+                </li>
+              </ul>
+            </div>
+          </details>
         </section>
 
         <hr style={hrStyle} />
@@ -700,7 +766,7 @@ export default function DocsPage() {
             <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">https://github.com/sdmlua/fimeval</a>
           </p>
           <p>
-            <strong>For more information:</strong><br />
+            <span style={{ fontWeight: 700 }}>For more information</span><br />
             Contact:{' '}
             <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
             {' | '}
@@ -765,7 +831,6 @@ const backLinkStyle: React.CSSProperties = {
   marginBottom: 20,
   fontSize: 13,
   color: '#152428',
-  textDecoration: 'none',
 };
 
 const pageTitleStyle: React.CSSProperties = {
