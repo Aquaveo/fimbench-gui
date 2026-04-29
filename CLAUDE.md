@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working Style
+
+**Always check with the user before making any edits to files.** Describe what you plan to change and wait for confirmation before proceeding. Only change exactly what was asked — do not add, remove, or reformat anything beyond the explicit request.
+
 ## Repository Layout
 
 The app lives under `fimbench-gui/`:
