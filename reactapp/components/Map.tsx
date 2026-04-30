@@ -246,7 +246,7 @@ const TIER_LABELS: Record<string, string> = {
   Tier_2: 'Tier 2',
   Tier_3: 'Tier 3',
   Tier_4: 'Tier 4',
-  HWM:    'High Water Mark',
+  HWM:    'High Water FIM',
 };
 
 // -----------------------------

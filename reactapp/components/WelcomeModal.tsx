@@ -103,7 +103,7 @@ const TIERS = [
   { label: 'Tier 2',       color: '#F39C12' },
   { label: 'Tier 3',       color: '#2ECC71' },
   { label: 'Tier 4 (BLE)', color: '#9B59B6' },
-  { label: 'HWM',          color: '#EC6FA3' },
+  { label: 'High Water FIM', color: '#EC6FA3' },
 ];
 
 const floatingArrowStyle: React.CSSProperties = {

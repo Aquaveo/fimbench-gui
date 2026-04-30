@@ -16,7 +16,7 @@ const TIER_OPTIONS = [
   { value: 'Tier_2', label: 'Tier 2' },
   { value: 'Tier_3', label: 'Tier 3' },
   { value: 'Tier_4', label: 'Tier 4' },
-  { value: 'HWM',    label: 'High Water Mark' },
+  { value: 'HWM',    label: 'High Water FIM' },
 ];
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
@@ -24,7 +24,7 @@ const TIER_DESCRIPTIONS: Record<string, string> = {
   Tier_2: 'PlanetScope + hydrologically guided algorithm (3–5 m)',
   Tier_3: 'Sentinel-1A + gap-filled algorithm (10 m)',
   Tier_4: 'FEMA Base Level Engineering synthetic events (10 m)',
-  HWM:    'High Water Mark-derived maps (10 m)',
+  HWM:    'FIMs derived using USGS high watermarks',
 };
 
 // Small "i" badge + custom hover tooltip. Portal'd to document.body so it

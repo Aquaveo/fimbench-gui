@@ -13,7 +13,7 @@ const TOC: { id: string; label: string; sub?: { id: string; label: string }[] }[
       { id: 'tier-2', label: 'Tier 2 — PlanetScope' },
       { id: 'tier-3', label: 'Tier 3 — Sentinel-1' },
       { id: 'tier-4', label: 'Tier 4 — FEMA BLE' },
-      { id: 'hwm',    label: 'High Water Mark (HWM)' },
+      { id: 'hwm',    label: 'High Water FIM (HWM)' },
     ],
   },
   { id: 'data-sources', label: 'File Structure & Naming Conventions' },
@@ -388,7 +388,7 @@ export default function DocsPage() {
             from <strong>remote sensing imagery</strong>, <strong>aerial observations</strong>, and{' '}
             <strong>high-fidelity hydrodynamic model predictions</strong>. The complete FIM inventory
             is categorized into <strong>four quality-based tiers</strong> (Fig. 1), along with an
-            additional class of <strong>High Water Mark (HWM)</strong>–derived maps. All benchmark
+            additional class of <strong>High Water FIM (HWM)</strong>–derived maps. All benchmark
             datasets are stored in an <strong>AWS S3 bucket</strong>, accessible through an{' '}
             <strong>open API</strong> for seamless integration into workflows.
           </p>
@@ -588,9 +588,9 @@ export default function DocsPage() {
             <li><strong>NoData Value:</strong> -9999</li>
           </ul>
 
-          <h3 id="hwm" style={h3Style}>3.5 High Water Mark (HWM)</h3>
+          <h3 id="hwm" style={h3Style}>3.5 High Water FIM (HWM)</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#EC6FA3">HWM</TierBadge>
+            <TierBadge color="#EC6FA3">High Water FIM</TierBadge>
           </p>
           <p>
             This category of FIM contains flood maps derived from surveyed USGS high water
@@ -613,7 +613,7 @@ export default function DocsPage() {
           <ul style={specListStyle}>
             <li>
               The folder structure in the database S3 Bucket is organized by quality
-              levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and HWM-FIM (Fig. 2).
+              levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 2).
             </li>
             <li>
               Under each Level folder, there are subfolders consisting of flood maps
