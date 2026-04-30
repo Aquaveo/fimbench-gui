@@ -199,7 +199,8 @@ const docCircleStyle: React.CSSProperties = {
   padding: '0 7px',
   fontSize: 12,
   fontWeight: 600,
-  color: '#25C2DF',
+  backgroundColor: '#25C2DF',
+  color: '#152428',
   lineHeight: 1.6,
 };
 
