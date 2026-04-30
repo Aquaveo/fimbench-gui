@@ -172,6 +172,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const anchorSiteId = React.useRef<string | null>(null);
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [infoRecord, setInfoRecord] = useState<FIMRecord | null>(null);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -305,8 +306,16 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
     { label: 'Download FIM',  width: 90,
       render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
-    { label: 'Metadata',      width: 80,
-      render: r => <a href={r.metaUrl} target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Info',           width: 60,
+      render: r => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setInfoRecord(r); }}
+          style={infoBtnStyle}
+          title="View metadata"
+        >
+          ⓘ
+        </button>
+      ) },
     { label: 'Zoom',          width: 70,
       render: r => (
         <button
@@ -390,6 +399,8 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
         </div>
       </div>
 
+      {infoRecord && <MetaModal record={infoRecord} onClose={() => setInfoRecord(null)} />}
+
       {/* Table */}
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
@@ -455,6 +466,93 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   );
 }
 
+// ── Download icon (same SVG as map centroid popup buttons) ────
+function DownloadIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, display: 'block' }}>
+      <path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// ── Metadata info modal ───────────────────────────────────────
+function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const handleDownloadText = () => {
+    const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
+    const parts: string[] = [
+      `Site ID:        ${record.siteId}`,
+      `River / Basin:  ${record.riverBasin}`,
+      `State:          ${record.state}`,
+      `Date:           ${record.date}`,
+      `Year:           ${record.year}`,
+      `Resolution:     ${record.resolution} m`,
+      `HUC8:           ${record.huc8}`,
+      `Quality:        ${quality}`,
+      `Platform:       ${record.platform}`,
+    ];
+    if (record.returnPeriod != null) parts.push(`Return Period:  ${record.returnPeriod}-year`);
+    saveAs(new Blob([parts.join('\n')], { type: 'text/plain' }), `${record.siteId}_metadata.txt`);
+  };
+
+  const handleDownloadJson = async () => {
+    try {
+      const res = await fetch(record.metaUrl);
+      if (!res.ok) return;
+      saveAs(await res.blob(), `${record.siteId}_metadata.json`);
+    } catch { /* silent */ }
+  };
+
+  const rows: [string, string][] = [
+    ['Site ID',       record.siteId],
+    ['River / Basin', record.riverBasin],
+    ['State',         record.state],
+    ['Date',          record.date],
+    ['Year',          record.year],
+    ['Resolution',    `${record.resolution} m`],
+    ['HUC8',          record.huc8],
+    ['Quality',       record.quality === 'HWM' ? 'High Water FIM' : record.quality],
+    ['Platform',      record.platform],
+    ...(record.returnPeriod != null ? [['Return Period', `${record.returnPeriod}-year`] as [string, string]] : []),
+  ];
+
+  return (
+    <div style={modalBackdropStyle} onClick={onClose}>
+      <div style={modalCardStyle} onClick={e => e.stopPropagation()}>
+        <div style={modalHeaderStyle}>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>FIM Record — {record.siteId}</span>
+          <button style={modalCloseBtnStyle} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div style={modalBodyStyle}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <tbody>
+              {rows.map(([label, value]) => (
+                <tr key={label} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <td style={modalLabelCellStyle}>{label}</td>
+                  <td style={modalValueCellStyle}>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={modalFooterStyle}>
+          <button onClick={handleDownloadText} style={modalDlBtnStyle('#e8e8e8', '#333')}>
+            <DownloadIcon /> Download .txt
+          </button>
+          <button onClick={handleDownloadJson} style={modalDlBtnStyle('#25C2DF', '#152428')}>
+            <DownloadIcon /> Download .json
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sort indicator icon ───────────────────────────────────────
 function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
@@ -488,3 +586,59 @@ const tdStyle: React.CSSProperties = {
   padding: '5px 10px', borderBottom: '1px solid #eee',
   whiteSpace: 'normal', wordBreak: 'break-word',
 };
+
+const infoBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', cursor: 'pointer',
+  fontSize: 15, color: '#666', padding: '0 2px', lineHeight: 1,
+};
+
+const modalBackdropStyle: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 9500,
+  backgroundColor: 'rgba(0,0,0,0.45)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 16,
+};
+
+const modalCardStyle: React.CSSProperties = {
+  background: '#fff', borderRadius: 8,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+  width: '100%', maxWidth: 420,
+  display: 'flex', flexDirection: 'column', overflow: 'hidden',
+};
+
+const modalHeaderStyle: React.CSSProperties = {
+  background: '#152428', color: '#D1EFF6',
+  padding: '12px 16px',
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+};
+
+const modalCloseBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', color: '#D1EFF6',
+  fontSize: 16, cursor: 'pointer', padding: '0 2px', lineHeight: 1,
+};
+
+const modalBodyStyle: React.CSSProperties = {
+  padding: '12px 16px', overflowY: 'auto', maxHeight: '60vh',
+};
+
+const modalLabelCellStyle: React.CSSProperties = {
+  fontWeight: 600, color: '#555', paddingRight: 12,
+  paddingTop: 6, paddingBottom: 6,
+  whiteSpace: 'nowrap', fontSize: 12, width: '40%',
+};
+
+const modalValueCellStyle: React.CSSProperties = {
+  color: '#222', paddingTop: 6, paddingBottom: 6, fontSize: 13,
+};
+
+const modalFooterStyle: React.CSSProperties = {
+  padding: '12px 16px', borderTop: '1px solid #eee',
+  display: 'flex', gap: 10, justifyContent: 'flex-end',
+};
+
+const modalDlBtnStyle = (bg: string, color: string): React.CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '5px 12px', fontSize: 13, fontFamily: 'inherit',
+  border: '1px solid rgba(0,0,0,0.12)', borderRadius: 4,
+  background: bg, color, cursor: 'pointer', fontWeight: 500,
+});
