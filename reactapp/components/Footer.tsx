@@ -28,13 +28,19 @@ export default function Footer() {
           />
 
           <img
-            src={`${LOGO_BASE}/4_BYU-Brigham-Young-University_Logo.png`}
+            src={`${LOGO_BASE}/4_SDML-lab_logo.png`}
+            alt="Surface Dynamics Modeling Lab"
+            style={logoStyle}
+          />
+
+          <img
+            src={`${LOGO_BASE}/5_BYU-Brigham-Young-University_Logo.png`}
             alt="Brigham Young University"
             style={logoStyle}
           />
 
           <img
-            src={`${LOGO_BASE}/5_Aquaveo_Logo.png`}
+            src={`${LOGO_BASE}/6_Aquaveo_Logo.png`}
             alt="Aquaveo"
             style={logoStyle}
           />

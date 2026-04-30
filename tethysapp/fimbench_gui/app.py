@@ -23,7 +23,7 @@ class App(TethysAppBase):
     catch_all = 'home'
 
     # Optional metadata
-    icon = f'{package}/images/android-chrome-512x512.png'
+    icon = f'{package}/images/FIMBench_UC_logo_cropped.png'
     description = 'FIMBench app with Tethys backend'
     color = '#007bff'
     tags = 'FIM, Flood Mapping, Flood Inundation Mapping, Hydrology, Benchmark data, GIS'

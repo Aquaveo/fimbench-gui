@@ -7,11 +7,18 @@ export default function HeaderBar() {
   const filled = onDocs || hovered;
   return (
     <header style={headerStyle}>
-      <div>
-        <h1 style={titleStyle}>FIMBench</h1>
-        <p style={taglineStyle}>
-          Explore and download benchmark Flood Inundation Maps across the U.S.
-        </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <img
+          src="/static/fimbench_gui/images/FIMBench_UC_logo_cropped.png"
+          alt="FIMBench logo"
+          style={{ height: '2.5rem', objectFit: 'contain' }}
+        />
+        <div>
+          <h1 style={titleStyle}>FIMBench</h1>
+          <p style={taglineStyle}>
+            Explore and download benchmark Flood Inundation Maps across the U.S.
+          </p>
+        </div>
       </div>
       <nav>
         <Link
@@ -48,7 +55,7 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 20px',
-  background: '#152428',
+  background: '#D1EFF6',
   color: '#fff',
   flexShrink: 0,
 };
@@ -58,11 +65,11 @@ const titleStyle: React.CSSProperties = {
   fontSize: 22,
   fontWeight: 700,
   letterSpacing: 0.5,
-  color: '#25C2DF',
+  color: '#152428',
 };
 
 const taglineStyle: React.CSSProperties = {
   margin: '2px 0 0 0',
   fontSize: 13,
-  color: '#D1EFF6',
+  color: '#1b4332',
 };
