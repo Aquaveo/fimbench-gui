@@ -55,8 +55,8 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 20px',
-  background: '#D1EFF6',
-  color: '#fff',
+  background: '#FFFFFF',
+  color: '#D1EFF6',
   flexShrink: 0,
 };
 

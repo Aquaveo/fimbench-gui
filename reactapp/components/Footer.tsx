@@ -40,7 +40,7 @@ export default function Footer() {
           />
 
           <img
-            src={`${LOGO_BASE}/6_Aquaveo_Logo.png`}
+            src={`${LOGO_BASE}/6_Aquaveo-blue-black_Logo.png`}
             alt="Aquaveo"
             style={logoStyle}
           />
@@ -70,7 +70,7 @@ export default function Footer() {
 ======================= */
 
 const footerStyle: React.CSSProperties = {
-  background: '#b8c2c9',
+  background: '#FFFFFF',
   padding: '1rem 0',
 };
 
