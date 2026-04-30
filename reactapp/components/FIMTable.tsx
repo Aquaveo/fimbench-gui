@@ -304,18 +304,6 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
     { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality === 'HWM' ? 'High Water FIM' : r.quality },
     { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
-    { label: 'Download FIM',  width: 90,
-      render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
-    { label: 'Info',           width: 60,
-      render: r => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setInfoRecord(r); }}
-          style={infoBtnStyle}
-          title="View metadata"
-        >
-          ⓘ
-        </button>
-      ) },
     { label: 'Zoom',          width: 70,
       render: r => (
         <button
@@ -333,6 +321,18 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
         </button>
       ),
     },
+    { label: 'Download FIM',  width: 90,
+      render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Info',           width: 60,
+      render: r => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setInfoRecord(r); }}
+          style={infoBtnStyle}
+          title="View metadata"
+        >
+          ⓘ
+        </button>
+      ) },
   ], [onZoomToFeature]);
 
   const handleHeaderClick = (key: SortKey | undefined) => {
