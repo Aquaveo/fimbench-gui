@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import { useColorMode } from './context/colorMode';
+import { tierColors } from './utils/tierColors';
 
 // ── Table of contents entries ─────────────────────────────────
 const TOC: { id: string; label: string; sub?: { id: string; label: string }[] }[] = [
@@ -327,6 +329,8 @@ fm.run_evaluation(
 )`;
 
 export default function DocsPage() {
+  const { colorMode } = useColorMode();
+  const tc = tierColors(colorMode);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <HeaderBar />
@@ -529,7 +533,7 @@ export default function DocsPage() {
 
           <h3 id="tier-1" style={h3Style}>3.1 Tier 1 — Very High Resolution</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#E74C3C">Tier 1</TierBadge>
+            <TierBadge color={tc['Tier_1']}>Tier 1</TierBadge>
           </p>
           <p>
             This category includes FIMs derived from very high resolution NOAA Emergency
@@ -544,7 +548,7 @@ export default function DocsPage() {
 
           <h3 id="tier-2" style={h3Style}>3.2 Tier 2 — PlanetScope</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#F39C12">Tier 2</TierBadge>
+            <TierBadge color={tc['Tier_2']}>Tier 2</TierBadge>
           </p>
           <p>
             This tier consists of FIMs generated from PlanetScope scenes integrated with
@@ -559,7 +563,7 @@ export default function DocsPage() {
 
           <h3 id="tier-3" style={h3Style}>3.3 Tier 3 — Sentinel-1</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#2ECC71">Tier 3</TierBadge>
+            <TierBadge color={tc['Tier_3']}>Tier 3</TierBadge>
           </p>
           <p>
             This category of FIMs contains flood rasters derived from Sentinel-1A
@@ -575,7 +579,7 @@ export default function DocsPage() {
 
           <h3 id="tier-4" style={h3Style}>3.4 Tier 4 — FEMA BLE</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#9B59B6">Tier 4 (BLE)</TierBadge>
+            <TierBadge color={tc['Tier_4']}>Tier 4 (BLE)</TierBadge>
           </p>
           <p>
             This tier contains FEMA's Base Level Engineering (BLE) flood maps representing
@@ -590,7 +594,7 @@ export default function DocsPage() {
 
           <h3 id="hwm" style={h3Style}>3.5 High Water FIM (HWM)</h3>
           <p style={tierBadgeWrapStyle}>
-            <TierBadge color="#EC6FA3">High Water FIM</TierBadge>
+            <TierBadge color={tc['HWM']}>High Water FIM</TierBadge>
           </p>
           <p>
             This category of FIM contains flood maps derived from surveyed USGS high water

@@ -3,16 +3,21 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App";
 import DocsPage from "./DocsPage";
+import { ColorModeProvider } from "./context/colorMode";
+import ColorblindToggle from "../components/ColorblindToggle";
 import './index.css';
 import "./styles/theme.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/docs" element={<DocsPage />} />
-      </Routes>
+      <ColorModeProvider>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/docs" element={<DocsPage />} />
+        </Routes>
+        <ColorblindToggle />
+      </ColorModeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useColorMode } from '../src/context/colorMode';
+import { tierColors } from '../src/utils/tierColors';
 
 type Props = { onClose: (dontShowAgain: boolean) => void };
 
 export default function WelcomeModal({ onClose }: Props) {
   const [dontShow, setDontShow] = useState(false);
+  const { colorMode } = useColorMode();
+  const tierPalette = tierColors(colorMode);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(dontShow); };
@@ -69,7 +73,7 @@ export default function WelcomeModal({ onClose }: Props) {
 
           <div style={tierLegendStyle}>
             {TIERS.map(t => (
-              <span key={t.label} style={tierBadgeStyle(t.color)}>{t.label}</span>
+              <span key={t.key} style={tierBadgeStyle(tierPalette[t.key] ?? '#aaa')}>{t.label}</span>
             ))}
           </div>
 
@@ -99,11 +103,11 @@ export default function WelcomeModal({ onClose }: Props) {
 }
 
 const TIERS = [
-  { label: 'Tier 1',       color: '#E74C3C' },
-  { label: 'Tier 2',       color: '#F39C12' },
-  { label: 'Tier 3',       color: '#2ECC71' },
-  { label: 'Tier 4 (BLE)', color: '#9B59B6' },
-  { label: 'High Water FIM', color: '#EC6FA3' },
+  { key: 'Tier_1', label: 'Tier 1' },
+  { key: 'Tier_2', label: 'Tier 2' },
+  { key: 'Tier_3', label: 'Tier 3' },
+  { key: 'Tier_4', label: 'Tier 4 (BLE)' },
+  { key: 'HWM',    label: 'High Water FIM' },
 ];
 
 const floatingArrowStyle: React.CSSProperties = {
