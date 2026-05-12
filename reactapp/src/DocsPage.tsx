@@ -769,14 +769,17 @@ export default function DocsPage() {
             see the <strong>FIMeval GitHub Repo:</strong>{' '}
             <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">https://github.com/sdmlua/fimeval</a>
           </p>
-          <p>
-            <span style={{ fontWeight: 700 }}>For more information</span><br />
-            Contact:{' '}
+          <p style={{ marginBottom: 6 }}>
+            <span style={{ fontWeight: 700 }}>Data & Research Enquiries</span><br />
             <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
             {' | '}
             <a href="mailto:sdhital@crimson.ua.edu">Supath Dhital</a>
             {' | '}
             <a href="mailto:ddevi@ua.edu">Dipsikha Devi</a>
+          </p>
+          <p>
+            <span style={{ fontWeight: 700 }}>Platform & Technical Support</span><br />
+            <a href="mailto:nswain@aquaveo.com">Nathan Swain</a>
           </p>
         </section>
 
