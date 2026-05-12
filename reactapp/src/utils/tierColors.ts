@@ -10,22 +10,20 @@ export const TIER_PALETTES: Record<ColorMode, Record<string, string>> = {
     HWM:    '#EC6FA3',  // pink
   },
   redGreen: {
-    // Deuteranopia / Protanopia: replaces red & green with colors that differ
-    // along axes these users can perceive (blue vs. orange vs. pink)
-    Tier_1: '#D55E00',  // vermillion
-    Tier_2: '#E69F00',  // orange/gold
-    Tier_3: '#56B4E9',  // sky blue
-    Tier_4: '#0072B2',  // blue
-    HWM:    '#CC79A7',  // rose
+    // Deuteranopia / Protanopia: avoids red & green confusion
+    Tier_1: '#0072B2',  // blue
+    Tier_2: '#E69F00',  // orange
+    Tier_3: '#FDE725',  // pale yellow
+    Tier_4: '#7B2CBF',  // purple
+    HWM:    '#2D2D2D',  // charcoal
   },
   blueYellow: {
-    // Tritanopia: replaces purple (appears blue) and avoids yellow confusion;
-    // reds and greens are perceived normally by tritanopes
-    Tier_1: '#E74C3C',  // red
-    Tier_2: '#F39C12',  // orange
-    Tier_3: '#009E73',  // teal green
-    Tier_4: '#D55E00',  // vermillion (replaces purple)
-    HWM:    '#CC79A7',  // rose
+    // Tritanopia: avoids blue/green confusion and yellow/red confusion
+    Tier_1: '#D7263D',  // deep red
+    Tier_2: '#F49D37',  // orange
+    Tier_3: '#A23B72',  // magenta
+    Tier_4: '#1B998B',  // teal
+    HWM:    '#2D3047',  // dark gray
   },
   monochrome: {
     // Five distinct lightness steps, readable on both light and dark basemaps

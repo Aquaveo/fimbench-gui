@@ -2,8 +2,6 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Filters } from '../src/types/filters';
 import { isValidHuc8 } from '../src/types/catalog';
-import { useColorMode } from '../src/context/colorMode';
-import { tierColors } from '../src/utils/tierColors';
 
 type FilterSidebarProps = {
   filters: Filters;
@@ -113,9 +111,6 @@ const addDays = (ymd: string, n: number): string => {
 
 export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates, availableHuc8s }: FilterSidebarProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
-  const { colorMode } = useColorMode();
-  const tierPalette = tierColors(colorMode);
-
   const handleTierToggle = (value: string) => {
     const already = filters.tiers.includes(value);
     const updated = already
@@ -191,12 +186,6 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
                 checked={filters.tiers.includes(value)}
                 onChange={() => handleTierToggle(value)}
               />
-              <span style={{
-                display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
-                backgroundColor: tierPalette[value] ?? '#aaa',
-                border: '1px solid rgba(0,0,0,0.15)',
-                flexShrink: 0,
-              }} />
               <span>
                 {label}
                 <InfoBadge description={TIER_DESCRIPTIONS[value]} />

@@ -2,6 +2,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useColorMode, type ColorMode } from '../src/context/colorMode';
 import { TIER_PALETTES, TIER_KEYS } from '../src/utils/tierColors';
 
+const EYE_FILL_COLORS: Record<ColorMode, string | null> = {
+  default:    null,
+  redGreen:   '#6274A7',
+  blueYellow: '#BE714B',
+  monochrome: '#C9C5C9',
+};
+
+function eyeStrokeFor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#000000' : '#ffffff';
+}
+
 const MODES: { id: ColorMode; name: string; sub: string }[] = [
   { id: 'default',    name: 'Default',     sub: '' },
   { id: 'redGreen',   name: 'Red-Green',   sub: 'Deuteranopia / Protanopia' },
@@ -25,8 +39,6 @@ export default function ColorblindToggle() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-
-  const isActive = colorMode !== 'default';
 
   return (
     <div ref={wrapperRef} style={wrapperStyle}>
@@ -78,13 +90,13 @@ export default function ColorblindToggle() {
         onClick={() => setOpen(o => !o)}
         style={{
           ...toggleBtnStyle,
-          background: isActive ? '#25C2DF' : 'rgba(255,255,255,0.92)',
+          background: EYE_FILL_COLORS[colorMode] ?? 'rgba(255,255,255,0.92)',
         }}
         title="Color vision accessibility settings"
         aria-label="Color vision accessibility settings"
         aria-expanded={open}
       >
-        <EyeIcon color={isActive ? '#152428' : '#444'} />
+        <EyeIcon color={EYE_FILL_COLORS[colorMode] ? eyeStrokeFor(EYE_FILL_COLORS[colorMode]!) : '#444'} />
       </button>
     </div>
   );

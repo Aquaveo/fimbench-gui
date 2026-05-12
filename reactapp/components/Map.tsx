@@ -135,7 +135,7 @@ function buttonTextColor(hex: string): string {
   return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? '#152428' : '#ffffff';
 }
 
-const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMBench" header text
+const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMbench" header text
 
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
   const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';

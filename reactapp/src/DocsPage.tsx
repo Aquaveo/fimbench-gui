@@ -380,13 +380,13 @@ export default function DocsPage() {
           `}</style>
           <Link to="/" style={backLinkStyle} className="back-link">← Back to Map</Link>
 
-          <h1 style={pageTitleStyle}>FIMBench Documentation</h1>
+          <h1 style={pageTitleStyle}>FIMbench Documentation</h1>
 
         {/* ── 1. Overview ── */}
         <section id="overview" style={sectionStyle}>
           <h2 style={h2Style}>1. Overview</h2>
 
-          <h3 style={h3Style}>Flood Inundation Mapping Benchmark (FIMBench) Repository</h3>
+          <h3 style={h3Style}>Flood Inundation Mapping Benchmark (FIMbench) Repository</h3>
           <p>
             This repository hosts <strong>benchmark Flood Inundation Maps (FIMs)</strong> sourced
             from <strong>remote sensing imagery</strong>, <strong>aerial observations</strong>, and{' '}
@@ -407,12 +407,12 @@ export default function DocsPage() {
           <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
             <img
               src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
-              alt="Structure of FIMBench"
+              alt="Structure of FIMbench"
               style={{ maxWidth: '45rem', width: '100%' }}
             />
           </div>
           <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 1: Structure of FIMBench
+            Fig. 1: Structure of FIMbench
           </p>
         </section>
 
