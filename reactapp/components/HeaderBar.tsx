@@ -54,7 +54,10 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 20px',
-  background: '#FFFFFF',
+  backgroundImage: 'url(/static/fimbench_gui/images/Header-trial.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
   color: '#D1EFF6',
   flexShrink: 0,
 };

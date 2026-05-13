@@ -70,7 +70,10 @@ export default function Footer() {
 ======================= */
 
 const footerStyle: React.CSSProperties = {
-  background: '#FFFFFF',
+  backgroundImage: 'url(/static/fimbench_gui/images/Footer-trial.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
   padding: '1rem 0',
 };
 
@@ -110,7 +113,7 @@ const attributionStyle: React.CSSProperties = {
 };
 
 const logoStyle: React.CSSProperties = {
-  height: '2.25rem',
+  height: '1.5rem',
   objectFit: 'contain',
   display: 'block',
 };
