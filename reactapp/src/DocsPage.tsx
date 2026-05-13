@@ -8,6 +8,7 @@ import { tierColors } from './utils/tierColors';
 const TOC: { id: string; label: string; sub?: { id: string; label: string }[] }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'how-to-use', label: 'How to Use the App' },
+  { id: 'how-to-use-api', label: 'How to Use the Python API' },
   {
     id: 'fim-tiers', label: 'FIM Tiers',
     sub: [
@@ -422,6 +423,192 @@ export default function DocsPage() {
         <section id="how-to-use" style={sectionStyle}>
           <h2 style={h2Style}>2. How to Use the App</h2>
           <p>
+            The FIMbench web application provides an interactive way to explore, filter, and
+            download benchmark Flood Inundation Maps without requiring any installation or
+            programming experience. The interface combines a map, a filter sidebar, and a
+            sortable data table — all kept in sync so that interactions in one view update
+            the others.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/01_Screenshot_Regular-Page-View.png"
+              alt="FIMbench app interface — map, filters, and data table"
+              style={{ maxWidth: '60rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 2: The FIMbench app interface
+          </p>
+
+          <h3 style={h3Style}>2.1 Welcome Modal</h3>
+          <p>
+            On your first visit, a welcome modal introduces the platform and points to the
+            Documentation link. It can be dismissed by clicking outside the modal, pressing{' '}
+            <code>Esc</code>, or using the close button in the top right. A
+            &ldquo;Don&rsquo;t show again&rdquo; option suppresses the modal on future visits.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/02_Screenshot_Opening-Modal-View.png"
+              alt="Welcome modal that appears on first visit"
+              style={{ maxWidth: '45rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 3: The welcome modal
+          </p>
+
+          <h3 style={h3Style}>2.2 Browsing the Map</h3>
+          <p>
+            The map displays FIM records as color-coded features keyed to their tier (see{' '}
+            <a href="#fim-tiers">FIM Tiers</a> for tier definitions). At lower zoom levels,
+            records are shown as centroid markers; as you zoom in past zoom level 8, those
+            centroids crossfade into the full extent polygons for each record. This gives an
+            overview of where data exists at any zoom while preserving spatial detail when
+            you zoom in.
+          </p>
+          <p>
+            Three basemaps are available — <strong>Street</strong>, <strong>Topographic</strong>,
+            and <strong>Satellite</strong> — switchable via the basemap control on the map.
+            Clicking any feature on the map highlights it and jumps the data table to the row
+            containing that record.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/03_Screenshot_Map-Detail.png"
+              alt="Map view showing the centroid-to-polygon transition with tier-colored features"
+              style={{ maxWidth: '45rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 4: Centroid-to-extent transition across zoom levels
+          </p>
+
+          <h3 style={h3Style}>2.3 Filtering Records</h3>
+          <p>The sidebar on the left provides multi-dimensional filtering of the catalog:</p>
+          <ul style={specListStyle}>
+            <li><strong>FIM Tier</strong> — multi-select checkboxes for Tier 1–4 and High Water FIM (HWM)</li>
+            <li><strong>HUC8 ID</strong> — free-text input for an exact watershed identifier</li>
+            <li><strong>State</strong> — multi-select dropdown of U.S. states</li>
+            <li><strong>Date Range</strong> — start and end date pickers</li>
+            <li><strong>Return Period</strong> — 100-year / 500-year dropdown <em>(UI present; filter logic pending)</em></li>
+          </ul>
+          <p>
+            When a HUC8 ID is entered, the State and Date Range filters become inactive —
+            HUC-based filtering is treated as logically separate from state/date filtering.
+            A <strong>Reset Filters</strong> button at the bottom restores all filters to
+            their default state.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/05_Screenshot_Filter-Sidebar.png"
+              alt="Filter sidebar with tier, HUC8, state, date range, and return period filters"
+              style={{ maxWidth: '45rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 5: Filter sidebar
+          </p>
+
+          <h3 style={h3Style}>2.4 Working with the Data Table</h3>
+          <p>
+            The table beneath the map lists every catalog record that passes the active
+            filters. Records are paginated (20 rows per page) and can be sorted by any column
+            — river/basin, state, year, date, resolution, HUC8, quality tier, or sensing
+            platform — by clicking the corresponding column header.
+          </p>
+          <p>Selection works in three ways:</p>
+          <ul style={specListStyle}>
+            <li><strong>Click</strong> a row to select that single record</li>
+            <li><strong>Ctrl + click</strong> to toggle a row in or out of the current selection</li>
+            <li><strong>Shift + click</strong> to select a range of rows</li>
+          </ul>
+          <p>
+            A <strong>Clear Selection</strong> control in the table header removes the current
+            selection.
+          </p>
+
+          <h3 style={h3Style}>2.5 Linked Map ↔ Table Selection</h3>
+          <p>
+            The map and table are kept in sync: clicking a feature on the map highlights the
+            corresponding row in the table and navigates the table to the correct page;
+            clicking a row in the table highlights that record on the map. Non-selected
+            features fade to a desaturated gray with reduced opacity, while the selected
+            record retains its tier color and full opacity. Selection state persists across
+            basemap switches.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/04_Screenshot_Linked_Selection-in-Action.png"
+              alt="Linked selection between the map and the data table"
+              style={{ maxWidth: '60rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 6: Map ↔ Table linked selection
+          </p>
+
+          <h3 style={h3Style}>2.6 Downloading Data</h3>
+          <p>Each record provides direct download links for:</p>
+          <ul style={specListStyle}>
+            <li>The <strong>flood inundation raster</strong> (GeoTIFF, <code>.tif</code>)</li>
+            <li>The <strong>metadata file</strong> (JSON, <code>.json</code>)</li>
+          </ul>
+          <p>
+            For bulk downloads, select multiple records (Ctrl + click or Shift + click as
+            described above) and use the <strong>Download Selected</strong> button that appears
+            in the table header. The associated files are bundled into a single zip archive
+            and streamed directly from the data store.
+          </p>
+
+          <h3 style={h3Style}>2.7 Viewing Metadata</h3>
+          <p>
+            Each table row also has an <strong>info</strong> button that opens a metadata modal
+            presenting the record&rsquo;s metadata fields in a readable format rather than raw
+            JSON. From the modal, the metadata can be downloaded as either a structured text
+            file or as the original JSON.
+          </p>
+
+          <h3 style={h3Style}>2.8 Color Vision Accessibility</h3>
+          <p>
+            A color vision accessibility control is anchored in the lower-right corner of the
+            application. Clicking it opens a panel for switching between four rendering modes
+            designed to remain distinguishable across common forms of color vision deficiency:
+          </p>
+          <ul style={specListStyle}>
+            <li><strong>Default</strong> — standard palette</li>
+            <li><strong>Red-Green</strong> — for Deuteranopia and Protanopia</li>
+            <li><strong>Blue-Yellow</strong> — for Tritanopia</li>
+            <li><strong>Monochrome</strong> — for Achromatopsia</li>
+          </ul>
+          <p>
+            Switching the mode updates the tier color palette across the map, the table, the
+            filter sidebar, and any open metadata modals.
+          </p>
+
+          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+            <img
+              src="/static/fimbench_gui/images/06_Screenshot_Color-Modes.png"
+              alt="Color vision accessibility modes panel"
+              style={{ maxWidth: '30rem', width: '100%' }}
+            />
+          </div>
+          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            Fig. 7: Color vision accessibility modes
+          </p>
+        </section>
+
+        <hr style={hrStyle} />
+
+        {/* ── 3. How to Use the Python API ── */}
+        <section id="how-to-use-api" style={sectionStyle}>
+          <h2 style={h2Style}>3. How to Use the Python API</h2>
+          <p>
             This explains what benchmark data is within this app and how you can access it
             programmatically- using Python or via the command line. So that user can
             seamlessly QUERY, DOWNLOAD and USE benchmark data for their own analysis. These
@@ -525,13 +712,13 @@ export default function DocsPage() {
 
         {/* ── 3. FIM Tiers ── */}
         <section id="fim-tiers" style={sectionStyle}>
-          <h2 style={h2Style}>3. FIM Tiers</h2>
+          <h2 style={h2Style}>4. FIM Tiers</h2>
           <p>
             The benchmark FIM rasters are available for four tiers and one separate class
             for High Water Marks–generated FIM.
           </p>
 
-          <h3 id="tier-1" style={h3Style}>3.1 Tier 1 — Very High Resolution</h3>
+          <h3 id="tier-1" style={h3Style}>4.1 Tier 1 — Very High Resolution</h3>
           <p style={tierBadgeWrapStyle}>
             <TierBadge color={tc['Tier_1']}>Tier 1</TierBadge>
           </p>
@@ -546,7 +733,7 @@ export default function DocsPage() {
             <li><strong>NoData Value:</strong> -9999</li>
           </ul>
 
-          <h3 id="tier-2" style={h3Style}>3.2 Tier 2 — PlanetScope</h3>
+          <h3 id="tier-2" style={h3Style}>4.2 Tier 2 — PlanetScope</h3>
           <p style={tierBadgeWrapStyle}>
             <TierBadge color={tc['Tier_2']}>Tier 2</TierBadge>
           </p>
@@ -561,7 +748,7 @@ export default function DocsPage() {
             <li><strong>NoData Value:</strong> -9999</li>
           </ul>
 
-          <h3 id="tier-3" style={h3Style}>3.3 Tier 3 — Sentinel-1</h3>
+          <h3 id="tier-3" style={h3Style}>4.3 Tier 3 — Sentinel-1</h3>
           <p style={tierBadgeWrapStyle}>
             <TierBadge color={tc['Tier_3']}>Tier 3</TierBadge>
           </p>
@@ -577,7 +764,7 @@ export default function DocsPage() {
             <li><strong>NoData Value:</strong> -9999</li>
           </ul>
 
-          <h3 id="tier-4" style={h3Style}>3.4 Tier 4 — FEMA BLE</h3>
+          <h3 id="tier-4" style={h3Style}>4.4 Tier 4 — FEMA BLE</h3>
           <p style={tierBadgeWrapStyle}>
             <TierBadge color={tc['Tier_4']}>Tier 4 (BLE)</TierBadge>
           </p>
@@ -592,7 +779,7 @@ export default function DocsPage() {
             <li><strong>NoData Value:</strong> -9999</li>
           </ul>
 
-          <h3 id="hwm" style={h3Style}>3.5 High Water FIM (HWM)</h3>
+          <h3 id="hwm" style={h3Style}>4.5 High Water FIM (HWM)</h3>
           <p style={tierBadgeWrapStyle}>
             <TierBadge color={tc['HWM']}>High Water FIM</TierBadge>
           </p>
@@ -611,7 +798,7 @@ export default function DocsPage() {
 
         {/* ── 4. File Structure & Naming Conventions ── */}
         <section id="data-sources" style={sectionStyle}>
-          <h2 style={h2Style}>4. File Structure & Naming Conventions</h2>
+          <h2 style={h2Style}>5. File Structure & Naming Conventions</h2>
 
           <h4 style={h4Style}>FIMbench Folder Structure</h4>
           <ul style={specListStyle}>
@@ -681,7 +868,7 @@ export default function DocsPage() {
 
         {/* ── 5. FAQs & Known Limitations ── */}
         <section id="faq" style={sectionStyle}>
-          <h2 style={h2Style}>5. FAQs & Known Limitations</h2>
+          <h2 style={h2Style}>6. FAQs & Known Limitations</h2>
 
           <details style={detailsStyle}>
             <summary style={summaryStyle}>Why are some records missing dates?</summary>
@@ -759,7 +946,7 @@ export default function DocsPage() {
 
         {/* ── 6. Contact & Attribution ── */}
         <section id="contact" style={sectionStyle}>
-          <h2 style={h2Style}>6. Contact & Attribution</h2>
+          <h2 style={h2Style}>7. Contact & Attribution</h2>
           <p>
             This FIM benchmark viewer is built to explore the available benchmark FIM and
             is seamlessly integrated with the open-source{' '}
