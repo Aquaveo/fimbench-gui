@@ -64,7 +64,7 @@ export default function Footer() {
 ======================= */
 
 const footerStyle: React.CSSProperties = {
-  backgroundImage: 'url(/static/fimbench_gui/images/Footer-trial.png)',
+  backgroundImage: 'url(/static/fimbench_gui/images/Footer-HQ.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',

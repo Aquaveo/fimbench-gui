@@ -54,7 +54,7 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 20px',
-  backgroundImage: 'url(/static/fimbench_gui/images/Header-trial.png)',
+  backgroundImage: 'url(/static/fimbench_gui/images/Header-HQ.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
