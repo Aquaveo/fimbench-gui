@@ -335,7 +335,6 @@ export default function DocsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <HeaderBar />
-
       <div style={bodyWrapStyle}>
         {/* ── Sticky TOC sidebar ── */}
         <aside style={sidebarStyle}>
@@ -378,601 +377,603 @@ export default function DocsPage() {
             details[open] > summary::before {
               background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath fill='%23152428' d='M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 380.8c9.4 10.9 27.5 10.9 37 0L858.9 335c12.2-14.2 1.2-35-18.5-35'/%3E%3C/svg%3E");
             }
-          `}</style>
+          `}
+          </style>
           <Link to="/" style={backLinkStyle} className="back-link">← Back to Map</Link>
-
+          
           <h1 style={pageTitleStyle}>FIMbench Documentation</h1>
+          
+          {/* ── 1. Overview ── */}
+          <section id="overview" style={sectionStyle}>
+            <h2 style={h2Style}>1. Overview</h2>
+            <h3 style={h3Style}>Flood Inundation Mapping Benchmark (FIMbench) Repository</h3>
+            <p>
+              This repository hosts <strong>benchmark Flood Inundation Maps (FIMs)</strong> sourced
+              from <strong>remote sensing imagery</strong>, <strong>aerial observations</strong>, and{' '}
+              <strong>high-fidelity hydrodynamic model predictions</strong>. The complete FIM inventory
+              is categorized into <strong>four quality-based tiers</strong> (Fig. 1), along with an
+              additional class of <strong>High Water FIM (HWM)</strong>–derived maps. All benchmark
+              datasets are stored in an <strong>AWS S3 bucket</strong>, accessible through an{' '}
+              <strong>open API</strong> for seamless integration into workflows.
+            </p>
+            
+            <h4 style={h4Style}>Each folder in the S3 bucket contains:</h4>
+            <ul style={specListStyle}>
+              <li><strong>Flood inundation raster</strong> (GeoTIFF: <code>.tif</code>)</li>
+              <li><strong>Bounding box vector layer</strong> for the flood domain (GeoPackage: <code>.gpkg</code>)</li>
+              <li><strong>Metadata file</strong> describing acquisition and dataset details (JSON: <code>.json</code>)</li>
+            </ul>
 
-        {/* ── 1. Overview ── */}
-        <section id="overview" style={sectionStyle}>
-          <h2 style={h2Style}>1. Overview</h2>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
+                alt="Structure of FIMbench"
+                style={{ maxWidth: '45rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 1: Structure of FIMbench
+            </p>
+          </section>
+          
+          <hr style={hrStyle} />
+          
+          {/* ── 2. How to Use the App ── */}
+          <section id="how-to-use" style={sectionStyle}>
+            <h2 style={h2Style}>2. How to Use the App</h2>
+            <p>
+              The FIMbench web application provides an interactive way to explore, filter, and
+              download benchmark Flood Inundation Maps without requiring any installation or
+              programming experience. The interface combines a map, a filter sidebar, and a
+              sortable data table — all kept in sync so that interactions in one view update
+             the others.
+           </p>
 
-          <h3 style={h3Style}>Flood Inundation Mapping Benchmark (FIMbench) Repository</h3>
-          <p>
-            This repository hosts <strong>benchmark Flood Inundation Maps (FIMs)</strong> sourced
-            from <strong>remote sensing imagery</strong>, <strong>aerial observations</strong>, and{' '}
-            <strong>high-fidelity hydrodynamic model predictions</strong>. The complete FIM inventory
-            is categorized into <strong>four quality-based tiers</strong> (Fig. 1), along with an
-            additional class of <strong>High Water FIM (HWM)</strong>–derived maps. All benchmark
-            datasets are stored in an <strong>AWS S3 bucket</strong>, accessible through an{' '}
-            <strong>open API</strong> for seamless integration into workflows.
-          </p>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/01_Screenshot_Regular-Page-View.png"
+                alt="FIMbench app interface — map, filters, and data table"
+                style={{ maxWidth: '60rem', width: '100%' }}
+              />
+            </div>
 
-          <h4 style={h4Style}>Each folder in the S3 bucket contains:</h4>
-          <ul style={specListStyle}>
-            <li><strong>Flood inundation raster</strong> (GeoTIFF: <code>.tif</code>)</li>
-            <li><strong>Bounding box vector layer</strong> for the flood domain (GeoPackage: <code>.gpkg</code>)</li>
-            <li><strong>Metadata file</strong> describing acquisition and dataset details (JSON: <code>.json</code>)</li>
-          </ul>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 2: The FIMbench app interface
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
-              alt="Structure of FIMbench"
-              style={{ maxWidth: '45rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 1: Structure of FIMbench
-          </p>
-        </section>
+            <h3 style={h3Style}>2.1 Welcome Modal</h3>
+            <p>
+              On your first visit, a welcome modal introduces the platform and points to the
+              Documentation link. It can be dismissed by clicking outside the modal, pressing{' '}
+              <code>Esc</code>, or using the close button in the top right. A
+              &ldquo;Don&rsquo;t show again&rdquo; option suppresses the modal on future visits.
+            </p>
 
-        <hr style={hrStyle} />
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/02_Screenshot_Opening-Modal-View.png"
+                alt="Welcome modal that appears on first visit"
+                style={{ maxWidth: '45rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 3: The welcome modal
+            </p>
 
-        {/* ── 2. How to Use the App ── */}
-        <section id="how-to-use" style={sectionStyle}>
-          <h2 style={h2Style}>2. How to Use the App</h2>
-          <p>
-            The FIMbench web application provides an interactive way to explore, filter, and
-            download benchmark Flood Inundation Maps without requiring any installation or
-            programming experience. The interface combines a map, a filter sidebar, and a
-            sortable data table — all kept in sync so that interactions in one view update
-            the others.
-          </p>
+            <h3 style={h3Style}>2.2 Browsing the Map</h3>
+            <p>
+              The map displays FIM records as color-coded features keyed to their tier (see{' '}
+              <a href="#fim-tiers">FIM Tiers</a> for tier definitions). At lower zoom levels,
+              records are shown as centroid markers; as you zoom in past zoom level 8, those
+              centroids crossfade into the full extent polygons for each record. This gives an
+              overview of where data exists at any zoom while preserving spatial detail when
+              you zoom in.
+            </p>
+            <p>
+              Three basemaps are available — <strong>Street</strong>, <strong>Topographic</strong>,
+              and <strong>Satellite</strong> — switchable via the basemap control on the map.
+              Clicking any feature on the map highlights it and jumps the data table to the row
+              containing that record.
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/01_Screenshot_Regular-Page-View.png"
-              alt="FIMbench app interface — map, filters, and data table"
-              style={{ maxWidth: '60rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 2: The FIMbench app interface
-          </p>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/03_Screenshot_Map-Detail.png"
+                alt="Map view showing the centroid-to-polygon transition with tier-colored features"
+                style={{ maxWidth: '45rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 4: Centroid-to-extent transition across zoom levels
+            </p>
 
-          <h3 style={h3Style}>2.1 Welcome Modal</h3>
-          <p>
-            On your first visit, a welcome modal introduces the platform and points to the
-            Documentation link. It can be dismissed by clicking outside the modal, pressing{' '}
-            <code>Esc</code>, or using the close button in the top right. A
-            &ldquo;Don&rsquo;t show again&rdquo; option suppresses the modal on future visits.
-          </p>
+            <h3 style={h3Style}>2.3 Filtering Records</h3>
+            <p>The sidebar on the left provides multi-dimensional filtering of the catalog:</p>
+            <ul style={specListStyle}>
+              <li><strong>FIM Tier</strong> — multi-select checkboxes for Tier 1–4 and High Water FIM (HWM)</li>
+              <li><strong>HUC8 ID</strong> — free-text input for an exact watershed identifier</li>
+              <li><strong>State</strong> — multi-select dropdown of U.S. states</li>
+              <li><strong>Date Range</strong> — start and end date pickers</li>
+              <li><strong>Return Period</strong> — 100-year / 500-year dropdown <em>(UI present; filter logic pending)</em></li>
+            </ul>
+            <p>
+              When a HUC8 ID is entered, the State and Date Range filters become inactive —
+              HUC-based filtering is treated as logically separate from state/date filtering.
+              A <strong>Reset Filters</strong> button at the bottom restores all filters to
+              their default state.
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/02_Screenshot_Opening-Modal-View.png"
-              alt="Welcome modal that appears on first visit"
-              style={{ maxWidth: '45rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 3: The welcome modal
-          </p>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/05_Screenshot_Filter-Sidebar.png"
+                alt="Filter sidebar with tier, HUC8, state, date range, and return period filters"
+                style={{ maxWidth: '45rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 5: Filter sidebar
+            </p>
 
-          <h3 style={h3Style}>2.2 Browsing the Map</h3>
-          <p>
-            The map displays FIM records as color-coded features keyed to their tier (see{' '}
-            <a href="#fim-tiers">FIM Tiers</a> for tier definitions). At lower zoom levels,
-            records are shown as centroid markers; as you zoom in past zoom level 8, those
-            centroids crossfade into the full extent polygons for each record. This gives an
-            overview of where data exists at any zoom while preserving spatial detail when
-            you zoom in.
-          </p>
-          <p>
-            Three basemaps are available — <strong>Street</strong>, <strong>Topographic</strong>,
-            and <strong>Satellite</strong> — switchable via the basemap control on the map.
-            Clicking any feature on the map highlights it and jumps the data table to the row
-            containing that record.
-          </p>
+            <h3 style={h3Style}>2.4 Working with the Data Table</h3>
+            <p>
+              The table beneath the map lists every catalog record that passes the active
+              filters. Records are paginated (20 rows per page) and can be sorted by any column
+              — river/basin, state, year, date, resolution, HUC8, quality tier, or sensing
+              platform — by clicking the corresponding column header.
+            </p>
+            <p>Selection works in three ways:</p>
+            <ul style={specListStyle}>
+              <li><strong>Click</strong> a row to select that single record</li>
+              <li><strong>Ctrl + click</strong> to toggle a row in or out of the current selection</li>
+              <li><strong>Shift + click</strong> to select a range of rows</li>
+            </ul>
+            <p>
+              A <strong>Clear Selection</strong> control in the table header removes the current
+              selection.
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/03_Screenshot_Map-Detail.png"
-              alt="Map view showing the centroid-to-polygon transition with tier-colored features"
-              style={{ maxWidth: '45rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 4: Centroid-to-extent transition across zoom levels
-          </p>
+            <h3 style={h3Style}>2.5 Linked Map ↔ Table Selection</h3>
+            <p>
+              The map and table are kept in sync: clicking a feature on the map highlights the
+              corresponding row in the table and navigates the table to the correct page;
+              clicking a row in the table highlights that record on the map. Non-selected
+              features fade to a desaturated gray with reduced opacity, while the selected
+              record retains its tier color and full opacity. Selection state persists across
+              basemap switches.
+            </p>
 
-          <h3 style={h3Style}>2.3 Filtering Records</h3>
-          <p>The sidebar on the left provides multi-dimensional filtering of the catalog:</p>
-          <ul style={specListStyle}>
-            <li><strong>FIM Tier</strong> — multi-select checkboxes for Tier 1–4 and High Water FIM (HWM)</li>
-            <li><strong>HUC8 ID</strong> — free-text input for an exact watershed identifier</li>
-            <li><strong>State</strong> — multi-select dropdown of U.S. states</li>
-            <li><strong>Date Range</strong> — start and end date pickers</li>
-            <li><strong>Return Period</strong> — 100-year / 500-year dropdown <em>(UI present; filter logic pending)</em></li>
-          </ul>
-          <p>
-            When a HUC8 ID is entered, the State and Date Range filters become inactive —
-            HUC-based filtering is treated as logically separate from state/date filtering.
-            A <strong>Reset Filters</strong> button at the bottom restores all filters to
-            their default state.
-          </p>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/04_Screenshot_Linked_Selection-in-Action.png"
+                alt="Linked selection between the map and the data table"
+                style={{ maxWidth: '60rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 6: Map ↔ Table linked selection
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/05_Screenshot_Filter-Sidebar.png"
-              alt="Filter sidebar with tier, HUC8, state, date range, and return period filters"
-              style={{ maxWidth: '45rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 5: Filter sidebar
-          </p>
+            <h3 style={h3Style}>2.6 Downloading Data</h3>
+            <p>Each record provides direct download links for:</p>
+            <ul style={specListStyle}>
+              <li>The <strong>flood inundation raster</strong> (GeoTIFF, <code>.tif</code>)</li>
+              <li>The <strong>metadata file</strong> (JSON, <code>.json</code>)</li>
+            </ul>
+            <p>
+              For bulk downloads, select multiple records (Ctrl + click or Shift + click as
+              described above) and use the <strong>Download Selected</strong> button that appears
+              in the table header. The associated files are bundled into a single zip archive
+              and streamed directly from the data store.
+            </p>
 
-          <h3 style={h3Style}>2.4 Working with the Data Table</h3>
-          <p>
-            The table beneath the map lists every catalog record that passes the active
-            filters. Records are paginated (20 rows per page) and can be sorted by any column
-            — river/basin, state, year, date, resolution, HUC8, quality tier, or sensing
-            platform — by clicking the corresponding column header.
-          </p>
-          <p>Selection works in three ways:</p>
-          <ul style={specListStyle}>
-            <li><strong>Click</strong> a row to select that single record</li>
-            <li><strong>Ctrl + click</strong> to toggle a row in or out of the current selection</li>
-            <li><strong>Shift + click</strong> to select a range of rows</li>
-          </ul>
-          <p>
-            A <strong>Clear Selection</strong> control in the table header removes the current
-            selection.
-          </p>
+            <h3 style={h3Style}>2.7 Viewing Metadata</h3>
+            <p>
+              Each table row also has an <strong>info</strong> button that opens a metadata modal
+              presenting the record&rsquo;s metadata fields in a readable format rather than raw
+              JSON. From the modal, the metadata can be downloaded as either a structured text
+              file or as the original JSON.
+            </p>
 
-          <h3 style={h3Style}>2.5 Linked Map ↔ Table Selection</h3>
-          <p>
-            The map and table are kept in sync: clicking a feature on the map highlights the
-            corresponding row in the table and navigates the table to the correct page;
-            clicking a row in the table highlights that record on the map. Non-selected
-            features fade to a desaturated gray with reduced opacity, while the selected
-            record retains its tier color and full opacity. Selection state persists across
-            basemap switches.
-          </p>
+            <h3 style={h3Style}>2.8 Color Vision Accessibility</h3>
+            <p>
+              A color vision accessibility control is anchored in the lower-right corner of the
+              application. Clicking it opens a panel for switching between four rendering modes
+              designed to remain distinguishable across common forms of color vision deficiency:
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Default</strong> — standard palette</li>
+              <li><strong>Red-Green</strong> — for Deuteranopia and Protanopia</li>
+              <li><strong>Blue-Yellow</strong> — for Tritanopia</li>
+              <li><strong>Monochrome</strong> — for Achromatopsia</li>
+            </ul>
+            <p>
+              Switching the mode updates the tier color palette across the map, the table, the
+              filter sidebar, and any open metadata modals.
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/04_Screenshot_Linked_Selection-in-Action.png"
-              alt="Linked selection between the map and the data table"
-              style={{ maxWidth: '60rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 6: Map ↔ Table linked selection
-          </p>
+            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
+              <img
+                src="/static/fimbench_gui/images/06_Screenshot_Color-Modes.png"
+                alt="Color vision accessibility modes panel"
+                style={{ maxWidth: '30rem', width: '100%' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+              Fig. 7: Color vision accessibility modes
+            </p>
+          </section>
 
-          <h3 style={h3Style}>2.6 Downloading Data</h3>
-          <p>Each record provides direct download links for:</p>
-          <ul style={specListStyle}>
-            <li>The <strong>flood inundation raster</strong> (GeoTIFF, <code>.tif</code>)</li>
-            <li>The <strong>metadata file</strong> (JSON, <code>.json</code>)</li>
-          </ul>
-          <p>
-            For bulk downloads, select multiple records (Ctrl + click or Shift + click as
-            described above) and use the <strong>Download Selected</strong> button that appears
-            in the table header. The associated files are bundled into a single zip archive
-            and streamed directly from the data store.
-          </p>
+          <hr style={hrStyle} />
 
-          <h3 style={h3Style}>2.7 Viewing Metadata</h3>
-          <p>
-            Each table row also has an <strong>info</strong> button that opens a metadata modal
-            presenting the record&rsquo;s metadata fields in a readable format rather than raw
-            JSON. From the modal, the metadata can be downloaded as either a structured text
-            file or as the original JSON.
-          </p>
+          {/* ── 3. How to Use the Python API ── */}
+          <section id="how-to-use-api" style={sectionStyle}>
+            <h2 style={h2Style}>3. How to Use the Python API</h2>
+            <p>
+              This explains what benchmark data is within this app and how you can access it
+              programmatically- using Python or via the command line. So that user can
+              seamlessly QUERY, DOWNLOAD and USE benchmark data for their own analysis. These
+              benchmark datasets are stored on Surface Dynamics Modeling Lab (SDML) S3 bucket.
+            </p>
+            <p>This dataset can be repurposed in multiple ways:</p>
+            <ul style={specListStyle}>
+              <li>Accessing <strong>ONLY BENCHMARK DATA</strong>,</li>
+              <li>
+                Accessing seamlessly for{' '}
+                <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">
+                  <strong>FIM EVALUATION FRAMEWORK</strong>
+                </a>, and
+              </li>
+              <li>
+                Accessing for{' '}
+                <a href="https://github.com/sdmlua/FIMserv" target="_blank" rel="noreferrer">
+                  <strong>FIMSERV</strong>
+                </a>.
+              </li>
+            </ul>
 
-          <h3 style={h3Style}>2.8 Color Vision Accessibility</h3>
-          <p>
-            A color vision accessibility control is anchored in the lower-right corner of the
-            application. Clicking it opens a panel for switching between four rendering modes
-            designed to remain distinguishable across common forms of color vision deficiency:
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Default</strong> — standard palette</li>
-            <li><strong>Red-Green</strong> — for Deuteranopia and Protanopia</li>
-            <li><strong>Blue-Yellow</strong> — for Tritanopia</li>
-            <li><strong>Monochrome</strong> — for Achromatopsia</li>
-          </ul>
-          <p>
-            Switching the mode updates the tier color palette across the map, the table, the
-            filter sidebar, and any open metadata modals.
-          </p>
+            <h3 style={h3Style}>Prior to using; INSTALLATION and SETUP</h3>
+            <p>
+              We recommend using virtual environments to manage dependencies. User can use
+              conda, Python's built-in venv, or uv — pick one of the options below.
+            </p>
 
-          <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-            <img
-              src="/static/fimbench_gui/images/06_Screenshot_Color-Modes.png"
-              alt="Color vision accessibility modes panel"
-              style={{ maxWidth: '30rem', width: '100%' }}
-            />
-          </div>
-          <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-            Fig. 7: Color vision accessibility modes
-          </p>
-        </section>
+            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option A – Using conda</p>
+            <pre style={codeBlockStyle}><code>{CODE_CONDA}</code></pre>
 
-        <hr style={hrStyle} />
+            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option B – Using venv (built-in Python)</p>
+            <pre style={codeBlockStyle}><code>{CODE_VENV}</code></pre>
 
-        {/* ── 3. How to Use the Python API ── */}
-        <section id="how-to-use-api" style={sectionStyle}>
-          <h2 style={h2Style}>3. How to Use the Python API</h2>
-          <p>
-            This explains what benchmark data is within this app and how you can access it
-            programmatically- using Python or via the command line. So that user can
-            seamlessly QUERY, DOWNLOAD and USE benchmark data for their own analysis. These
-            benchmark datasets are stored on Surface Dynamics Modeling Lab (SDML) S3 bucket.
-          </p>
-          <p>This dataset can be repurposed in multiple ways:</p>
-          <ul style={specListStyle}>
-            <li>Accessing <strong>ONLY BENCHMARK DATA</strong>,</li>
-            <li>
-              Accessing seamlessly for{' '}
+            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option C – Using uv</p>
+            <p style={{ margin: '4px 0 8px', fontSize: 13.5 }}>
+              <code>uv</code> is a lightweight tool for creating and managing virtual
+              environments and can be installed via pip: <code>pip install uv</code>.
+            </p>
+            <pre style={codeBlockStyle}><code>{CODE_UV}</code></pre>
+
+            <p style={{ margin: '16px 0 4px' }}>
+              Once the environment is active, install the fimeval package to access the
+              modules and dependencies needed to work with benchmark data.
+            </p>
+            <pre style={codeBlockStyle}><code>{CODE_PIP_INSTALL}</code></pre>
+            <p style={{ margin: '8px 0 4px', fontSize: 13.5 }}>OR</p>
+            <pre style={codeBlockStyle}><code>{CODE_UV_INSTALL}</code></pre>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Accessing ONLY BENCHMARK DATA</summary>
+              <div style={detailsBodyStyle}>
+                <p style={{ margin: '0 0 12px' }}>
+                  This section explains how to access benchmark flood inundation data stored
+                  in the SDML S3 bucket based on user-defined filters (event date, location,
+                  etc.). Use the benchFIMquery() function from fimeval.
+                </p>
+                <pre style={codeBlockStyle}><code>{CODE_BENCH_DATA}</code></pre>
+              </div>
+            </details>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Accessing seamlessly for FIM EVALUATION FRAMEWORK</summary>
+              <div style={detailsBodyStyle}>
+                <p style={{ margin: '0 0 12px' }}>
+                  This dataset can be used directly with the{' '}
+                  <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">FIM Evaluation Framework</a>{' '}
+                  to compare model FIMs against benchmark FIMs and compute metrics. The entire
+                  evaluation workflow is automated with the right benchmark FIMs fetched based
+                  on user-defined AOI and event date on the step 1. In this step to proceed,
+                  The user decide all the benchmark FIMs for all the cases to be evaluated.
+                </p>
+                <pre style={codeBlockStyle}><code>{CODE_FIM_EVAL}</code></pre>
+              </div>
+            </details>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Accessing for FIMSERV</summary>
+              <div style={detailsBodyStyle}>
+                <p style={{ margin: '0 0 12px' }}>
+                  The{' '}
+                  <a href="https://github.com/sdmlua/FIMserv" target="_blank" rel="noreferrer">FIM as a Service (FIMSERV)</a>{' '}
+                  platform allows users to generate FIM using NOAA Office of Water Prediction
+                  FIM framework based on Height Above Nearest Drainage (HAND) approach. This
+                  can also use as a test bed for investigating the multiple components of FIM
+                  (like river slope, geometry, and so on.). For those investigation and even
+                  to evaluate the performance of OWP HAND FIM approach overall, the seamless
+                  evaluation makes the task much easier. This step is mainly for FIMSERV users
+                  who want to evaluate their generated FIMs against benchmark datasets.
+                </p>
+                <p style={{ margin: '0 0 12px' }}>
+                  This FIMserv runs on HUC8 basis, so the user need to provide HUC8 and event
+                  date to query and download the benchmark FIMs.
+                </p>
+                <pre style={codeBlockStyle}><code>{CODE_FIMSERV}</code></pre>
+              </div>
+            </details>
+          </section>
+
+          <hr style={hrStyle} />
+
+          {/* ── 4. FIM Tiers ── */}
+          <section id="fim-tiers" style={sectionStyle}>
+            <h2 style={h2Style}>4. FIM Tiers</h2>
+            <p>
+              The benchmark FIM rasters are available for four tiers and one separate class
+              for High Water Marks–generated FIM.
+            </p>
+
+            <h3 id="tier-1" style={h3Style}>4.1 Tier 1 — Very High Resolution</h3>
+            <p style={tierBadgeWrapStyle}>
+              <TierBadge color={tc['Tier_1']}>Tier 1</TierBadge>
+            </p>
+            <p>
+              This category includes FIMs derived from very high resolution NOAA Emergency
+              Response Imagery. Flood rasters are generated by classifying raw images into
+              two classes: flood pixels (1) and non-flooded pixels (0), using a combination
+              of automated and hand-labelled processing (storms.ngs.noaa.gov).
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Spatial Resolution:</strong> 20–50 cm</li>
+              <li><strong>NoData Value:</strong> -9999</li>
+            </ul>
+
+            <h3 id="tier-2" style={h3Style}>4.2 Tier 2 — PlanetScope</h3>
+            <p style={tierBadgeWrapStyle}>
+              <TierBadge color={tc['Tier_2']}>Tier 2</TierBadge>
+            </p>
+            <p>
+              This tier consists of FIMs generated from PlanetScope scenes integrated with
+              a hydrologically guided algorithm. The flood rasters contain three classes:
+              non-flooded pixels (0), flooded pixels from remote-sensing sensor (1), and
+              flooded pixels from gap-filled algorithm (2).
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Spatial Resolution:</strong> 3–5 m</li>
+              <li><strong>NoData Value:</strong> -9999</li>
+            </ul>
+
+            <h3 id="tier-3" style={h3Style}>4.3 Tier 3 — Sentinel-1</h3>
+            <p style={tierBadgeWrapStyle}>
+              <TierBadge color={tc['Tier_3']}>Tier 3</TierBadge>
+            </p>
+            <p>
+              This category of FIMs contains flood rasters derived from Sentinel-1A
+              integrated with the hydrologically guided gap-filled algorithm. Similar to
+              Tier 2, the flood rasters contain three classes: non-flooded pixels (0),
+              flooded pixels from remote-sensing sensor (1), and flooded pixels from
+              gap-filled algorithm (2).
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Spatial Resolution:</strong> 10 m</li>
+              <li><strong>NoData Value:</strong> -9999</li>
+            </ul>
+
+            <h3 id="tier-4" style={h3Style}>4.4 Tier 4 — FEMA BLE</h3>
+            <p style={tierBadgeWrapStyle}>
+              <TierBadge color={tc['Tier_4']}>Tier 4 (BLE)</TierBadge>
+            </p>
+            <p>
+              This tier contains FEMA's Base Level Engineering (BLE) flood maps representing
+              synthetic flood events. It includes HEC-RAS-derived FIMs of 100-year and
+              500-year floods containing two classes: flooded pixels (1) and non-flooded
+              pixels (0).
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Spatial Resolution:</strong> 10 m</li>
+              <li><strong>NoData Value:</strong> -9999</li>
+            </ul>
+
+            <h3 id="hwm" style={h3Style}>4.5 High Water FIM (HWM)</h3>
+            <p style={tierBadgeWrapStyle}>
+              <TierBadge color={tc['HWM']}>High Water FIM</TierBadge>
+            </p>
+            <p>
+              This category of FIM contains flood maps derived from surveyed USGS high water
+              marks. The rasters contain two classes: flooded pixels (1) and non-flooded
+              pixels (0).
+            </p>
+            <ul style={specListStyle}>
+              <li><strong>Spatial Resolution:</strong> 10 m</li>
+              <li><strong>NoData Value:</strong> -9999</li>
+            </ul>
+          </section>
+
+          <hr style={hrStyle} />
+
+          {/* ── 5. File Structure & Naming Conventions ── */}
+          <section id="data-sources" style={sectionStyle}>
+            <h2 style={h2Style}>5. File Structure & Naming Conventions</h2>
+
+            <h4 style={h4Style}>FIMbench Folder Structure</h4>
+            <ul style={specListStyle}>
+              <li>
+                The folder structure in the database S3 Bucket is organized by quality
+                levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 2).
+              </li>
+              <li>
+                Under each Level folder, there are subfolders consisting of flood maps
+                for different case studies.
+              </li>
+              <li>
+                The naming convention of these subfolders is based on the date of the
+                flood event, followed by the coordinates of the centroid of the flood
+                map (e.g. <code>20161009T150712_0775815W352133N</code>).
+              </li>
+            </ul>
+
+            <h4 style={h4Style}>File Naming Convention</h4>
+            <p>
+              The benchmark raster filenames encode key metadata, including location, data
+              type, resolution, and the date and time of the flood event. The following
+              naming convention is used:
+            </p>
+            <ul style={specListStyle}>
+              <li>
+                <strong>SS:</strong> Sensor Name
+                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                  <li><code>S1</code> – Sentinel-1</li>
+                  <li><code>AI</code> – Aerial Imagery</li>
+                  <li><code>BLE</code> – Base Level Engineering</li>
+                </ul>
+              </li>
+              <li>
+                <strong>SR:</strong> Spatial resolution of the imagery
+                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                  <li><code>10m</code> for 10 meters</li>
+                  <li><code>0_5m</code> for 50 centimeters</li>
+                </ul>
+              </li>
+              <li>
+                <strong>YYYYMMDD:</strong> Acquisition date — year, month, and day of
+                the flood event
+              </li>
+              <li>
+                <strong>TT:</strong> Time of acquisition in UTC
+              </li>
+              <li>
+                <strong>UU:</strong> Unique Identifier of the location
+                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                  <li>
+                    Latitude and longitude (formatted as W/E + N/S) of the centroid
+                    for actual flood events
+                  </li>
+                  <li>HUC-8 ID for BLE flood maps</li>
+                </ul>
+              </li>
+              <li><strong>BM:</strong> Indicates Benchmark</li>
+            </ul>
+            <p style={{ margin: '12px 0 4px' }}>
+              <strong>Example:</strong>{' '}
+              <code>S1A_10m_20190527T002655_953144W310436N_BM.tif</code>
+            </p>
+          </section>
+
+          <hr style={hrStyle} />
+
+          {/* ── 6. FAQs & Known Limitations ── */}
+          <section id="faq" style={sectionStyle}>
+            <h2 style={h2Style}>6. FAQs & Known Limitations</h2>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Why are some records missing dates?</summary>
+              <div style={detailsBodyStyle}>
+                <p>
+                  Tier 4 (FEMA BLE) records represent synthetic flood scenarios (100-year and
+                  500-year return periods) derived from hydrodynamic modeling — they are not
+                  tied to a real observed event and therefore carry no event date. These records
+                  are excluded from the date range filter automatically. Some older Tier 1–3
+                  records may also have incomplete metadata if the acquisition date was not
+                  captured at the time of processing.
+                </p>
+              </div>
+            </details>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Why does my HUC8 filter return no results?</summary>
+              <div style={detailsBodyStyle}>
+                <p>
+                  The catalog only includes watersheds where FIM data has been actively collected.
+                  Coverage is event-driven — a HUC8 will only appear if a qualifying flood event
+                  was observed there and processed into a benchmark FIM. Not every HUC8 in the
+                  contiguous US is represented. Use the map or the State filter to explore which
+                  areas currently have coverage, then narrow down by HUC8.
+                </p>
+              </div>
+            </details>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Does the Return Period filter apply to all tiers?</summary>
+              <div style={detailsBodyStyle}>
+                <p>
+                  No — the Return Period filter (100-year, 500-year) only applies to{' '}
+                  <strong>Tier 4 (FEMA BLE)</strong> records, which are the only tier derived
+                  from synthetic design storms with defined recurrence intervals. Selecting a
+                  return period while other tiers are checked will not affect those results.
+                </p>
+              </div>
+            </details>
+
+            <details style={detailsStyle}>
+              <summary style={summaryStyle}>Known Limitations</summary>
+              <div style={detailsBodyStyle}>
+                <ul style={specListStyle}>
+                  <li>
+                    <strong>Incomplete coverage:</strong> Data collection is ongoing and
+                    event-driven. Large portions of the US have no benchmark FIM available yet.
+                  </li>
+                  <li>
+                    <strong>Cloud cover and sensor gaps (Tiers 2 & 3):</strong> SAR and
+                    optical imagery can be affected by cloud cover, vegetation canopy, or
+                    off-nadir acquisition angles, which may reduce flood extent accuracy.
+                  </li>
+                  <li>
+                    <strong>Tier 4 is synthetic:</strong> FEMA BLE maps represent modeled
+                    design events, not observed floods. They should not be compared directly
+                    to real-event FIMs from other tiers without careful consideration of
+                    recurrence interval and boundary conditions.
+                  </li>
+                  <li>
+                    <strong>Catalog latency:</strong> There is typically a lag between a flood
+                    event occurring and its benchmark FIM appearing in the catalog, due to
+                    imagery acquisition, processing, and quality review time.
+                  </li>
+                  <li>
+                    <strong>Metadata completeness:</strong> Some older records may have
+                    partial metadata (missing dates, resolution, or HUC8 assignments).
+                  </li>
+                </ul>
+              </div>
+            </details>
+          </section>
+
+          <hr style={hrStyle} />
+
+          {/* ── 7. Contact & Attribution ── */}
+          <section id="contact" style={sectionStyle}>
+            <h2 style={h2Style}>7. Contact & Attribution</h2>
+            <p>
+              This FIM benchmark viewer is built to visualize and explore FIM
+              benchmark datasets, and is integrated with the open-source{' '}
+              <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">fimeval</a>{' '}
+              framework by SDML. For installation, documentation, and contribution
+              details, see the{' '}
               <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">
-                <strong>FIM EVALUATION FRAMEWORK</strong>
-              </a>, and
-            </li>
-            <li>
-              Accessing for{' '}
-              <a href="https://github.com/sdmlua/FIMserv" target="_blank" rel="noreferrer">
-                <strong>FIMSERV</strong>
+                <strong>FIMeval GitHub repository</strong>
               </a>.
-            </li>
-          </ul>
-
-          <h3 style={h3Style}>Prior to using; INSTALLATION and SETUP</h3>
-          <p>
-            We recommend using virtual environments to manage dependencies. User can use
-            conda, Python's built-in venv, or uv — pick one of the options below.
-          </p>
-
-          <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option A – Using conda</p>
-          <pre style={codeBlockStyle}><code>{CODE_CONDA}</code></pre>
-
-          <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option B – Using venv (built-in Python)</p>
-          <pre style={codeBlockStyle}><code>{CODE_VENV}</code></pre>
-
-          <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option C – Using uv</p>
-          <p style={{ margin: '4px 0 8px', fontSize: 13.5 }}>
-            <code>uv</code> is a lightweight tool for creating and managing virtual
-            environments and can be installed via pip: <code>pip install uv</code>.
-          </p>
-          <pre style={codeBlockStyle}><code>{CODE_UV}</code></pre>
-
-          <p style={{ margin: '16px 0 4px' }}>
-            Once the environment is active, install the fimeval package to access the
-            modules and dependencies needed to work with benchmark data.
-          </p>
-          <pre style={codeBlockStyle}><code>{CODE_PIP_INSTALL}</code></pre>
-          <p style={{ margin: '8px 0 4px', fontSize: 13.5 }}>OR</p>
-          <pre style={codeBlockStyle}><code>{CODE_UV_INSTALL}</code></pre>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Accessing ONLY BENCHMARK DATA</summary>
-            <div style={detailsBodyStyle}>
-              <p style={{ margin: '0 0 12px' }}>
-                This section explains how to access benchmark flood inundation data stored
-                in the SDML S3 bucket based on user-defined filters (event date, location,
-                etc.). Use the benchFIMquery() function from fimeval.
-              </p>
-              <pre style={codeBlockStyle}><code>{CODE_BENCH_DATA}</code></pre>
-            </div>
-          </details>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Accessing seamlessly for FIM EVALUATION FRAMEWORK</summary>
-            <div style={detailsBodyStyle}>
-              <p style={{ margin: '0 0 12px' }}>
-                This dataset can be used directly with the{' '}
-                <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">FIM Evaluation Framework</a>{' '}
-                to compare model FIMs against benchmark FIMs and compute metrics. The entire
-                evaluation workflow is automated with the right benchmark FIMs fetched based
-                on user-defined AOI and event date on the step 1. In this step to proceed,
-                The user decide all the benchmark FIMs for all the cases to be evaluated.
-              </p>
-              <pre style={codeBlockStyle}><code>{CODE_FIM_EVAL}</code></pre>
-            </div>
-          </details>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Accessing for FIMSERV</summary>
-            <div style={detailsBodyStyle}>
-              <p style={{ margin: '0 0 12px' }}>
-                The{' '}
-                <a href="https://github.com/sdmlua/FIMserv" target="_blank" rel="noreferrer">FIM as a Service (FIMSERV)</a>{' '}
-                platform allows users to generate FIM using NOAA Office of Water Prediction
-                FIM framework based on Height Above Nearest Drainage (HAND) approach. This
-                can also use as a test bed for investigating the multiple components of FIM
-                (like river slope, geometry, and so on.). For those investigation and even
-                to evaluate the performance of OWP HAND FIM approach overall, the seamless
-                evaluation makes the task much easier. This step is mainly for FIMSERV users
-                who want to evaluate their generated FIMs against benchmark datasets.
-              </p>
-              <p style={{ margin: '0 0 12px' }}>
-                This FIMserv runs on HUC8 basis, so the user need to provide HUC8 and event
-                date to query and download the benchmark FIMs.
-              </p>
-              <pre style={codeBlockStyle}><code>{CODE_FIMSERV}</code></pre>
-            </div>
-          </details>
-        </section>
-
-        <hr style={hrStyle} />
-
-        {/* ── 3. FIM Tiers ── */}
-        <section id="fim-tiers" style={sectionStyle}>
-          <h2 style={h2Style}>4. FIM Tiers</h2>
-          <p>
-            The benchmark FIM rasters are available for four tiers and one separate class
-            for High Water Marks–generated FIM.
-          </p>
-
-          <h3 id="tier-1" style={h3Style}>4.1 Tier 1 — Very High Resolution</h3>
-          <p style={tierBadgeWrapStyle}>
-            <TierBadge color={tc['Tier_1']}>Tier 1</TierBadge>
-          </p>
-          <p>
-            This category includes FIMs derived from very high resolution NOAA Emergency
-            Response Imagery. Flood rasters are generated by classifying raw images into
-            two classes: flood pixels (1) and non-flooded pixels (0), using a combination
-            of automated and hand-labelled processing (storms.ngs.noaa.gov).
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Spatial Resolution:</strong> 20–50 cm</li>
-            <li><strong>NoData Value:</strong> -9999</li>
-          </ul>
-
-          <h3 id="tier-2" style={h3Style}>4.2 Tier 2 — PlanetScope</h3>
-          <p style={tierBadgeWrapStyle}>
-            <TierBadge color={tc['Tier_2']}>Tier 2</TierBadge>
-          </p>
-          <p>
-            This tier consists of FIMs generated from PlanetScope scenes integrated with
-            a hydrologically guided algorithm. The flood rasters contain three classes:
-            non-flooded pixels (0), flooded pixels from remote-sensing sensor (1), and
-            flooded pixels from gap-filled algorithm (2).
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Spatial Resolution:</strong> 3–5 m</li>
-            <li><strong>NoData Value:</strong> -9999</li>
-          </ul>
-
-          <h3 id="tier-3" style={h3Style}>4.3 Tier 3 — Sentinel-1</h3>
-          <p style={tierBadgeWrapStyle}>
-            <TierBadge color={tc['Tier_3']}>Tier 3</TierBadge>
-          </p>
-          <p>
-            This category of FIMs contains flood rasters derived from Sentinel-1A
-            integrated with the hydrologically guided gap-filled algorithm. Similar to
-            Tier 2, the flood rasters contain three classes: non-flooded pixels (0),
-            flooded pixels from remote-sensing sensor (1), and flooded pixels from
-            gap-filled algorithm (2).
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Spatial Resolution:</strong> 10 m</li>
-            <li><strong>NoData Value:</strong> -9999</li>
-          </ul>
-
-          <h3 id="tier-4" style={h3Style}>4.4 Tier 4 — FEMA BLE</h3>
-          <p style={tierBadgeWrapStyle}>
-            <TierBadge color={tc['Tier_4']}>Tier 4 (BLE)</TierBadge>
-          </p>
-          <p>
-            This tier contains FEMA's Base Level Engineering (BLE) flood maps representing
-            synthetic flood events. It includes HEC-RAS-derived FIMs of 100-year and
-            500-year floods containing two classes: flooded pixels (1) and non-flooded
-            pixels (0).
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Spatial Resolution:</strong> 10 m</li>
-            <li><strong>NoData Value:</strong> -9999</li>
-          </ul>
-
-          <h3 id="hwm" style={h3Style}>4.5 High Water FIM (HWM)</h3>
-          <p style={tierBadgeWrapStyle}>
-            <TierBadge color={tc['HWM']}>High Water FIM</TierBadge>
-          </p>
-          <p>
-            This category of FIM contains flood maps derived from surveyed USGS high water
-            marks. The rasters contain two classes: flooded pixels (1) and non-flooded
-            pixels (0).
-          </p>
-          <ul style={specListStyle}>
-            <li><strong>Spatial Resolution:</strong> 10 m</li>
-            <li><strong>NoData Value:</strong> -9999</li>
-          </ul>
-        </section>
-
-        <hr style={hrStyle} />
-
-        {/* ── 4. File Structure & Naming Conventions ── */}
-        <section id="data-sources" style={sectionStyle}>
-          <h2 style={h2Style}>5. File Structure & Naming Conventions</h2>
-
-          <h4 style={h4Style}>FIMbench Folder Structure</h4>
-          <ul style={specListStyle}>
-            <li>
-              The folder structure in the database S3 Bucket is organized by quality
-              levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 2).
-            </li>
-            <li>
-              Under each Level folder, there are subfolders consisting of flood maps
-              for different case studies.
-            </li>
-            <li>
-              The naming convention of these subfolders is based on the date of the
-              flood event, followed by the coordinates of the centroid of the flood
-              map (e.g. <code>20161009T150712_0775815W352133N</code>).
-            </li>
-          </ul>
-
-          <h4 style={h4Style}>File Naming Convention</h4>
-          <p>
-            The benchmark raster filenames encode key metadata, including location, data
-            type, resolution, and the date and time of the flood event. The following
-            naming convention is used:
-          </p>
-          <ul style={specListStyle}>
-            <li>
-              <strong>SS:</strong> Sensor Name
-              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
-                <li><code>S1</code> – Sentinel-1</li>
-                <li><code>AI</code> – Aerial Imagery</li>
-                <li><code>BLE</code> – Base Level Engineering</li>
-              </ul>
-            </li>
-            <li>
-              <strong>SR:</strong> Spatial resolution of the imagery
-              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
-                <li><code>10m</code> for 10 meters</li>
-                <li><code>0_5m</code> for 50 centimeters</li>
-              </ul>
-            </li>
-            <li>
-              <strong>YYYYMMDD:</strong> Acquisition date — year, month, and day of
-              the flood event
-            </li>
-            <li>
-              <strong>TT:</strong> Time of acquisition in UTC
-            </li>
-            <li>
-              <strong>UU:</strong> Unique Identifier of the location
-              <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
-                <li>
-                  Latitude and longitude (formatted as W/E + N/S) of the centroid
-                  for actual flood events
-                </li>
-                <li>HUC-8 ID for BLE flood maps</li>
-              </ul>
-            </li>
-            <li><strong>BM:</strong> Indicates Benchmark</li>
-          </ul>
-          <p style={{ margin: '12px 0 4px' }}>
-            <strong>Example:</strong>{' '}
-            <code>S1A_10m_20190527T002655_953144W310436N_BM.tif</code>
-          </p>
-        </section>
-
-        <hr style={hrStyle} />
-
-        {/* ── 5. FAQs & Known Limitations ── */}
-        <section id="faq" style={sectionStyle}>
-          <h2 style={h2Style}>6. FAQs & Known Limitations</h2>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Why are some records missing dates?</summary>
-            <div style={detailsBodyStyle}>
-              <p>
-                Tier 4 (FEMA BLE) records represent synthetic flood scenarios (100-year and
-                500-year return periods) derived from hydrodynamic modeling — they are not
-                tied to a real observed event and therefore carry no event date. These records
-                are excluded from the date range filter automatically. Some older Tier 1–3
-                records may also have incomplete metadata if the acquisition date was not
-                captured at the time of processing.
-              </p>
-            </div>
-          </details>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Why does my HUC8 filter return no results?</summary>
-            <div style={detailsBodyStyle}>
-              <p>
-                The catalog only includes watersheds where FIM data has been actively collected.
-                Coverage is event-driven — a HUC8 will only appear if a qualifying flood event
-                was observed there and processed into a benchmark FIM. Not every HUC8 in the
-                contiguous US is represented. Use the map or the State filter to explore which
-                areas currently have coverage, then narrow down by HUC8.
-              </p>
-            </div>
-          </details>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Does the Return Period filter apply to all tiers?</summary>
-            <div style={detailsBodyStyle}>
-              <p>
-                No — the Return Period filter (100-year, 500-year) only applies to{' '}
-                <strong>Tier 4 (FEMA BLE)</strong> records, which are the only tier derived
-                from synthetic design storms with defined recurrence intervals. Selecting a
-                return period while other tiers are checked will not affect those results.
-              </p>
-            </div>
-          </details>
-
-          <details style={detailsStyle}>
-            <summary style={summaryStyle}>Known Limitations</summary>
-            <div style={detailsBodyStyle}>
-              <ul style={specListStyle}>
-                <li>
-                  <strong>Incomplete coverage:</strong> Data collection is ongoing and
-                  event-driven. Large portions of the US have no benchmark FIM available yet.
-                </li>
-                <li>
-                  <strong>Cloud cover and sensor gaps (Tiers 2 & 3):</strong> SAR and
-                  optical imagery can be affected by cloud cover, vegetation canopy, or
-                  off-nadir acquisition angles, which may reduce flood extent accuracy.
-                </li>
-                <li>
-                  <strong>Tier 4 is synthetic:</strong> FEMA BLE maps represent modeled
-                  design events, not observed floods. They should not be compared directly
-                  to real-event FIMs from other tiers without careful consideration of
-                  recurrence interval and boundary conditions.
-                </li>
-                <li>
-                  <strong>Catalog latency:</strong> There is typically a lag between a flood
-                  event occurring and its benchmark FIM appearing in the catalog, due to
-                  imagery acquisition, processing, and quality review time.
-                </li>
-                <li>
-                  <strong>Metadata completeness:</strong> Some older records may have
-                  partial metadata (missing dates, resolution, or HUC8 assignments).
-                </li>
-              </ul>
-            </div>
-          </details>
-        </section>
-
-        <hr style={hrStyle} />
-
-        {/* ── 6. Contact & Attribution ── */}
-        <section id="contact" style={sectionStyle}>
-          <h2 style={h2Style}>7. Contact & Attribution</h2>
-          <p>
-            This FIM benchmark viewer is built to explore the available benchmark FIM and
-            is seamlessly integrated with the open-source{' '}
-            <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">fimeval</a>{' '}
-            framework by SDML.
-            More detailed information about installation, documentation, and contribution,
-            see the <strong>FIMeval GitHub Repo:</strong>{' '}
-            <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">https://github.com/sdmlua/fimeval</a>
-          </p>
-          <p style={{ marginBottom: 6 }}>
-            <span style={{ fontWeight: 700 }}>Data & Research Enquiries</span><br />
-            <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
-            {' | '}
-            <a href="mailto:sdhital@crimson.ua.edu">Supath Dhital</a>
-            {' | '}
-            <a href="mailto:ddevi@ua.edu">Dipsikha Devi</a>
-          </p>
-          <p>
-            <span style={{ fontWeight: 700 }}>Platform & Technical Support</span><br />
-            <a href="mailto:nswain@aquaveo.com">Nathan Swain</a>
-          </p>
-        </section>
-
+            </p>
+            <p style={{ marginBottom: 6 }}>
+              <span style={{ fontWeight: 700 }}>Research & Data Science</span><br />
+              <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
+              {' | '}
+              <a href="mailto:sdhital@crimson.ua.edu">Supath Dhital</a>
+              {' | '}
+              <a href="mailto:ddevi@ua.edu">Dipsikha Devi</a>
+            </p>
+            <p>
+              <span style={{ fontWeight: 700 }}>Architecture & Engineering</span><br />
+              <a href="mailto:nswain@aquaveo.com">Nathan Swain</a> — Lead Engineer & Architect
+              {' | '}
+              <a href="mailto:rraghavan@aquaveo.com">Reshma Raghavan</a> — Software Developer
+            </p>
+          </section>
         </main>
       </div>
-
       <Footer />
     </div>
   );
