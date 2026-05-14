@@ -217,11 +217,25 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     return () => { cancelled = true; };
   }, [features]);
 
+  // When 2+ items are selected (e.g. via Shift+drag spatial select on the map),
+  // narrow the table to just those records — the user's intent is to focus on
+  // the selected set. For 0 or 1 selections, show everything.
+  const filteredRecords = useMemo(
+    () => (selectedIds.size >= 2 ? records.filter(r => selectedIds.has(r.siteId)) : records),
+    [records, selectedIds]
+  );
+
   // Sort records — memoized so it only reruns when records/sort state changes
   const sortedRecords = useMemo(
-    () => [...records].sort((a, b) => compareRecords(a, b, sortKey, sortDir)),
-    [records, sortKey, sortDir]
+    () => [...filteredRecords].sort((a, b) => compareRecords(a, b, sortKey, sortDir)),
+    [filteredRecords, sortKey, sortDir]
   );
+
+  // When entering "focused" mode (size ≥ 2), reset to page 1 so the selected
+  // rows are visible from the top.
+  useEffect(() => {
+    if (selectedIds.size >= 2) setPage(1);
+  }, [selectedIds.size]);
 
   // When a single item is selected (e.g. from a map centroid click), jump to its page.
   useEffect(() => {
