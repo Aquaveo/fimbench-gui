@@ -167,7 +167,7 @@ function App() {
               mapRef.current?.clearPopup?.();
             }}
             onClearSelection={() => setSelectedSiteIds(new Set())}
-            onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
+            onZoomToFeature={(bbox, siteId) => mapRef.current?.zoomToBbox(bbox, siteId)}
           />
         </div>
 

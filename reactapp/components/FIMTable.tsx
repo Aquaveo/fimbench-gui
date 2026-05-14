@@ -163,7 +163,7 @@ type Props = {
   selectedSiteIds?: Set<string>;
   onSelectionChange?: (newIds: Set<string>) => void;
   onClearSelection?: () => void;
-  onZoomToFeature?: (bbox: Bbox) => void;
+  onZoomToFeature?: (bbox: Bbox, siteId: string) => void;
 };
 const PAGE_SIZE = 20;
 
@@ -312,7 +312,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     { label: 'Zoom',          width: '4.375rem',
       render: r => (
         <button
-          onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox); }}
+          onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox, r.siteId); }}
           disabled={!r.bbox}
           style={{
             ...tableHeaderBtnStyle,

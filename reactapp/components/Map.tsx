@@ -284,13 +284,28 @@ const TIER_SORT_EXPR: ExpressionSpecification = [
 ];
 
 // Applies (or resets) selection-emphasis paint properties on both layers.
-// Takes tierColorExpr so colorMode changes re-apply the right palette.
+// Takes tierColorExpr so colorMode changes re-apply the right palette. When
+// focusSiteId is provided, that feature is rendered above other selected
+// features via a bumped sort-key (useful right after clicking "Zoom" on a
+// row inside a multi-feature selection).
 function applySelectionEmphasis(
   map: maplibregl.Map,
   siteIds: Set<string>,
   tierColorExpr: ExpressionSpecification,
+  focusSiteId: string | null = null,
 ) {
   if (!map.getLayer('centroids-layer') || !map.getLayer('fim-layer')) return;
+
+  // Sort-key layered z-order:
+  //   focus target → 20 (top), other selected → 10, unselected → TIER_SORT_EXPR.
+  const sortKeyExpr: ExpressionSpecification = focusSiteId
+    ? ['case',
+        ['==', ['get', 'site_id'], focusSiteId], 20,
+        ['in', ['get', 'site_id'], ['literal', [...siteIds]]], 10,
+        TIER_SORT_EXPR]
+    : ['case',
+        ['in', ['get', 'site_id'], ['literal', [...siteIds]]], 10,
+        TIER_SORT_EXPR];
 
   if (siteIds.size === 0) {
     map.setPaintProperty('centroids-layer', 'circle-color', tierColorExpr);
@@ -300,8 +315,8 @@ function applySelectionEmphasis(
     map.setPaintProperty('fim-layer', 'fill-color', '#0067E1');
     map.setPaintProperty('fim-layer', 'fill-outline-color', '#003B8E');
     map.setPaintProperty('fim-layer', 'fill-opacity', EXTENT_OPACITY_EXPR);
-    map.setLayoutProperty('centroids-layer', 'circle-sort-key', TIER_SORT_EXPR);
-    map.setLayoutProperty('fim-layer', 'fill-sort-key', TIER_SORT_EXPR);
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', sortKeyExpr);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', sortKeyExpr);
   } else {
     const isSelected: ExpressionSpecification = ['in', ['get', 'site_id'], ['literal', [...siteIds]]];
 
@@ -328,12 +343,8 @@ function applySelectionEmphasis(
       EXTENT_OPACITY_EXPR,
       ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
     ]);
-    map.setLayoutProperty('centroids-layer', 'circle-sort-key', [
-      'case', isSelected, 10, TIER_SORT_EXPR,
-    ]);
-    map.setLayoutProperty('fim-layer', 'fill-sort-key', [
-      'case', isSelected, 10, TIER_SORT_EXPR,
-    ]);
+    map.setLayoutProperty('centroids-layer', 'circle-sort-key', sortKeyExpr);
+    map.setLayoutProperty('fim-layer', 'fill-sort-key', sortKeyExpr);
   }
 }
 
@@ -356,7 +367,9 @@ type MapProps = {
 };
 
 export type MapHandle = {
-  zoomToBbox: (bbox: Bbox) => void;
+  // focusSiteId, when provided, is rendered above other selected features so
+  // the user can pick it out at a glance after clicking "Zoom" on a row.
+  zoomToBbox: (bbox: Bbox, focusSiteId?: string) => void;
   clearPopup: () => void;
 };
 
@@ -417,6 +430,11 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
   const onMultiFeatureSelectRef = useRef(onMultiFeatureSelect);
   useEffect(() => { onMultiFeatureSelectRef.current = onMultiFeatureSelect; }, [onMultiFeatureSelect]);
+
+  // The site_id of the feature the user most recently clicked "Zoom" on,
+  // used by the centroid/extent sort-key so the zoom target renders above
+  // neighbouring selected features. Persists until another Zoom click.
+  const zoomFocusSiteIdRef = useRef<string | null>(null);
 
   const filtersRef = useRef(filters);
 
@@ -758,7 +776,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)
-      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)));
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -892,24 +910,27 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     selectedSiteIdsRef.current = ids;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, ids, buildTierColorExpr(tierColors(colorModeRef.current)));
+    applySelectionEmphasis(map, ids, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
   }, [selectedSiteIds]);
 
   // Re-apply tier colors whenever the color mode changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorMode)));
+    applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorMode)), zoomFocusSiteIdRef.current);
   }, [colorMode]);
 
   useImperativeHandle(ref, () => ({
-    zoomToBbox: (bbox) => {
+    zoomToBbox: (bbox, focusSiteId) => {
       const map = mapRef.current;
       if (!map || !map.isStyleLoaded()) return;
       if (!Array.isArray(bbox) || bbox.length !== 4) return;
       const [w, s, e, n] = bbox;
       if (!Number.isFinite(w) || !Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(n)) return;
       map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
+      // Bump the focus target's z-order so it renders above its neighbours.
+      zoomFocusSiteIdRef.current = focusSiteId ?? null;
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
     },
     clearPopup: () => {
       currentClickPopupRef.current?.remove();
