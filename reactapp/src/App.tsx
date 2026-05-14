@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import FilterSidebar from '../components/FilterSidebar';
 import { DEFAULT_FILTERS, type Filters } from './types/filters';
 import Map, { type MapHandle, type CatalogDateBounds } from '../components/Map';
 import FIMTable from '../components/FIMTable';
+import WelcomeModal from '../components/WelcomeModal';
 import type { FeatureProperties } from './types/catalog';
 import './App.css';
 
@@ -16,8 +17,20 @@ function App() {
   const [availableHuc8s, setAvailableHuc8s] = useState<Set<string>>(new Set());
   const [catalogDateBounds, setCatalogDateBounds] = useState<CatalogDateBounds | null>(null);
   const [selectedSiteIds, setSelectedSiteIds] = useState<Set<string>>(() => new Set());
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try { return !localStorage.getItem('fimbench.welcomeSeen'); }
+    catch { return true; } // localStorage unavailable (e.g. private browsing restrictions)
+  });
 
   const mapRef = useRef<MapHandle | null>(null);
+
+  const handleCloseWelcome = useCallback((dontShowAgain: boolean) => {
+    try {
+      if (dontShowAgain) localStorage.setItem('fimbench.welcomeSeen', '1');
+      else localStorage.removeItem('fimbench.welcomeSeen');
+    } catch { /* ignore — modal re-appears next visit if storage is unavailable */ }
+    setShowWelcome(false);
+  }, []);
 
   const toggleSelection = (siteId: string) => {
     setSelectedSiteIds(prev => {
@@ -112,6 +125,8 @@ function App() {
       </div>
 
       <Footer />
+
+      {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
     </div>
   );
 }

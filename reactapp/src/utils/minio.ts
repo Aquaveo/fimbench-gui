@@ -1,13 +1,9 @@
-export const MINIO_BASE = 'http://127.0.0.1:9000/fimbench';
-
-export function toMinioPath(s3Prefix: string): string {
-  return s3Prefix.replace(/^FIM_Database\//, '');
-}
+export const S3_BASE = 'https://sdmlab.s3.amazonaws.com';
 
 export function buildTifUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName}`;
+  return `${S3_BASE}/${s3Prefix}/${fileName}`;
 }
 
 export function buildMetaUrl(s3Prefix: string, fileName: string): string {
-  return `${MINIO_BASE}/${toMinioPath(s3Prefix)}/${fileName.replace('_BM.tif', '_metadata.json')}`;
+  return `${S3_BASE}/${s3Prefix}/${fileName.replace('_BM.tif', '_metadata.json')}`;
 }
