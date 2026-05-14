@@ -79,6 +79,17 @@ function App() {
     });
   };
 
+  // Shift+drag spatial selection on the map — additive to existing selection
+  // so users can build a multi-region selection across separate drags.
+  const handleMultiFeatureSelect = (siteIds: string[]) => {
+    if (siteIds.length === 0) return;
+    setSelectedSiteIds(prev => {
+      const next = new Set(prev);
+      for (const id of siteIds) next.add(id);
+      return next;
+    });
+  };
+
   const handleCatalogDateBounds = (bounds: CatalogDateBounds) => {
     setCatalogDateBounds(bounds);
     // Seed empty date fields on first catalog load; preserve any user edits.
@@ -126,6 +137,7 @@ function App() {
             onCatalogHuc8s={setAvailableHuc8s}
             onCatalogDateBounds={handleCatalogDateBounds}
             onPruneSelections={handlePruneSelections}
+            onMultiFeatureSelect={handleMultiFeatureSelect}
             selectedSiteIds={selectedSiteIds}
           />
         </div>

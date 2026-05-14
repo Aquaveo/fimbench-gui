@@ -349,6 +349,9 @@ type MapProps = {
   // Fires when filter changes cause one or more currently-selected features
   // to drop out of view. Parent should remove those ids from its selection set.
   onPruneSelections?: (idsToRemove: string[]) => void;
+  // Fires after a Shift+drag spatial selection — parent should add these ids
+  // to the existing selection (additive, matching Shift-click semantics).
+  onMultiFeatureSelect?: (siteIds: string[]) => void;
   selectedSiteIds?: Set<string>;
 };
 
@@ -395,7 +398,7 @@ function createStyle(basemapUrl: string): StyleSpecification {
 // -----------------------------
 
 const Map = forwardRef<MapHandle, MapProps>(function Map(
-  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, onCatalogDateBounds, onPruneSelections, selectedSiteIds },
+  { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, onCatalogDateBounds, onPruneSelections, onMultiFeatureSelect, selectedSiteIds },
   ref
 ) {
   const { colorMode } = useColorMode();
@@ -412,6 +415,8 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
   const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
+  const onMultiFeatureSelectRef = useRef(onMultiFeatureSelect);
+  useEffect(() => { onMultiFeatureSelectRef.current = onMultiFeatureSelect; }, [onMultiFeatureSelect]);
 
   const filtersRef = useRef(filters);
 
@@ -455,6 +460,10 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       maxZoom: 20,
       attributionControl: false,
     });
+
+    // Disable the default Shift+drag → zoom-to-box behaviour; we repurpose
+    // Shift+drag for spatial multi-feature selection below.
+    map.boxZoom.disable();
 
     // Debug access — dev only, stripped from production builds
     if (import.meta.env.DEV) {
@@ -609,6 +618,84 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         currentClickPopupRef.current?.remove();
         currentClickPopupRef.current = null;
         onFeatureClick?.(null);
+      });
+
+      // ── Shift+drag → spatial multi-feature selection ─────────────
+      // Holds canvas-pixel coords of the drag origin and a handle to the
+      // overlay <div> we paint as the user drags. Both are nulled out when
+      // the drag completes (or is abandoned).
+      let boxStart: { x: number; y: number } | null = null;
+      let boxEl: HTMLDivElement | null = null;
+      const DRAG_THRESHOLD_PX = 6;  // anything under this is a click, not a box-select
+
+      map.on('mousedown', (e) => {
+        if (!e.originalEvent.shiftKey) return;
+        e.preventDefault();
+        boxStart = { x: e.point.x, y: e.point.y };
+
+        // Paint the rectangle imperatively to avoid React re-renders on every
+        // mousemove. Mounted inside the map's CanvasContainer so the pixel
+        // coords from `e.point` map 1:1 to the overlay's positioning.
+        const container = map.getCanvasContainer();
+        boxEl = document.createElement('div');
+        boxEl.style.position = 'absolute';
+        boxEl.style.background = 'rgba(37,194,223,0.15)';
+        boxEl.style.border = '0.125rem dashed #25C2DF';
+        boxEl.style.pointerEvents = 'none';
+        boxEl.style.zIndex = '5';
+        boxEl.style.left = `${boxStart.x}px`;
+        boxEl.style.top = `${boxStart.y}px`;
+        boxEl.style.width = '0';
+        boxEl.style.height = '0';
+        container.appendChild(boxEl);
+
+        // Suppress map pan while the box is being drawn.
+        map.dragPan.disable();
+      });
+
+      map.on('mousemove', (e) => {
+        if (!boxStart || !boxEl) return;
+        const x1 = Math.min(boxStart.x, e.point.x);
+        const y1 = Math.min(boxStart.y, e.point.y);
+        boxEl.style.left = `${x1}px`;
+        boxEl.style.top = `${y1}px`;
+        boxEl.style.width = `${Math.abs(e.point.x - boxStart.x)}px`;
+        boxEl.style.height = `${Math.abs(e.point.y - boxStart.y)}px`;
+      });
+
+      map.on('mouseup', (e) => {
+        if (!boxStart || !boxEl) return;
+        const startPoint = boxStart;
+        const endPoint = { x: e.point.x, y: e.point.y };
+
+        // Teardown first so we re-enable pan even if the query throws.
+        boxEl.remove();
+        boxEl = null;
+        boxStart = null;
+        map.dragPan.enable();
+
+        // Tiny drag = treat as click; the regular click handler already ran.
+        const dx = endPoint.x - startPoint.x;
+        const dy = endPoint.y - startPoint.y;
+        if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return;
+
+        // Query both centroid and extent layers — works at any zoom level
+        // (low-zoom shows centroids, high-zoom shows extents).
+        const minX = Math.min(startPoint.x, endPoint.x);
+        const minY = Math.min(startPoint.y, endPoint.y);
+        const maxX = Math.max(startPoint.x, endPoint.x);
+        const maxY = Math.max(startPoint.y, endPoint.y);
+        const features = map.queryRenderedFeatures(
+          [[minX, minY], [maxX, maxY]] as [maplibregl.PointLike, maplibregl.PointLike],
+          { layers: INTERACTIVE_LAYERS.filter(l => map.getLayer(l)) }
+        );
+
+        const siteIds = Array.from(new Set(
+          features
+            .map(f => String(f.properties?.site_id ?? ''))
+            .filter(Boolean)
+        ));
+        if (siteIds.length > 0) onMultiFeatureSelectRef.current?.(siteIds);
       });
 
       // ── Cursor: pointer over interactive layers ──────────────────
