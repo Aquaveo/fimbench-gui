@@ -16,12 +16,6 @@ export default function Footer() {
           />
 
           <img
-            src={`${LOGO_BASE}/2_NOAA_logo_mobile.svg.png`}
-            alt="NOAA"
-            style={logoStyle}
-          />
-
-          <img
             src={`${LOGO_BASE}/3_UA-University-of-Alabama_Logo.png`}
             alt="University of Alabama"
             style={logoStyle}
@@ -70,7 +64,7 @@ export default function Footer() {
 ======================= */
 
 const footerStyle: React.CSSProperties = {
-  backgroundImage: 'url(/static/fimbench_gui/images/Footer-trial.png)',
+  backgroundImage: 'url(/static/fimbench_gui/images/Footer-HQ.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
