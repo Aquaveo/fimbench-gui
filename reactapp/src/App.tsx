@@ -24,6 +24,33 @@ function App() {
 
   const mapRef = useRef<MapHandle | null>(null);
 
+  const [mapPercent, setMapPercent] = useState(60);
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const [handleHover, setHandleHover] = useState(false);
+  const [resizing, setResizing] = useState(false);
+
+  const handleSeparatorMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = splitContainerRef.current;
+    if (!container) return;
+    setResizing(true);
+    const startY = e.clientY;
+    const startPercent = mapPercent;
+    const containerHeight = container.getBoundingClientRect().height;
+
+    const onMove = (ev: MouseEvent) => {
+      const deltaPercent = ((ev.clientY - startY) / containerHeight) * 100;
+      setMapPercent(Math.min(80, Math.max(20, startPercent + deltaPercent)));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setResizing(false);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [mapPercent]);
+
   const handleCloseWelcome = useCallback((dontShowAgain: boolean) => {
     try {
       if (dontShowAgain) localStorage.setItem('fimbench.welcomeSeen', '1');
@@ -91,9 +118,9 @@ function App() {
       />
 
       {/* Right: map on top, table on bottom */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div ref={splitContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        <div style={{ flex: '0 0 60%', minHeight: 0 }}>
+        <div style={{ flex: `${mapPercent} 1 0`, minHeight: 0 }}>
           <Map
             ref={mapRef}
             filters={filters}
@@ -107,7 +134,23 @@ function App() {
           />
         </div>
 
-        <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
+        <div
+          onMouseDown={handleSeparatorMouseDown}
+          onMouseEnter={() => setHandleHover(true)}
+          onMouseLeave={() => setHandleHover(false)}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize map and table panels"
+          style={{
+            height: '0.4rem',
+            flexShrink: 0,
+            cursor: 'row-resize',
+            background: (handleHover || resizing) ? '#888' : '#ddd',
+            transition: 'background 0.15s ease',
+          }}
+        />
+
+        <div style={{ flex: `${100 - mapPercent} 1 0`, minHeight: 0, overflow: 'hidden' }}>
           <FIMTable
             features={visibleFeatures}
             selectedSiteIds={selectedSiteIds}
