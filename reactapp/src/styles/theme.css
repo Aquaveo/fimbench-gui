@@ -23,11 +23,11 @@
   --color-error: #CC0000;
 
   /* ===== UI Tokens ===== */
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
 
-  --shadow-sm: 0 4px 12px rgba(21, 36, 40, 0.05);
-  --shadow-md: 0 8px 20px rgba(21, 36, 40, 0.08);
+  --shadow-sm: 0 0.25rem 0.75rem rgba(21, 36, 40, 0.05);
+  --shadow-md: 0 0.5rem 1.25rem rgba(21, 36, 40, 0.08);
 }
 
 .button-primary {
@@ -47,5 +47,5 @@
 
 .button-primary:active {
   background: var(--color-primary-active);
-  transform: translateY(1px);
+  transform: translateY(0.0625rem);
 }

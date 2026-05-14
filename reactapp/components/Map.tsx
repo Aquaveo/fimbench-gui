@@ -124,7 +124,7 @@ function toDisplayStr(v: string | string[] | undefined): string {
 // Inlined download icon (from public/download-icon_svg-vector_svgrepo-com.svg).
 // stroke="currentColor" means the icon automatically inherits the button's CSS
 // text color, so it stays correct whether the button uses dark or white text.
-const DOWNLOAD_ICON_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const DOWNLOAD_ICON_SVG = `<svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // Returns '#ffffff' or '#152428' depending on whether the hex background color
 // is dark or light, using the YIQ perceived-brightness formula.
@@ -150,7 +150,7 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
     val ? `<div><strong>${escapeHtml(lbl)}:</strong> ${escapeHtml(val)}</div>` : '';
 
   return `
-    <div style="font-size:12px;line-height:1.45;min-width:180px">
+    <div style="font-size:0.75rem;line-height:1.45;min-width:11.25rem">
       ${line('Tier',   tierLabel)}
       ${line('Basin',  basinStr)}
       ${line('State',  stateStr)}
@@ -179,14 +179,14 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   // Only renders a table row when val is non-empty — no '—' placeholders.
   const row = (k: string, v: string) =>
     v ? `<tr>
-           <td style="color:#000;font-weight:600;padding:2px 10px 2px 0;white-space:nowrap">${escapeHtml(k)}</td>
+           <td style="color:#000;font-weight:600;padding:0.125rem 0.625rem 0.125rem 0;white-space:nowrap">${escapeHtml(k)}</td>
            <td>${escapeHtml(v)}</td>
          </tr>` : '';
 
   const mkBtnStyle = (bg: string, color: string) => [
-    'display:inline-flex', 'align-items:center', 'gap:5px',
-    'padding:4px 10px', 'font-size:12px', 'font-family:inherit',
-    'border:1px solid #ccc', 'border-radius:4px',
+    'display:inline-flex', 'align-items:center', 'gap:0.3125rem',
+    'padding:0.25rem 0.625rem', 'font-size:0.75rem', 'font-family:inherit',
+    'border:0.0625rem solid #ccc', 'border-radius:0.25rem',
     `background:${bg}`, `color:${color}`,
     'cursor:pointer', 'text-decoration:none', 'font-weight:500',
   ].join(';');
@@ -199,7 +199,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
     `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer" style="${style}">${DOWNLOAD_ICON_SVG}${escapeHtml(label)}</a>`;
 
   return `
-    <div style="font-size:13px;line-height:1.5;min-width:220px">
+    <div style="font-size:0.8125rem;line-height:1.5;min-width:13.75rem">
       <table style="border-collapse:collapse;width:100%">
         ${row('Tier',       tierLabel)}
         ${row('Basin',      basinStr)}
@@ -210,7 +210,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${hasDate ? row(label, value) : ''}
       </table>
       ${tifUrl || metaUrl ? `
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:wrap">
         ${tifUrl  ? btn(tifUrl,  'Download FIM',      fimStyle)  : ''}
         ${metaUrl ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
       </div>` : ''}
@@ -627,7 +627,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               closeButton: true,
               closeOnClick: false,
               offset: 15,
-              maxWidth: '300px',
+              maxWidth: '18.75rem',
               className: 'fim-click-popup',
               anchor,
             });
@@ -898,11 +898,11 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       <div
         style={{
           position: 'absolute',
-          top: 10,
-          left: 10,
-          padding: 8,
+          top: '0.625rem',
+          left: '0.625rem',
+          padding: '0.5rem',
           backgroundColor: 'rgba(255,255,255,0.85)',
-          borderRadius: 4,
+          borderRadius: '0.25rem',
         }}
       >
         <label>
@@ -925,23 +925,23 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       {filters.tiers.length > 0 && (
         <div style={{
           position: 'absolute',
-          bottom: 28,
-          left: 10,
-          padding: '8px 12px',
+          bottom: '1.75rem',
+          left: '0.625rem',
+          padding: '0.5rem 0.75rem',
           backgroundColor: 'rgba(255,255,255,0.88)',
-          borderRadius: 4,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-          fontSize: 12,
+          borderRadius: '0.25rem',
+          boxShadow: '0 0.0625rem 0.25rem rgba(0,0,0,0.2)',
+          fontSize: '0.75rem',
           lineHeight: 1.6,
           pointerEvents: 'none',
         }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>FIM Tiers</div>
+          <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>FIM Tiers</div>
           {filters.tiers.map(tier => (
-            <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
               <span style={{
                 display: 'inline-block',
-                width: 12,
-                height: 12,
+                width: '0.75rem',
+                height: '0.75rem',
                 borderRadius: '50%',
                 backgroundColor: tierColors(colorMode)[tier] ?? '#aaa',
                 flexShrink: 0,

@@ -404,16 +404,11 @@ export default function DocsPage() {
               <li><strong>Metadata file</strong> describing acquisition and dataset details (JSON: <code>.json</code>)</li>
             </ul>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
-                alt="Structure of FIMbench"
-                style={{ maxWidth: '45rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 1: Structure of FIMbench
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
+              alt="Structure of FIMbench"
+              caption="Fig. 1: Structure of FIMbench"
+            />
           </section>
           
           <hr style={hrStyle} />
@@ -429,17 +424,12 @@ export default function DocsPage() {
              the others.
            </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/01_Screenshot_Regular-Page-View.png"
-                alt="FIMbench app interface — map, filters, and data table"
-                style={{ maxWidth: '60rem', width: '100%' }}
-              />
-            </div>
-
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 2: The FIMbench app interface
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/01_Screenshot_Regular-Page-View.png"
+              alt="FIMbench app interface — map, filters, and data table"
+              caption="Fig. 2: The FIMbench app interface"
+              maxWidth="60rem"
+            />
 
             <h3 style={h3Style}>2.1 Welcome Modal</h3>
             <p>
@@ -449,16 +439,11 @@ export default function DocsPage() {
               &ldquo;Don&rsquo;t show again&rdquo; option suppresses the modal on future visits.
             </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/02_Screenshot_Opening-Modal-View.png"
-                alt="Welcome modal that appears on first visit"
-                style={{ maxWidth: '45rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 3: The welcome modal
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/02_Screenshot_Opening-Modal-View.png"
+              alt="Welcome modal that appears on first visit"
+              caption="Fig. 3: The welcome modal"
+            />
 
             <h3 style={h3Style}>2.2 Browsing the Map</h3>
             <p>
@@ -476,16 +461,11 @@ export default function DocsPage() {
               containing that record.
             </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/03_Screenshot_Map-Detail.png"
-                alt="Map view showing the centroid-to-polygon transition with tier-colored features"
-                style={{ maxWidth: '45rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 4: Centroid-to-extent transition across zoom levels
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/03_Screenshot_Map-Detail.png"
+              alt="Map view showing the centroid-to-polygon transition with tier-colored features"
+              caption="Fig. 4: Centroid-to-extent transition across zoom levels"
+            />
 
             <h3 style={h3Style}>2.3 Filtering Records</h3>
             <p>The sidebar on the left provides multi-dimensional filtering of the catalog:</p>
@@ -503,16 +483,11 @@ export default function DocsPage() {
               their default state.
             </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/05_Screenshot_Filter-Sidebar.png"
-                alt="Filter sidebar with tier, HUC8, state, date range, and return period filters"
-                style={{ maxWidth: '45rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 5: Filter sidebar
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/05_Screenshot_Filter-Sidebar.png"
+              alt="Filter sidebar with tier, HUC8, state, date range, and return period filters"
+              caption="Fig. 5: Filter sidebar"
+            />
 
             <h3 style={h3Style}>2.4 Working with the Data Table</h3>
             <p>
@@ -542,16 +517,12 @@ export default function DocsPage() {
               basemap switches.
             </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/04_Screenshot_Linked_Selection-in-Action.png"
-                alt="Linked selection between the map and the data table"
-                style={{ maxWidth: '60rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 6: Map ↔ Table linked selection
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/04_Screenshot_Linked_Selection-in-Action.png"
+              alt="Linked selection between the map and the data table"
+              caption="Fig. 6: Map ↔ Table linked selection"
+              maxWidth="60rem"
+            />
 
             <h3 style={h3Style}>2.6 Downloading Data</h3>
             <p>Each record provides direct download links for:</p>
@@ -591,16 +562,12 @@ export default function DocsPage() {
               filter sidebar, and any open metadata modals.
             </p>
 
-            <div style={{ textAlign: 'center', margin: '24px 0 4px' }}>
-              <img
-                src="/static/fimbench_gui/images/06_Screenshot_Color-Modes.png"
-                alt="Color vision accessibility modes panel"
-                style={{ maxWidth: '30rem', width: '100%' }}
-              />
-            </div>
-            <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
-              Fig. 7: Color vision accessibility modes
-            </p>
+            <Figure
+              src="/static/fimbench_gui/images/06_Screenshot_Color-Modes.png"
+              alt="Color vision accessibility modes panel"
+              caption="Fig. 7: Color vision accessibility modes"
+              maxWidth="30rem"
+            />
           </section>
 
           <hr style={hrStyle} />
@@ -637,31 +604,31 @@ export default function DocsPage() {
               conda, Python's built-in venv, or uv — pick one of the options below.
             </p>
 
-            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option A – Using conda</p>
+            <p style={{ margin: '0.75rem 0 0.25rem', fontWeight: 600, fontSize: '0.8125rem' }}>Option A – Using conda</p>
             <pre style={codeBlockStyle}><code>{CODE_CONDA}</code></pre>
 
-            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option B – Using venv (built-in Python)</p>
+            <p style={{ margin: '0.75rem 0 0.25rem', fontWeight: 600, fontSize: '0.8125rem' }}>Option B – Using venv (built-in Python)</p>
             <pre style={codeBlockStyle}><code>{CODE_VENV}</code></pre>
 
-            <p style={{ margin: '12px 0 4px', fontWeight: 600, fontSize: 13 }}>Option C – Using uv</p>
-            <p style={{ margin: '4px 0 8px', fontSize: 13.5 }}>
+            <p style={{ margin: '0.75rem 0 0.25rem', fontWeight: 600, fontSize: '0.8125rem' }}>Option C – Using uv</p>
+            <p style={{ margin: '0.25rem 0 0.5rem', fontSize: '0.84375rem' }}>
               <code>uv</code> is a lightweight tool for creating and managing virtual
               environments and can be installed via pip: <code>pip install uv</code>.
             </p>
             <pre style={codeBlockStyle}><code>{CODE_UV}</code></pre>
 
-            <p style={{ margin: '16px 0 4px' }}>
+            <p style={{ margin: '1rem 0 0.25rem' }}>
               Once the environment is active, install the fimeval package to access the
               modules and dependencies needed to work with benchmark data.
             </p>
             <pre style={codeBlockStyle}><code>{CODE_PIP_INSTALL}</code></pre>
-            <p style={{ margin: '8px 0 4px', fontSize: 13.5 }}>OR</p>
+            <p style={{ margin: '0.5rem 0 0.25rem', fontSize: '0.84375rem' }}>OR</p>
             <pre style={codeBlockStyle}><code>{CODE_UV_INSTALL}</code></pre>
 
             <details style={detailsStyle}>
               <summary style={summaryStyle}>Accessing ONLY BENCHMARK DATA</summary>
               <div style={detailsBodyStyle}>
-                <p style={{ margin: '0 0 12px' }}>
+                <p style={{ margin: '0 0 0.75rem' }}>
                   This section explains how to access benchmark flood inundation data stored
                   in the SDML S3 bucket based on user-defined filters (event date, location,
                   etc.). Use the benchFIMquery() function from fimeval.
@@ -673,7 +640,7 @@ export default function DocsPage() {
             <details style={detailsStyle}>
               <summary style={summaryStyle}>Accessing seamlessly for FIM EVALUATION FRAMEWORK</summary>
               <div style={detailsBodyStyle}>
-                <p style={{ margin: '0 0 12px' }}>
+                <p style={{ margin: '0 0 0.75rem' }}>
                   This dataset can be used directly with the{' '}
                   <a href="https://github.com/sdmlua/fimeval" target="_blank" rel="noreferrer">FIM Evaluation Framework</a>{' '}
                   to compare model FIMs against benchmark FIMs and compute metrics. The entire
@@ -688,7 +655,7 @@ export default function DocsPage() {
             <details style={detailsStyle}>
               <summary style={summaryStyle}>Accessing for FIMSERV</summary>
               <div style={detailsBodyStyle}>
-                <p style={{ margin: '0 0 12px' }}>
+                <p style={{ margin: '0 0 0.75rem' }}>
                   The{' '}
                   <a href="https://github.com/sdmlua/FIMserv" target="_blank" rel="noreferrer">FIM as a Service (FIMSERV)</a>{' '}
                   platform allows users to generate FIM using NOAA Office of Water Prediction
@@ -699,7 +666,7 @@ export default function DocsPage() {
                   evaluation makes the task much easier. This step is mainly for FIMSERV users
                   who want to evaluate their generated FIMs against benchmark datasets.
                 </p>
-                <p style={{ margin: '0 0 12px' }}>
+                <p style={{ margin: '0 0 0.75rem' }}>
                   This FIMserv runs on HUC8 basis, so the user need to provide HUC8 and event
                   date to query and download the benchmark FIMs.
                 </p>
@@ -826,7 +793,7 @@ export default function DocsPage() {
             <ul style={specListStyle}>
               <li>
                 <strong>SS:</strong> Sensor Name
-                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <ul style={{ ...specListStyle, margin: '0.25rem 0 0' }}>
                   <li><code>S1</code> – Sentinel-1</li>
                   <li><code>AI</code> – Aerial Imagery</li>
                   <li><code>BLE</code> – Base Level Engineering</li>
@@ -834,7 +801,7 @@ export default function DocsPage() {
               </li>
               <li>
                 <strong>SR:</strong> Spatial resolution of the imagery
-                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <ul style={{ ...specListStyle, margin: '0.25rem 0 0' }}>
                   <li><code>10m</code> for 10 meters</li>
                   <li><code>0_5m</code> for 50 centimeters</li>
                 </ul>
@@ -848,7 +815,7 @@ export default function DocsPage() {
               </li>
               <li>
                 <strong>UU:</strong> Unique Identifier of the location
-                <ul style={{ ...specListStyle, margin: '4px 0 0' }}>
+                <ul style={{ ...specListStyle, margin: '0.25rem 0 0' }}>
                   <li>
                     Latitude and longitude (formatted as W/E + N/S) of the centroid
                     for actual flood events
@@ -858,7 +825,7 @@ export default function DocsPage() {
               </li>
               <li><strong>BM:</strong> Indicates Benchmark</li>
             </ul>
-            <p style={{ margin: '12px 0 4px' }}>
+            <p style={{ margin: '0.75rem 0 0.25rem' }}>
               <strong>Example:</strong>{' '}
               <code>S1A_10m_20190527T002655_953144W310436N_BM.tif</code>
             </p>
@@ -957,7 +924,7 @@ export default function DocsPage() {
                 <strong>FIMeval GitHub repository</strong>
               </a>.
             </p>
-            <p style={{ marginBottom: 6 }}>
+            <p style={{ marginBottom: '0.375rem' }}>
               <span style={{ fontWeight: 700 }}>Research & Data Science</span><br />
               <a href="https://geography.ua.edu/people/sagy-cohen/" target="_blank" rel="noreferrer">Sagy Cohen</a>
               {' | '}
@@ -983,11 +950,30 @@ export default function DocsPage() {
 function TierBadge({ color, children }: { color: string; children: React.ReactNode }) {
   return (
     <span style={{
-      display: 'inline-block', padding: '2px 12px', borderRadius: 12,
-      backgroundColor: color, color: '#fff', fontSize: 12, fontWeight: 600,
+      display: 'inline-block', padding: '0.125rem 0.75rem', borderRadius: '0.75rem',
+      backgroundColor: color, color: '#fff', fontSize: '0.75rem', fontWeight: 600,
     }}>
       {children}
     </span>
+  );
+}
+
+// ── Helper for figure (image + caption) blocks ────────────────
+function Figure({ src, alt, caption, maxWidth = '45rem' }: {
+  src: string;
+  alt: string;
+  caption: string;
+  maxWidth?: string;
+}) {
+  return (
+    <>
+      <div style={{ textAlign: 'center', margin: '1.5rem 0 0.25rem' }}>
+        <img src={src} alt={alt} style={{ maxWidth, width: '100%' }} />
+      </div>
+      <p style={{ textAlign: 'center', fontWeight: 700, color: '#555', margin: '0 0 0.5rem' }}>
+        {caption}
+      </p>
+    </>
   );
 }
 
@@ -1001,58 +987,58 @@ const bodyWrapStyle: React.CSSProperties = {
 };
 
 const sidebarStyle: React.CSSProperties = {
-  width: 240,
+  width: '15rem',
   flexShrink: 0,
   position: 'sticky',
   top: 0,
   maxHeight: '100vh',
   overflowY: 'auto',
-  padding: '28px 16px 48px 20px',
+  padding: '1.75rem 1rem 3rem 1.25rem',
   boxSizing: 'border-box',
-  borderRight: '1px solid #e0e0e0',
-  fontSize: 13.5,
+  borderRight: '0.0625rem solid #e0e0e0',
+  fontSize: '0.84375rem',
   lineHeight: 1.8,
 };
 
 const mainStyle: React.CSSProperties = {
   flex: 1,
-  padding: '28px 48px 48px',
+  padding: '1.75rem 3rem 3rem',
   boxSizing: 'border-box',
   minWidth: 0,
 };
 
 const backLinkStyle: React.CSSProperties = {
   display: 'inline-block',
-  marginBottom: 20,
-  fontSize: 13,
+  marginBottom: '1.25rem',
+  fontSize: '0.8125rem',
   color: '#152428',
 };
 
 const pageTitleStyle: React.CSSProperties = {
-  fontSize: 28,
+  fontSize: '1.75rem',
   fontWeight: 700,
-  margin: '0 0 20px',
+  margin: '0 0 1.25rem',
   color: '#25C2DF',
 };
 
 const tocTitleStyle: React.CSSProperties = {
-  margin: '0 0 6px',
+  margin: '0 0 0.375rem',
   fontWeight: 700,
-  fontSize: 14,
+  fontSize: '0.875rem',
 };
 
 const tocListStyle: React.CSSProperties = {
   margin: 0,
-  paddingLeft: 18,
+  paddingLeft: '1.125rem',
 };
 
 const tocSubListStyle: React.CSSProperties = {
-  margin: '2px 0',
-  paddingLeft: 18,
+  margin: '0.125rem 0',
+  paddingLeft: '1.125rem',
 };
 
 const tocItemStyle: React.CSSProperties = {
-  marginBottom: 2,
+  marginBottom: '0.125rem',
 };
 
 const tocLinkStyle: React.CSSProperties = {
@@ -1061,46 +1047,46 @@ const tocLinkStyle: React.CSSProperties = {
 };
 
 const sectionStyle: React.CSSProperties = {
-  marginBottom: 8,
+  marginBottom: '0.5rem',
 };
 
 const h2Style: React.CSSProperties = {
-  fontSize: 20,
+  fontSize: '1.25rem',
   fontWeight: 700,
-  margin: '0 0 12px',
+  margin: '0 0 0.75rem',
   color: '#152428',
-  borderBottom: '1px solid #e0e0e0',
-  paddingBottom: 4,
+  borderBottom: '0.0625rem solid #e0e0e0',
+  paddingBottom: '0.25rem',
 };
 
 const h3Style: React.CSSProperties = {
-  fontSize: 16,
+  fontSize: '1rem',
   fontWeight: 700,
-  margin: '20px 0 8px',
+  margin: '1.25rem 0 0.5rem',
   color: '#2a3a3e',
 };
 
 const h4Style: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: '0.875rem',
   fontWeight: 700,
-  margin: '16px 0 6px',
+  margin: '1rem 0 0.375rem',
   color: '#2a3a3e',
 };
 
 const hrStyle: React.CSSProperties = {
   border: 'none',
-  borderTop: '1px solid #e8e8e8',
-  margin: '28px 0',
+  borderTop: '0.0625rem solid #e8e8e8',
+  margin: '1.75rem 0',
 };
 
 const tierBadgeWrapStyle: React.CSSProperties = {
-  margin: '4px 0 8px',
+  margin: '0.25rem 0 0.5rem',
 };
 
 const specListStyle: React.CSSProperties = {
-  margin: '8px 0 0',
-  paddingLeft: 20,
-  fontSize: 13.5,
+  margin: '0.5rem 0 0',
+  paddingLeft: '1.25rem',
+  fontSize: '0.84375rem',
   color: '#333',
   lineHeight: 1.8,
 };
@@ -1119,7 +1105,7 @@ const codeBlockStyle: React.CSSProperties = {
 };
 
 const detailsStyle: React.CSSProperties = {
-  border: '1px solid #d0d7de',
+  border: '0.0625rem solid #d0d7de',
   borderRadius: '0.375rem',
   margin: '1rem 0',
   overflow: 'hidden',
@@ -1138,7 +1124,7 @@ const summaryStyle: React.CSSProperties = {
 
 const detailsBodyStyle: React.CSSProperties = {
   padding: '1rem',
-  borderTop: '1px solid #d0d7de',
+  borderTop: '0.0625rem solid #d0d7de',
   fontSize: '0.875rem',
   lineHeight: 1.7,
 };

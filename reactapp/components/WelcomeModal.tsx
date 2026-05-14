@@ -79,7 +79,7 @@ export default function WelcomeModal({ onClose }: Props) {
 
           {/* Docs callout */}
           <div style={docsCalloutStyle}>
-            <p style={{ margin: 0, fontSize: 13, color: '#333', lineHeight: 1.55 }}>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: '#333', lineHeight: 1.55 }}>
               For a full guide to all features, click the{' '}
               <span style={docCircleStyle}>Documentation</span>
               {' '}link in the header bar above.
@@ -91,7 +91,7 @@ export default function WelcomeModal({ onClose }: Props) {
               type="checkbox"
               checked={dontShow}
               onChange={e => setDontShow(e.target.checked)}
-              style={{ marginRight: 6 }}
+              style={{ marginRight: '0.375rem' }}
             />
             Don&apos;t show on startup
           </label>
@@ -124,15 +124,15 @@ const backdropStyle: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 9000,
   backgroundColor: 'rgba(0,0,0,0.55)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  padding: 16,
+  padding: '1rem',
 };
 
 const cardStyle: React.CSSProperties = {
   background: '#fff',
-  borderRadius: 8,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.28)',
+  borderRadius: '0.5rem',
+  boxShadow: '0 0.5rem 2rem rgba(0,0,0,0.28)',
   width: '100%',
-  maxWidth: 500,
+  maxWidth: '31.25rem',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
@@ -140,68 +140,68 @@ const cardStyle: React.CSSProperties = {
 
 const cardHeaderStyle: React.CSSProperties = {
   background: '#152428',
-  padding: '18px 20px 14px 24px',
+  padding: '1.125rem 1.25rem 0.875rem 1.5rem',
   display: 'flex',
   alignItems: 'flex-start',
   justifyContent: 'space-between',
-  gap: 12,
+  gap: '0.75rem',
 };
 
 const titleStyle: React.CSSProperties = {
-  margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: 0.5, color: '#25C2DF',
+  margin: 0, fontSize: '1.375rem', fontWeight: 700, letterSpacing: '0.03125rem', color: '#25C2DF',
 };
 
 const taglineStyle: React.CSSProperties = {
-  margin: '4px 0 0', fontSize: 13, color: '#D1EFF6',
+  margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#D1EFF6',
 };
 
 const closeBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
   color: '#D1EFF6',
-  fontSize: 18,
+  fontSize: '1.125rem',
   lineHeight: 1,
   cursor: 'pointer',
-  padding: '2px 4px',
+  padding: '0.125rem 0.25rem',
   flexShrink: 0,
-  marginTop: 2,
+  marginTop: '0.125rem',
 };
 
 const bodyStyle: React.CSSProperties = {
-  padding: '20px 24px 22px',
+  padding: '1.25rem 1.5rem 1.375rem',
 };
 
 const introStyle: React.CSSProperties = {
-  margin: '0 0 14px', fontSize: 14, color: '#333', lineHeight: 1.55,
+  margin: '0 0 0.875rem', fontSize: '0.875rem', color: '#333', lineHeight: 1.55,
 };
 
 const listStyle: React.CSSProperties = {
-  margin: '0 0 16px', paddingLeft: 20, fontSize: 13.5, color: '#333', lineHeight: 1.7,
+  margin: '0 0 1rem', paddingLeft: '1.25rem', fontSize: '0.84375rem', color: '#333', lineHeight: 1.7,
 };
 
 const tierLegendStyle: React.CSSProperties = {
-  display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16,
+  display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '1rem',
 };
 
 const tierBadgeStyle = (color: string): React.CSSProperties => ({
-  display: 'inline-block', padding: '2px 10px', borderRadius: 12,
-  backgroundColor: color, color: '#fff', fontSize: 12, fontWeight: 600,
+  display: 'inline-block', padding: '0.125rem 0.625rem', borderRadius: '0.75rem',
+  backgroundColor: color, color: '#fff', fontSize: '0.75rem', fontWeight: 600,
 });
 
 const docsCalloutStyle: React.CSSProperties = {
   background: '#f0fbfd',
-  border: '1px solid #b8ecf5',
-  borderRadius: 6,
-  padding: '10px 14px',
-  marginBottom: 16,
+  border: '0.0625rem solid #b8ecf5',
+  borderRadius: '0.375rem',
+  padding: '0.625rem 0.875rem',
+  marginBottom: '1rem',
 };
 
 const docCircleStyle: React.CSSProperties = {
   display: 'inline-block',
-  border: '2px solid #25C2DF',
-  borderRadius: '999px',
-  padding: '0 7px',
-  fontSize: 12,
+  border: '0.125rem solid #25C2DF',
+  borderRadius: '62.4375rem',
+  padding: '0 0.4375rem',
+  fontSize: '0.75rem',
   fontWeight: 600,
   backgroundColor: '#25C2DF',
   color: '#152428',
@@ -209,5 +209,5 @@ const docCircleStyle: React.CSSProperties = {
 };
 
 const checkboxLabelStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', fontSize: 13, color: '#555', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', fontSize: '0.8125rem', color: '#555', cursor: 'pointer',
 };

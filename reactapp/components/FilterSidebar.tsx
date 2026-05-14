@@ -57,7 +57,7 @@ function InfoBadge({ description }: { description: string }) {
         onClick={(e) => e.preventDefault()}
         style={infoBadgeStyle}
       >
-        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+        <svg width="0.75rem" height="0.75rem" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ display: 'block' }}>
           <path d="M9 10C9 9.44772 9.44772 9 10 9C10.5523 9 11 9.44772 11 10V14C11 14.5523 10.5523 15 10 15C9.44772 15 9 14.5523 9 14V10Z" fill="#000000" />
           <circle cx="10" cy="7" r="1" fill="#000000" />
           <path fillRule="evenodd" clipRule="evenodd" d="M2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10ZM16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10Z" fill="#000000" />
@@ -169,17 +169,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
 
   return (
-    <div style={{ width: 250, padding: 16, backgroundColor: '#f2f2f2', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '15.625rem', padding: '1rem', backgroundColor: '#f2f2f2', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <h2>Filters</h2>
 
       {/* ── Tier (multi-select checkboxes) ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: '0.75rem' }}>
         <label style={{ fontWeight: 600 }}>FIM Tier:</label>
-        <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ marginTop: '0.375rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {TIER_OPTIONS.map(({ value, label }) => (
             <label
               key={value}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
             >
               <input
                 type="checkbox"
@@ -196,7 +196,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
       </div>
 
       {/* ── HUC8 ID ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: '0.75rem' }}>
         <label htmlFor="huc8Id" style={{ fontWeight: 600 }}>HUC8 ID:</label>
         <input
           id="huc8Id"
@@ -204,36 +204,36 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           value={filters.huc8Id}
           onChange={handleHuc8Change}
           placeholder="e.g. 12100201"
-          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
         />
         {!huc8Empty && !huc8FormatOk && (
-          <span style={{ fontSize: 11, color: '#c0392b', marginTop: 3, display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: '#c0392b', marginTop: '0.1875rem', display: 'block' }}>
             HUC8 must be 8 digits
           </span>
         )}
         {huc8FormatOk && !huc8InCatalog && (
-          <span style={{ fontSize: 11, color: '#c0392b', marginTop: 3, display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: '#c0392b', marginTop: '0.1875rem', display: 'block' }}>
             No records match this HUC8
           </span>
         )}
         {huc8FormatOk && huc8InCatalog && (
-          <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
             State &amp; date filters are inactive while HUC8 is set
           </span>
         )}
       </div>
 
       {/* ── State (dropdown multi-select) ── */}
-      <div style={{ marginBottom: 12, opacity: huc8FormatOk ? 0.4 : 1, position: 'relative' }}>
+      <div style={{ marginBottom: '0.75rem', opacity: huc8FormatOk ? 0.4 : 1, position: 'relative' }}>
         <label style={{ fontWeight: 600 }}>State:</label>
         <button
           type="button"
           disabled={huc8FormatOk}
           onClick={() => setStateDropdownOpen(prev => !prev)}
           style={{
-            display: 'block', width: '100%', marginTop: 4, padding: '5px 8px',
-            fontFamily: 'inherit', fontSize: 13, textAlign: 'left',
-            border: '1px solid #bbb', borderRadius: 4, backgroundColor: '#fff',
+            display: 'block', width: '100%', marginTop: '0.25rem', padding: '0.3125rem 0.5rem',
+            fontFamily: 'inherit', fontSize: '0.8125rem', textAlign: 'left',
+            border: '0.0625rem solid #bbb', borderRadius: '0.25rem', backgroundColor: '#fff',
             cursor: huc8FormatOk ? 'default' : 'pointer', boxSizing: 'border-box',
           }}
         >
@@ -246,17 +246,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
         </button>
         {stateDropdownOpen && !huc8FormatOk && (
           <div style={{
-            position: 'absolute', zIndex: 10, left: 0, right: 0, marginTop: 2,
-            maxHeight: 200, overflowY: 'auto',
-            border: '1px solid #bbb', borderRadius: 4, backgroundColor: '#fff',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+            position: 'absolute', zIndex: 10, left: 0, right: 0, marginTop: '0.125rem',
+            maxHeight: '12.5rem', overflowY: 'auto',
+            border: '0.0625rem solid #bbb', borderRadius: '0.25rem', backgroundColor: '#fff',
+            boxShadow: '0 0.125rem 0.375rem rgba(0,0,0,0.15)',
           }}>
             {availableStates.map(st => (
               <label
                 key={st}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '4px 8px', cursor: 'pointer', fontSize: 13,
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.25rem 0.5rem', cursor: 'pointer', fontSize: '0.8125rem',
                 }}
               >
                 <input
@@ -272,7 +272,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
       </div>
 
       {/* ── Date range ── */}
-      <div style={{ marginBottom: 12, opacity: onlyTier4 ? 0.4 : 1 }}>
+      <div style={{ marginBottom: '0.75rem', opacity: onlyTier4 ? 0.4 : 1 }}>
         <label htmlFor="startDate">Start Date:</label>
         <input
           id="startDate"
@@ -280,11 +280,11 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           value={filters.startDate}
           onChange={handleStartDateChange}
           disabled={onlyTier4}
-          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit' }}
         />
       </div>
 
-      <div style={{ marginBottom: 12, opacity: onlyTier4 ? 0.4 : 1 }}>
+      <div style={{ marginBottom: '0.75rem', opacity: onlyTier4 ? 0.4 : 1 }}>
         <label htmlFor="endDate">End Date:</label>
         <input
           id="endDate"
@@ -292,17 +292,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           value={filters.endDate}
           onChange={handleEndDateChange}
           disabled={onlyTier4}
-          style={{ display: 'block', marginTop: 4, fontFamily: 'inherit' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit' }}
         />
         {onlyTier4 && (
-          <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
             Tier 4 is synthetic — no observation date
           </span>
         )}
       </div>
 
       {/* ── Return Period ── */}
-      <div style={{ marginBottom: 12, opacity: tier4Selected ? 1 : 0.4 }}>
+      <div style={{ marginBottom: '0.75rem', opacity: tier4Selected ? 1 : 0.4 }}>
         <label htmlFor="returnPeriod">Return Period:</label>
         <select
           id="returnPeriod"
@@ -310,20 +310,20 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           onChange={handleReturnPeriodChange}
           disabled={!tier4Selected}
           style={{
-            display: 'block', marginTop: 4, fontFamily: 'inherit',
+            display: 'block', marginTop: '0.25rem', fontFamily: 'inherit',
             cursor: tier4Selected ? 'pointer' : 'default',
           }}
         >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>
-        <span style={{ fontSize: 11, color: '#666', marginTop: 3, display: 'block' }}>
+        <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
           Only applies to Tier 4 (BLE)
         </span>
       </div>
 
       {/* ── Actions ── */}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: '1rem' }}>
         <button onClick={onResetFilters} style={btnStyle}>
           Reset Filters
         </button>
@@ -336,7 +336,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
 const infoBadgeStyle: React.CSSProperties = {
   display: 'inline-block',
   verticalAlign: 'super',
-  marginLeft: 2,
+  marginLeft: '0.125rem',
   cursor: 'pointer',
 };
 
@@ -345,23 +345,23 @@ const tooltipStyle: React.CSSProperties = {
   zIndex: 10000,
   background: '#ffffff',
   color: '#222',
-  padding: '8px 10px',
-  borderRadius: 4,
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
-  fontSize: 12,
+  padding: '0.5rem 0.625rem',
+  borderRadius: '0.25rem',
+  boxShadow: '0 0.125rem 0.5rem rgba(0, 0, 0, 0.18)',
+  fontSize: '0.75rem',
   lineHeight: 1.45,
-  maxWidth: 260,
+  maxWidth: '16.25rem',
   pointerEvents: 'none',
   transform: 'translateY(-50%)',
 };
 
 const btnStyle: React.CSSProperties = {
-  padding: '6px 10px',
-  fontSize: 13,
+  padding: '0.375rem 0.625rem',
+  fontSize: '0.8125rem',
   fontFamily: 'inherit',
   cursor: 'pointer',
-  border: '1px solid #bbb',
-  borderRadius: 4,
+  border: '0.0625rem solid #bbb',
+  borderRadius: '0.25rem',
   backgroundColor: '#fff',
 };
 

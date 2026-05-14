@@ -148,7 +148,7 @@ function compareRecords(a: FIMRecord, b: FIMRecord, key: SortKey, dir: SortDir):
 type ColDef = {
   label: string;
   sortKey?: SortKey;
-  width: number;
+  width: string;
   align?: 'left' | 'right';
   render: (r: FIMRecord) => React.ReactNode;
 };
@@ -296,18 +296,18 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
-    { label: 'River / Basin', sortKey: 'riverBasin',   width: 180, render: r => r.riverBasin },
-    { label: 'State',         sortKey: 'state',        width: 110, render: r => r.state },
-    { label: 'Year',          sortKey: 'year',         width: 55,  align: 'right', render: r => r.year },
-    { label: 'Date',          sortKey: 'date',         width: 95,  render: r => r.date },
-    { label: 'Return Period', sortKey: 'returnPeriod', width: 95,  align: 'right',
+    { label: 'River / Basin', sortKey: 'riverBasin',   width: '11.25rem', render: r => r.riverBasin },
+    { label: 'State',         sortKey: 'state',        width: '6.875rem', render: r => r.state },
+    { label: 'Year',          sortKey: 'year',         width: '3.4375rem',  align: 'right', render: r => r.year },
+    { label: 'Date',          sortKey: 'date',         width: '5.9375rem',  render: r => r.date },
+    { label: 'Return Period', sortKey: 'returnPeriod', width: '5.9375rem',  align: 'right',
       render: r => r.returnPeriod != null ? `${r.returnPeriod}-year` : '—' },
-    { label: 'Resolution (m)',sortKey: 'resolution',   width: 90,  align: 'right',
+    { label: 'Resolution (m)',sortKey: 'resolution',   width: '5.625rem',  align: 'right',
       render: r => Number(r.resolution).toFixed(2) },
-    { label: 'HUC8',          sortKey: 'huc8',         width: 130, render: r => r.huc8 },
-    { label: 'Quality',       sortKey: 'quality',      width: 80,  render: r => r.quality === 'HWM' ? 'High Water FIM' : r.quality },
-    { label: 'Platform',      sortKey: 'platform',     width: 180, render: r => r.platform },
-    { label: 'Zoom',          width: 70,
+    { label: 'HUC8',          sortKey: 'huc8',         width: '8.125rem', render: r => r.huc8 },
+    { label: 'Quality',       sortKey: 'quality',      width: '5rem',  render: r => r.quality === 'HWM' ? 'High Water FIM' : r.quality },
+    { label: 'Platform',      sortKey: 'platform',     width: '11.25rem', render: r => r.platform },
+    { label: 'Zoom',          width: '4.375rem',
       render: r => (
         <button
           onClick={(e) => { e.stopPropagation(); if (r.bbox) onZoomToFeature?.(r.bbox); }}
@@ -316,7 +316,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
             ...tableHeaderBtnStyle,
             opacity: r.bbox ? 1 : 0.4,
             cursor: r.bbox ? 'pointer' : 'default',
-            padding: '2px 8px',
+            padding: '0.125rem 0.5rem',
           }}
           title={r.bbox ? 'Zoom map to this feature' : 'No bounding box available'}
         >
@@ -324,9 +324,9 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
         </button>
       ),
     },
-    { label: 'Download FIM',  width: 90,
+    { label: 'Download FIM',  width: '5.625rem',
       render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
-    { label: 'Info',           width: 60,
+    { label: 'Info',           width: '3.75rem',
       render: r => (
         <button
           onClick={(e) => { e.stopPropagation(); setInfoRecord(r); }}
@@ -351,13 +351,13 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
 
   if (features.length === 0) return (
     <div style={containerStyle}>
-      <p style={{ color: '#888', padding: 12 }}>No FIM extents visible in current map view.</p>
+      <p style={{ color: '#888', padding: '0.75rem' }}>No FIM extents visible in current map view.</p>
     </div>
   );
 
   if (loading) return (
     <div style={containerStyle}>
-      <p style={{ padding: 12 }}>⏳ Loading records…</p>
+      <p style={{ padding: '0.75rem' }}>⏳ Loading records…</p>
     </div>
   );
 
@@ -368,11 +368,11 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     <div style={containerStyle}>
 
       {/* Header */}
-      <div style={{ padding: '6px 12px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+      <div style={{ padding: '0.375rem 0.75rem', borderBottom: '0.0625rem solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong>FIM Records ({records.length})</strong>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {downloadProgress ? (
-            <span style={{ fontSize: 13, color: '#555' }}>
+            <span style={{ fontSize: '0.8125rem', color: '#555' }}>
               Downloading {downloadProgress.done} / {downloadProgress.total}…
             </span>
           ) : (
@@ -406,7 +406,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
 
       {/* Table */}
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem', tableLayout: 'fixed' }}>
           <colgroup>
             {allColumns.map((col, i) => (
               <col key={i} style={{ width: col.width }} />
@@ -472,7 +472,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
 // ── Download icon (same SVG as map centroid popup buttons) ────
 function DownloadIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, display: 'block' }}>
+    <svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, display: 'block' }}>
       <path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
@@ -528,14 +528,14 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
     <div style={modalBackdropStyle} onClick={onClose}>
       <div style={modalCardStyle} onClick={e => e.stopPropagation()}>
         <div style={modalHeaderStyle}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>FIM Record — {record.siteId}</span>
+          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>FIM Record — {record.siteId}</span>
           <button style={modalCloseBtnStyle} onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div style={modalBodyStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
             <tbody>
               {rows.map(([label, value]) => (
-                <tr key={label} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                <tr key={label} style={{ borderBottom: '0.0625rem solid #f0f0f0' }}>
                   <td style={modalLabelCellStyle}>{label}</td>
                   <td style={modalValueCellStyle}>{value}</td>
                 </tr>
@@ -559,7 +559,7 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
 // ── Sort indicator icon ───────────────────────────────────────
 function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
-    <span style={{ marginLeft: 4, opacity: active ? 1 : 0.3, fontSize: 10 }}>
+    <span style={{ marginLeft: '0.25rem', opacity: active ? 1 : 0.3, fontSize: '0.625rem' }}>
       {active ? (dir === 'asc' ? '▲' : '▼') : '⇅'}
     </span>
   );
@@ -568,80 +568,80 @@ function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
 // ── Styles ────────────────────────────────────────────────────
 const tableHeaderBtnStyle: React.CSSProperties = {
   fontFamily: 'inherit',
-  fontSize: 13,
+  fontSize: '0.8125rem',
   cursor: 'pointer',
-  padding: '2px 8px',
-  border: '1px solid #bbb',
-  borderRadius: 4,
+  padding: '0.125rem 0.5rem',
+  border: '0.0625rem solid #bbb',
+  borderRadius: '0.25rem',
   backgroundColor: '#fff',
 };
 
 const containerStyle: React.CSSProperties = {
   height: '100%', overflow: 'hidden', display: 'flex',
-  flexDirection: 'column', backgroundColor: '#fff', borderTop: '2px solid #ccc',
+  flexDirection: 'column', backgroundColor: '#fff', borderTop: '0.125rem solid #ccc',
 };
 const thStyle: React.CSSProperties = {
-  padding: '6px 10px', textAlign: 'left', borderBottom: '2px solid #ccc',
+  padding: '0.375rem 0.625rem', textAlign: 'left', borderBottom: '0.125rem solid #ccc',
   whiteSpace: 'normal', wordBreak: 'break-word', position: 'sticky',
   top: 0,
 };
 const tdStyle: React.CSSProperties = {
-  padding: '5px 10px', borderBottom: '1px solid #eee',
+  padding: '0.3125rem 0.625rem', borderBottom: '0.0625rem solid #eee',
   whiteSpace: 'normal', wordBreak: 'break-word',
 };
 
 const infoBtnStyle: React.CSSProperties = {
   background: 'none', border: 'none', cursor: 'pointer',
-  fontSize: 15, color: '#666', padding: '0 2px', lineHeight: 1,
+  fontSize: '0.9375rem', color: '#666', padding: '0 0.125rem', lineHeight: 1,
 };
 
 const modalBackdropStyle: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 9500,
   backgroundColor: 'rgba(0,0,0,0.45)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  padding: 16,
+  padding: '1rem',
 };
 
 const modalCardStyle: React.CSSProperties = {
-  background: '#fff', borderRadius: 8,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-  width: '100%', maxWidth: 420,
+  background: '#fff', borderRadius: '0.5rem',
+  boxShadow: '0 0.5rem 2rem rgba(0,0,0,0.25)',
+  width: '100%', maxWidth: '26.25rem',
   display: 'flex', flexDirection: 'column', overflow: 'hidden',
 };
 
 const modalHeaderStyle: React.CSSProperties = {
   background: '#152428', color: '#D1EFF6',
-  padding: '12px 16px',
+  padding: '0.75rem 1rem',
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
 };
 
 const modalCloseBtnStyle: React.CSSProperties = {
   background: 'none', border: 'none', color: '#D1EFF6',
-  fontSize: 16, cursor: 'pointer', padding: '0 2px', lineHeight: 1,
+  fontSize: '1rem', cursor: 'pointer', padding: '0 0.125rem', lineHeight: 1,
 };
 
 const modalBodyStyle: React.CSSProperties = {
-  padding: '12px 16px', overflowY: 'auto', maxHeight: '60vh',
+  padding: '0.75rem 1rem', overflowY: 'auto', maxHeight: '60vh',
 };
 
 const modalLabelCellStyle: React.CSSProperties = {
-  fontWeight: 600, color: '#555', paddingRight: 12,
-  paddingTop: 6, paddingBottom: 6,
-  whiteSpace: 'nowrap', fontSize: 12, width: '40%',
+  fontWeight: 600, color: '#555', paddingRight: '0.75rem',
+  paddingTop: '0.375rem', paddingBottom: '0.375rem',
+  whiteSpace: 'nowrap', fontSize: '0.75rem', width: '40%',
 };
 
 const modalValueCellStyle: React.CSSProperties = {
-  color: '#222', paddingTop: 6, paddingBottom: 6, fontSize: 13,
+  color: '#222', paddingTop: '0.375rem', paddingBottom: '0.375rem', fontSize: '0.8125rem',
 };
 
 const modalFooterStyle: React.CSSProperties = {
-  padding: '12px 16px', borderTop: '1px solid #eee',
-  display: 'flex', gap: 10, justifyContent: 'flex-end',
+  padding: '0.75rem 1rem', borderTop: '0.0625rem solid #eee',
+  display: 'flex', gap: '0.625rem', justifyContent: 'flex-end',
 };
 
 const modalDlBtnStyle = (bg: string, color: string): React.CSSProperties => ({
-  display: 'inline-flex', alignItems: 'center', gap: 6,
-  padding: '5px 12px', fontSize: 13, fontFamily: 'inherit',
-  border: '1px solid rgba(0,0,0,0.12)', borderRadius: 4,
+  display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+  padding: '0.3125rem 0.75rem', fontSize: '0.8125rem', fontFamily: 'inherit',
+  border: '0.0625rem solid rgba(0,0,0,0.12)', borderRadius: '0.25rem',
   background: bg, color, cursor: 'pointer', fontWeight: 500,
 });

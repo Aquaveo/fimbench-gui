@@ -39,10 +39,10 @@ export default function HeaderBar() {
 
 const docLinkStyle: React.CSSProperties = {
   display: 'inline-block',
-  border: '2px solid #25C2DF',
-  borderRadius: '999px',
-  padding: '3px 12px',
-  fontSize: 13,
+  border: '0.125rem solid #25C2DF',
+  borderRadius: '62.4375rem',
+  padding: '0.1875rem 0.75rem',
+  fontSize: '0.8125rem',
   fontWeight: 600,
   color: '#25C2DF',
   textDecoration: 'none',
@@ -53,7 +53,7 @@ const headerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '8px 20px',
+  padding: '0.5rem 1.25rem',
   backgroundImage: 'url(/static/fimbench_gui/images/Header-HQ.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
@@ -64,14 +64,14 @@ const headerStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   margin: 0,
-  fontSize: 22,
+  fontSize: '1.375rem',
   fontWeight: 700,
-  letterSpacing: 0.5,
+  letterSpacing: '0.03125rem',
   color: '#152428',
 };
 
 const taglineStyle: React.CSSProperties = {
-  margin: '2px 0 0 0',
-  fontSize: 13,
+  margin: '0.125rem 0 0 0',
+  fontSize: '0.8125rem',
   color: '#1b4332',
 };
