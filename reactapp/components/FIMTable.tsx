@@ -19,8 +19,11 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
     ? huc8Raw.join(', ')
     : (typeof huc8Raw === 'string' ? huc8Raw : '—');
 
-  const fmt = (d: string) =>
-    d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : d;
+  const fmt = (d: string) => {
+    if (d.length === 8) return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
+    return d;
+  };
 
   const rawEvent  = asString(j['Flooding Event']);
   const startDate = asString(j['Start Date of the Flood']);
