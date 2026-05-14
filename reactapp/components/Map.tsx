@@ -1,4 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useColorMode } from '../src/context/colorMode';
+import { tierColors } from '../src/utils/tierColors';
 import maplibregl, {
   type ExpressionSpecification,
   type LngLatLike,
@@ -133,7 +135,7 @@ function buttonTextColor(hex: string): string {
   return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? '#152428' : '#ffffff';
 }
 
-const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMBench" header text
+const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMbench" header text
 
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
   const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
@@ -232,36 +234,28 @@ const CATALOG_URL = 'https://sdmlab.s3.amazonaws.com/FIM_Database/FIM_Viz/catalo
 const ZOOM_CROSSFADE_START = 7;
 const ZOOM_CROSSFADE_END   = 8;
 
-// Color per tier — distinct from the dark blue used for extents
-const TIER_CENTROID_COLORS: Record<string, string> = {
-  Tier_1: '#E74C3C',  // red
-  Tier_2: '#F39C12',  // orange
-  Tier_3: '#2ECC71',  // green
-  Tier_4: '#9B59B6',  // purple
-  HWM:    '#EC6FA3',  // pink
-};
 
+function buildTierColorExpr(colors: Record<string, string>): ExpressionSpecification {
+  return [
+    'match', ['get', 'tier'],
+    'Tier_1', colors.Tier_1,
+    'Tier_2', colors.Tier_2,
+    'Tier_3', colors.Tier_3,
+    'Tier_4', colors.Tier_4,
+    'HWM',    colors.HWM,
+    '#aaaaaa',
+  ];
+}
+
+// Keep a name-only lookup for labels (no colors here)
 const TIER_LABELS: Record<string, string> = {
   Tier_1: 'Tier 1',
   Tier_2: 'Tier 2',
   Tier_3: 'Tier 3',
   Tier_4: 'Tier 4',
-  HWM:    'High Water Mark',
+  HWM:    'High Water FIM',
 };
 
-// -----------------------------
-// Shared paint expressions
-// Extracted so they can be reused in both addLayer and setPaintProperty calls.
-// -----------------------------
-const TIER_COLOR_EXPR: ExpressionSpecification = [
-  'match', ['get', 'tier'],
-  'Tier_1', TIER_CENTROID_COLORS.Tier_1,
-  'Tier_2', TIER_CENTROID_COLORS.Tier_2,
-  'Tier_3', TIER_CENTROID_COLORS.Tier_3,
-  'Tier_4', TIER_CENTROID_COLORS.Tier_4,
-  'HWM',    TIER_CENTROID_COLORS.HWM,
-  '#aaaaaa',
-];
 
 const CENTROID_OPACITY_EXPR: ExpressionSpecification = [
   'interpolate', ['linear'], ['zoom'],
@@ -288,14 +282,16 @@ const TIER_SORT_EXPR: ExpressionSpecification = [
 ];
 
 // Applies (or resets) selection-emphasis paint properties on both layers.
-// Called both from the selectedSiteIds useEffect and inside map.on('load')
-// so that basemap switches re-apply the current selection state.
-function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
+// Takes tierColorExpr so colorMode changes re-apply the right palette.
+function applySelectionEmphasis(
+  map: maplibregl.Map,
+  siteIds: Set<string>,
+  tierColorExpr: ExpressionSpecification,
+) {
   if (!map.getLayer('centroids-layer') || !map.getLayer('fim-layer')) return;
 
   if (siteIds.size === 0) {
-    // Reset to default — no active selection
-    map.setPaintProperty('centroids-layer', 'circle-color', TIER_COLOR_EXPR);
+    map.setPaintProperty('centroids-layer', 'circle-color', tierColorExpr);
     map.setPaintProperty('centroids-layer', 'circle-opacity', CENTROID_OPACITY_EXPR);
     map.setPaintProperty('centroids-layer', 'circle-stroke-opacity', CENTROID_OPACITY_EXPR);
     map.setPaintProperty('centroids-layer', 'circle-radius', 7);
@@ -307,9 +303,8 @@ function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
   } else {
     const isSelected: ExpressionSpecification = ['in', ['get', 'site_id'], ['literal', [...siteIds]]];
 
-    // Centroids: selected stays in tier color and grows slightly; others fade to gray
     map.setPaintProperty('centroids-layer', 'circle-color', [
-      'case', isSelected, TIER_COLOR_EXPR, '#cccccc',
+      'case', isSelected, tierColorExpr, '#cccccc',
     ]);
     map.setPaintProperty('centroids-layer', 'circle-opacity', [
       'case', isSelected, 1, 0.2,
@@ -320,8 +315,6 @@ function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
     map.setPaintProperty('centroids-layer', 'circle-radius', [
       'case', isSelected, 9, 6,
     ]);
-
-    // Extents: selected stays in full blue; others become very faint gray
     map.setPaintProperty('fim-layer', 'fill-color', [
       'case', isSelected, '#0067E1', '#aaaaaa',
     ]);
@@ -333,7 +326,6 @@ function applySelectionEmphasis(map: maplibregl.Map, siteIds: Set<string>) {
       EXTENT_OPACITY_EXPR,
       ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
     ]);
-    // Selected features float above all tier-based ordering on both layers
     map.setLayoutProperty('centroids-layer', 'circle-sort-key', [
       'case', isSelected, 10, TIER_SORT_EXPR,
     ]);
@@ -404,12 +396,16 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   { filters, onFeaturesChange, onFeatureClick, onCatalogStates, onCatalogHuc8s, onCatalogDateBounds, onPruneSelections, selectedSiteIds },
   ref
 ) {
+  const { colorMode } = useColorMode();
+  const colorModeRef = useRef(colorMode);
+  useEffect(() => { colorModeRef.current = colorMode; }, [colorMode]);
+
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const viewStateRef = useRef<ViewState>(DEFAULT_VIEW);
   const [basemap, setBasemap] =
     useState<keyof typeof BASEMAPS>('Topographic');
-  
+
   const catalogRef = useRef<CatalogRecord[]>([]);    // all catalog records, loaded once
   const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
@@ -544,6 +540,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // ── Centroid circle layer (visible below crossfade zone) ──
+      const initTierColorExpr = buildTierColorExpr(tierColors(colorModeRef.current));
       map.addLayer({
         id: 'centroids-layer',
         type: 'circle',
@@ -553,7 +550,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         },
         paint: {
           'circle-radius': 7,
-          'circle-color': TIER_COLOR_EXPR,
+          'circle-color': initTierColorExpr,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1.5,
           'circle-opacity': CENTROID_OPACITY_EXPR,
@@ -703,7 +700,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)
-      applySelectionEmphasis(map, selectedSiteIdsRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)));
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -865,8 +862,15 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     selectedSiteIdsRef.current = ids;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, ids);
+    applySelectionEmphasis(map, ids, buildTierColorExpr(tierColors(colorModeRef.current)));
   }, [selectedSiteIds]);
+
+  // Re-apply tier colors whenever the color mode changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorMode)));
+  }, [colorMode]);
 
   useImperativeHandle(ref, () => ({
     zoomToBbox: (bbox) => {
@@ -929,7 +933,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
           fontSize: 12,
           lineHeight: 1.6,
-          pointerEvents: 'none', // don't block map interaction
+          pointerEvents: 'none',
         }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>FIM Tiers</div>
           {filters.tiers.map(tier => (
@@ -939,7 +943,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
                 width: 12,
                 height: 12,
                 borderRadius: '50%',
-                backgroundColor: TIER_CENTROID_COLORS[tier] ?? '#aaa',
+                backgroundColor: tierColors(colorMode)[tier] ?? '#aaa',
                 flexShrink: 0,
               }} />
               <span>{TIER_LABELS[tier] ?? tier}</span>

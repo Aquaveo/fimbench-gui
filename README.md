@@ -1,4 +1,4 @@
-# FIMBench GUI
+# FIMbench GUI
 
 A React-based single-page application (SPA) for visualizing and downloading **Flood Inundation Maps (FIMs)**, integrated with the **Tethys Platform** backend. Users explore benchmark FIM datasets hosted in the SDML S3 bucket, browsing raster, vector, and metadata files across four quality tiers and High Water Mark (HWM)–derived maps.
 
@@ -10,7 +10,7 @@ A React-based single-page application (SPA) for visualizing and downloading **Fl
   <img src="tethysapp/fimbench_gui/public/images/FIMBench_Architecture.png" width="700">
 </p>
 
-This is a Tethys Platform 4 (Django-based) backend serving a React/TypeScript SPA built with Vite. The backend exposes two controllers: a catch-all route that renders the SPA shell, and a tile-proxy endpoint that forwards gzip-compressed Mapbox Vector Tiles from MinIO (or, eventually, S3) to the browser. There is no database, no user auth, and no ORM — the app is a read-only visualization layer over the FIMBench catalog.
+This is a Tethys Platform 4 (Django-based) backend serving a React/TypeScript SPA built with Vite. The backend exposes two controllers: a catch-all route that renders the SPA shell, and a tile-proxy endpoint that forwards gzip-compressed Mapbox Vector Tiles from MinIO (or, eventually, S3) to the browser. There is no database, no user auth, and no ORM — the app is a read-only visualization layer over the FIMbench catalog.
 
 ---
 
@@ -76,7 +76,7 @@ Supported combinations, per the original specification:
 
 ---
 
-## FIMBench Data
+## FIMbench Data
 
 Benchmark FIMs are drawn from the SDML bucket and include:
 
@@ -143,7 +143,7 @@ Upcoming work, in rough priority order:
 
 ## Contact
 
-For questions on **FIMBench** (data, methodology, access requests):
+For questions on **FIMbench** (data, methodology, access requests):
 
 - [Dr. Sagy Cohen](mailto:sagy.cohen@ua.edu)
 - [Dr. Anupal Baruah](mailto:abaruah@ua.edu)

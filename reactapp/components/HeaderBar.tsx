@@ -8,12 +8,12 @@ export default function HeaderBar() {
     <header style={headerStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <img
-          src="/static/fimbench_gui/images/FIMBench_UC_logo_cropped.png"
-          alt="FIMBench logo"
+          src="/static/fimbench_gui/images/android-chrome-512x512.png"
+          alt="FIMbench logo"
           style={{ height: '2.5rem', objectFit: 'contain' }}
         />
         <div>
-          <h1 style={titleStyle}>FIMBench</h1>
+          <h1 style={titleStyle}>FIMbench</h1>
           <p style={taglineStyle}>
             Explore and download benchmark Flood Inundation Maps across the U.S.
           </p>
@@ -54,7 +54,10 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 20px',
-  background: '#FFFFFF',
+  backgroundImage: 'url(/static/fimbench_gui/images/Header-trial.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
   color: '#D1EFF6',
   flexShrink: 0,
 };
