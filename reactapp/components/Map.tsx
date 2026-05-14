@@ -15,6 +15,7 @@ import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 import { pickContrastColor } from '../src/utils/contrast';
 import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
 import { COLORS } from '../src/theme';
+import { formatYmd } from '../src/utils/dateFormat';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -122,10 +123,10 @@ function dateOrReturnPeriod(rec: Partial<CatalogRecord>): { label: string; value
   if (rp != null && rp !== '') {
     return { label: 'Return Period', value: `${rp}-year` };
   }
-  const single = typeof rec?.date_ymd === 'string' ? rec.date_ymd : '';
+  const single = typeof rec?.date_ymd === 'string' ? formatYmd(rec.date_ymd) : '';
   if (single) return { label: 'Date', value: single };
-  const s = typeof rec?.start_date_ymd === 'string' ? rec.start_date_ymd : '';
-  const e = typeof rec?.end_date_ymd   === 'string' ? rec.end_date_ymd   : '';
+  const s = typeof rec?.start_date_ymd === 'string' ? formatYmd(rec.start_date_ymd) : '';
+  const e = typeof rec?.end_date_ymd   === 'string' ? formatYmd(rec.end_date_ymd)   : '';
   if (s && e) return { label: 'Date', value: `${s} – ${e}` };
   if (s)      return { label: 'Date', value: s };
   if (e)      return { label: 'Date', value: e };

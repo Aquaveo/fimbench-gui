@@ -7,6 +7,7 @@ import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
 import { toggleInSet } from '../src/utils/toggle';
 import { useEscapeKey } from '../src/hooks/useEscapeKey';
+import { formatYmd } from '../src/utils/dateFormat';
 
 const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
 const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
@@ -23,12 +24,6 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
     ? huc8Raw.join(', ')
     : (typeof huc8Raw === 'string' ? huc8Raw : '—');
 
-  const fmt = (d: string) => {
-    if (d.length === 8) return `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`;
-    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0, 10);
-    return d;
-  };
-
   const rawEvent  = asString(j['Flooding Event']);
   const startDate = asString(j['Start Date of the Flood']);
   const endDate   = asString(j['End Date of the Flood']);
@@ -40,14 +35,14 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
 
   if (rawEvent) {
     year = rawEvent.slice(0, 4);
-    date = fmt(rawEvent);
-    dateSortKey = fmt(rawEvent);           // already YYYY-MM-DD
+    date = formatYmd(rawEvent);
+    dateSortKey = formatYmd(rawEvent);
   } else if (startDate) {
     year = startDate.slice(0, 4);
     date = endDate && endDate !== startDate
-      ? `${fmt(startDate)} – ${fmt(endDate)}`
-      : fmt(startDate);
-    dateSortKey = fmt(startDate);
+      ? `${formatYmd(startDate)} – ${formatYmd(endDate)}`
+      : formatYmd(startDate);
+    dateSortKey = formatYmd(startDate);
   }
 
   let platform =
