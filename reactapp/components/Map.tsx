@@ -10,8 +10,9 @@ import maplibregl, {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Filters } from '../src/types/filters';
 import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
-import { isValidHuc8 } from '../src/types/catalog';
+import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
+import { pickContrastColor } from '../src/utils/contrast';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -87,6 +88,21 @@ function dateMatches(record: CatalogRecord, startDate: string, endDate: string):
   return true;  // no valid date info — include
 }
 
+// Single source of truth for whether a catalog record passes the active filters.
+// HUC mode (valid 8-digit huc8Id) bypasses state and date checks — HUC-based
+// filtering is logically separate per the original filter spec.
+function recordMatchesFilters(rec: CatalogRecord, f: Filters): boolean {
+  const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = f;
+  if (!tiers.includes(rec.tier)) return false;
+  if (!returnPeriodMatches(rec, returnPeriod)) return false;
+  if (isValidHuc8(huc8Id)) {
+    return toHuc8Array(rec).some(h => h === huc8Id);
+  }
+  if (!stateMatches(rec.state, states)) return false;
+  if (!dateMatches(rec, startDate, endDate)) return false;
+  return true;
+}
+
 // Escape HTML so catalog-sourced strings can't inject markup into the tooltip.
 function escapeHtml(s: unknown): string {
   return String(s ?? '')
@@ -127,13 +143,9 @@ function toDisplayStr(v: string | string[] | undefined): string {
 const DOWNLOAD_ICON_SVG = `<svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // Returns '#ffffff' or '#152428' depending on whether the hex background color
-// is dark or light, using the YIQ perceived-brightness formula.
-function buttonTextColor(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? '#152428' : '#ffffff';
-}
+// is dark or light. Uses the standard 128 luminance midpoint.
+const buttonTextColor = (hex: string) =>
+  pickContrastColor(hex, { onLight: '#152428' });
 
 const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMbench" header text
 
@@ -414,26 +426,10 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const filtersRef = useRef(filters);
 
   const buildCentroidGeoJSON = (f: Filters) => {
-    const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = f;
-    const isHucMode = isValidHuc8(huc8Id);
-
     return {
       type: 'FeatureCollection' as const,
       features: catalogRef.current
-        .filter(r => {
-          if (!tiers.includes(r.tier)) return false;
-          if (!returnPeriodMatches(r, returnPeriod)) return false;
-          if (isHucMode) {
-            const huc8s: string[] = Array.isArray(r.huc8)
-              ? r.huc8.map(String)
-              : r.huc8 ? [String(r.huc8)] : [];
-            return huc8s.some(h => h === huc8Id);
-          } else {
-            if (!stateMatches(r.state, states)) return false;
-            if (!dateMatches(r, startDate, endDate)) return false;
-          }
-          return true;
-        })
+        .filter(r => recordMatchesFilters(r, f))
         .map(r => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: r.centroid },
@@ -488,24 +484,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       if (!onFeaturesChange) return;
 
       // Build allowed site_ids from catalog using current filters
-      const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filtersRef.current;
-      const isHucMode = isValidHuc8(huc8Id);
       const allowedIds = new Set<string>(
         catalogRef.current
-          .filter(r => {
-            if (!tiers.includes(r.tier)) return false;
-            if (!returnPeriodMatches(r, returnPeriod)) return false;
-            if (isHucMode) {
-              const huc8s: string[] = Array.isArray(r.huc8)
-                ? r.huc8.map(String)
-                : r.huc8 ? [String(r.huc8)] : [];
-              return huc8s.some(h => h === huc8Id);
-            } else {
-              if (!stateMatches(r.state, states)) return false;
-              if (!dateMatches(r, startDate, endDate)) return false;
-            }
-            return true;
-          })
+          .filter(r => recordMatchesFilters(r, filtersRef.current))
           .map(r => r.site_id as string)
       );
 
@@ -744,11 +725,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         // Emit unique HUC8 codes as a Set for O(1) membership checks.
         // HUC8 values stay as strings (leading zeros are significant).
         if (onCatalogHuc8s) {
-          const all = catalogRef.current.flatMap(r =>
-            Array.isArray(r.huc8)
-              ? r.huc8.map(String)
-              : r.huc8 ? [String(r.huc8)] : []
-          );
+          const all = catalogRef.current.flatMap(toHuc8Array);
           onCatalogHuc8s(new Set(all));
         }
 
@@ -797,20 +774,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       if (isHucMode || states.length > 0 || hasDateConstraint || returnPeriod) {
         // Use catalog to compute allowed site_ids
         const allowedSiteIds = catalogRef.current
-          .filter(r => {
-            if (!tiers.includes(r.tier)) return false;
-            if (!returnPeriodMatches(r, returnPeriod)) return false;
-            if (isHucMode) {
-              const huc8s: string[] = Array.isArray(r.huc8)
-                ? r.huc8.map(String)
-                : r.huc8 ? [String(r.huc8)] : [];
-              return huc8s.some(h => h === huc8Id);
-            } else {
-              if (!stateMatches(r.state, states)) return false;
-              if (!dateMatches(r, startDate, endDate)) return false;
-            }
-            return true;
-          })
+          .filter(r => recordMatchesFilters(r, filters))
           .map(r => r.site_id as string);
         map.setFilter('fim-layer', [
           'in', ['get', 'site_id'], ['literal', allowedSiteIds]
@@ -835,18 +799,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       for (const id of currentIds) {
         const rec = catalogRef.current.find(r => r.site_id === id);
         if (!rec) continue;
-        const tierOk = tiers.includes(rec.tier);
-        const rpOk   = returnPeriodMatches(rec, returnPeriod);
-        const stateOk = isHucMode || stateMatches(rec.state, states);
-        const dateOk  = isHucMode || dateMatches(rec, startDate, endDate);
-        let huc8Ok = true;
-        if (isHucMode) {
-          const huc8s: string[] = Array.isArray(rec.huc8)
-            ? rec.huc8.map(String)
-            : rec.huc8 ? [String(rec.huc8)] : [];
-          huc8Ok = huc8s.some(h => h === huc8Id);
-        }
-        if (!tierOk || !rpOk || !huc8Ok || !stateOk || !dateOk) toPrune.push(id);
+        if (!recordMatchesFilters(rec, filters)) toPrune.push(id);
       }
       if (toPrune.length > 0) onPruneSelections?.(toPrune);
     }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useColorMode, type ColorMode } from '../src/context/colorMode';
 import { TIER_PALETTES, TIER_KEYS } from '../src/utils/tierColors';
+import { pickContrastColor } from '../src/utils/contrast';
 
 const EYE_FILL_COLORS: Record<ColorMode, string | null> = {
   default:    null,
@@ -9,12 +10,9 @@ const EYE_FILL_COLORS: Record<ColorMode, string | null> = {
   monochrome: '#C9C5C9',
 };
 
-function eyeStrokeFor(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#000000' : '#ffffff';
-}
+// Slightly higher threshold (150 vs the default 128) tuned for the
+// medium-saturation fill colors above — picks white strokes more aggressively.
+const eyeStrokeFor = (hex: string) => pickContrastColor(hex, { threshold: 150 });
 
 const MODES: { id: ColorMode; name: string; sub: string }[] = [
   { id: 'default',    name: 'Default',     sub: '' },

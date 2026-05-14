@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useColorMode } from '../src/context/colorMode';
 import { tierColors } from '../src/utils/tierColors';
+import TierBadge from './TierBadge';
 
 type Props = { onClose: (dontShowAgain: boolean) => void };
 
@@ -73,7 +74,7 @@ export default function WelcomeModal({ onClose }: Props) {
 
           <div style={tierLegendStyle}>
             {TIERS.map(t => (
-              <span key={t.key} style={tierBadgeStyle(tierPalette[t.key] ?? '#aaa')}>{t.label}</span>
+              <TierBadge key={t.key} color={tierPalette[t.key] ?? '#aaa'}>{t.label}</TierBadge>
             ))}
           </div>
 
@@ -182,11 +183,6 @@ const listStyle: React.CSSProperties = {
 const tierLegendStyle: React.CSSProperties = {
   display: 'flex', flexWrap: 'wrap', gap: '0.375rem', marginBottom: '1rem',
 };
-
-const tierBadgeStyle = (color: string): React.CSSProperties => ({
-  display: 'inline-block', padding: '0.125rem 0.625rem', borderRadius: '0.75rem',
-  backgroundColor: color, color: '#fff', fontSize: '0.75rem', fontWeight: 600,
-});
 
 const docsCalloutStyle: React.CSSProperties = {
   background: '#f0fbfd',

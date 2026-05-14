@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
+import TierBadge from '../components/TierBadge';
 import { useColorMode } from './context/colorMode';
 import { tierColors } from './utils/tierColors';
 
@@ -943,18 +944,6 @@ export default function DocsPage() {
       </div>
       <Footer />
     </div>
-  );
-}
-
-// ── Small helper for tier colour badges ───────────────────────
-function TierBadge({ color, children }: { color: string; children: React.ReactNode }) {
-  return (
-    <span style={{
-      display: 'inline-block', padding: '0.125rem 0.75rem', borderRadius: '0.75rem',
-      backgroundColor: color, color: '#fff', fontSize: '0.75rem', fontWeight: 600,
-    }}>
-      {children}
-    </span>
   );
 }
 
