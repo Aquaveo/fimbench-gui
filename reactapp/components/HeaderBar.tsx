@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useMatch } from 'react-router-dom';
+import { COLORS } from '../src/theme';
 
 export default function HeaderBar() {
   const onDocs = !!useMatch('/docs');
@@ -24,8 +25,8 @@ export default function HeaderBar() {
           to="/docs"
           style={{
             ...docLinkStyle,
-            backgroundColor: hovered || onDocs ? '#1da8c4' : '#25C2DF',
-            color: '#152428',
+            backgroundColor: hovered || onDocs ? COLORS.brandHover : COLORS.brand,
+            color: COLORS.ink,
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -39,12 +40,12 @@ export default function HeaderBar() {
 
 const docLinkStyle: React.CSSProperties = {
   display: 'inline-block',
-  border: '0.125rem solid #25C2DF',
+  border: `0.125rem solid ${COLORS.brand}`,
   borderRadius: '62.4375rem',
   padding: '0.1875rem 0.75rem',
   fontSize: '0.8125rem',
   fontWeight: 600,
-  color: '#25C2DF',
+  color: COLORS.brand,
   textDecoration: 'none',
   lineHeight: 1.5,
 };
@@ -58,7 +59,7 @@ const headerStyle: React.CSSProperties = {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
-  color: '#D1EFF6',
+  color: COLORS.inkLight,
   flexShrink: 0,
 };
 
@@ -67,11 +68,11 @@ const titleStyle: React.CSSProperties = {
   fontSize: '1.375rem',
   fontWeight: 700,
   letterSpacing: '0.03125rem',
-  color: '#152428',
+  color: COLORS.ink,
 };
 
 const taglineStyle: React.CSSProperties = {
   margin: '0.125rem 0 0 0',
   fontSize: '0.8125rem',
-  color: '#1b4332',
+  color: COLORS.taglineGreen,
 };

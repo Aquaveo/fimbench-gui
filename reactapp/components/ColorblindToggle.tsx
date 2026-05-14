@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useColorMode, type ColorMode } from '../src/context/colorMode';
 import { TIER_PALETTES, TIER_KEYS } from '../src/utils/tierColors';
 import { pickContrastColor } from '../src/utils/contrast';
+import { COLORS } from '../src/theme';
 
 const EYE_FILL_COLORS: Record<ColorMode, string | null> = {
   default:    null,
@@ -53,7 +54,7 @@ export default function ColorblindToggle() {
                 style={{
                   ...optionStyle,
                   background: selected ? '#e8f5f8' : '#fff',
-                  borderLeft: selected ? '0.1875rem solid #25C2DF' : '0.1875rem solid transparent',
+                  borderLeft: selected ? `0.1875rem solid ${COLORS.brand}` : '0.1875rem solid transparent',
                 }}
               >
                 <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.25rem' }}>
@@ -71,7 +72,7 @@ export default function ColorblindToggle() {
                   ))}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem' }}>
-                  <span style={{ fontWeight: selected ? 700 : 500, fontSize: '0.8125rem', color: '#152428' }}>
+                  <span style={{ fontWeight: selected ? 700 : 500, fontSize: '0.8125rem', color: COLORS.ink }}>
                     {m.name}
                   </span>
                   {m.sub && (
@@ -144,8 +145,8 @@ const panelStyle: React.CSSProperties = {
 };
 
 const panelHeaderStyle: React.CSSProperties = {
-  background: '#152428',
-  color: '#D1EFF6',
+  background: COLORS.ink,
+  color: COLORS.inkLight,
   padding: '0.5rem 0.875rem',
   fontSize: '0.75rem',
   fontWeight: 700,

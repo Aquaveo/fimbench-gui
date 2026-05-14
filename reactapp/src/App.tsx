@@ -8,6 +8,7 @@ import FIMTable from '../components/FIMTable';
 import WelcomeModal from '../components/WelcomeModal';
 import type { FeatureProperties } from './types/catalog';
 import './App.css';
+import { toggleInSet } from './utils/toggle';
 
 function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -60,12 +61,7 @@ function App() {
   }, []);
 
   const toggleSelection = (siteId: string) => {
-    setSelectedSiteIds(prev => {
-      const next = new Set(prev);
-      if (next.has(siteId)) next.delete(siteId);
-      else next.add(siteId);
-      return next;
-    });
+    setSelectedSiteIds(prev => toggleInSet(prev, siteId));
   };
 
   const handleFeatureClick = (feature: FeatureProperties | null, additive = false) => {

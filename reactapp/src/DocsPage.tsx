@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import TierBadge from '../components/TierBadge';
+import { COLORS } from './theme';
 import { useColorMode } from './context/colorMode';
 import { tierColors } from './utils/tierColors';
 
@@ -1000,14 +1001,14 @@ const backLinkStyle: React.CSSProperties = {
   display: 'inline-block',
   marginBottom: '1.25rem',
   fontSize: '0.8125rem',
-  color: '#152428',
+  color: COLORS.ink,
 };
 
 const pageTitleStyle: React.CSSProperties = {
   fontSize: '1.75rem',
   fontWeight: 700,
   margin: '0 0 1.25rem',
-  color: '#25C2DF',
+  color: COLORS.brand,
 };
 
 const tocTitleStyle: React.CSSProperties = {
@@ -1043,7 +1044,7 @@ const h2Style: React.CSSProperties = {
   fontSize: '1.25rem',
   fontWeight: 700,
   margin: '0 0 0.75rem',
-  color: '#152428',
+  color: COLORS.ink,
   borderBottom: '0.0625rem solid #e0e0e0',
   paddingBottom: '0.25rem',
 };
@@ -1106,7 +1107,7 @@ const summaryStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   cursor: 'pointer',
   background: '#f6f8fa',
-  color: '#152428',
+  color: COLORS.ink,
   userSelect: 'none',
   listStyle: 'none',
 };

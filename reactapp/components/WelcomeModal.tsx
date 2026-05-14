@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useColorMode } from '../src/context/colorMode';
 import { tierColors } from '../src/utils/tierColors';
 import TierBadge from './TierBadge';
+import { COLORS } from '../src/theme';
+import { TIER_KEYS, TIER_LABELS } from '../src/utils/tierColors';
+import { useEscapeKey } from '../src/hooks/useEscapeKey';
 
 type Props = { onClose: (dontShowAgain: boolean) => void };
 
@@ -10,11 +13,7 @@ export default function WelcomeModal({ onClose }: Props) {
   const { colorMode } = useColorMode();
   const tierPalette = tierColors(colorMode);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(dontShow); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose, dontShow]);
+  useEscapeKey(() => onClose(dontShow));
 
   return (
     <div style={backdropStyle} onClick={() => onClose(dontShow)} role="dialog" aria-modal="true" aria-label="Welcome to FIMbench">
@@ -23,7 +22,7 @@ export default function WelcomeModal({ onClose }: Props) {
       <svg
         viewBox="0 0 375.01 375.01"
         preserveAspectRatio="none"
-        fill="#25C2DF"
+        fill={COLORS.brand}
         aria-hidden="true"
         style={floatingArrowStyle}
       >
@@ -103,13 +102,12 @@ export default function WelcomeModal({ onClose }: Props) {
   );
 }
 
-const TIERS = [
-  { key: 'Tier_1', label: 'Tier 1' },
-  { key: 'Tier_2', label: 'Tier 2' },
-  { key: 'Tier_3', label: 'Tier 3' },
-  { key: 'Tier_4', label: 'Tier 4 (BLE)' },
-  { key: 'HWM',    label: 'High Water FIM' },
-];
+// Welcome-modal-specific labels: annotate Tier 4 as "(BLE)" for first-time
+// readers; everything else uses the canonical label.
+const TIERS = TIER_KEYS.map(k => ({
+  key: k,
+  label: k === 'Tier_4' ? 'Tier 4 (BLE)' : TIER_LABELS[k],
+}));
 
 const floatingArrowStyle: React.CSSProperties = {
   position: 'absolute',
@@ -140,7 +138,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const cardHeaderStyle: React.CSSProperties = {
-  background: '#152428',
+  background: COLORS.ink,
   padding: '1.125rem 1.25rem 0.875rem 1.5rem',
   display: 'flex',
   alignItems: 'flex-start',
@@ -149,17 +147,17 @@ const cardHeaderStyle: React.CSSProperties = {
 };
 
 const titleStyle: React.CSSProperties = {
-  margin: 0, fontSize: '1.375rem', fontWeight: 700, letterSpacing: '0.03125rem', color: '#25C2DF',
+  margin: 0, fontSize: '1.375rem', fontWeight: 700, letterSpacing: '0.03125rem', color: COLORS.brand,
 };
 
 const taglineStyle: React.CSSProperties = {
-  margin: '0.25rem 0 0', fontSize: '0.8125rem', color: '#D1EFF6',
+  margin: '0.25rem 0 0', fontSize: '0.8125rem', color: COLORS.inkLight,
 };
 
 const closeBtnStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#D1EFF6',
+  color: COLORS.inkLight,
   fontSize: '1.125rem',
   lineHeight: 1,
   cursor: 'pointer',
@@ -194,13 +192,13 @@ const docsCalloutStyle: React.CSSProperties = {
 
 const docCircleStyle: React.CSSProperties = {
   display: 'inline-block',
-  border: '0.125rem solid #25C2DF',
+  border: `0.125rem solid ${COLORS.brand}`,
   borderRadius: '62.4375rem',
   padding: '0 0.4375rem',
   fontSize: '0.75rem',
   fontWeight: 600,
-  backgroundColor: '#25C2DF',
-  color: '#152428',
+  backgroundColor: COLORS.brand,
+  color: COLORS.ink,
   lineHeight: 1.6,
 };
 

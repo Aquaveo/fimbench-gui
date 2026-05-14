@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Filters } from '../src/types/filters';
 import { isValidHuc8 } from '../src/types/catalog';
+import { TIER_KEYS, TIER_LABELS } from '../src/utils/tierColors';
+import { toggleInArray } from '../src/utils/toggle';
 
 type FilterSidebarProps = {
   filters: Filters;
@@ -11,13 +13,7 @@ type FilterSidebarProps = {
   availableHuc8s: Set<string>;
 };
 
-const TIER_OPTIONS = [
-  { value: 'Tier_1', label: 'Tier 1' },
-  { value: 'Tier_2', label: 'Tier 2' },
-  { value: 'Tier_3', label: 'Tier 3' },
-  { value: 'Tier_4', label: 'Tier 4' },
-  { value: 'HWM',    label: 'High Water FIM' },
-];
+const TIER_OPTIONS = TIER_KEYS.map(k => ({ value: k, label: TIER_LABELS[k] }));
 
 const TIER_DESCRIPTIONS: Record<string, string> = {
   Tier_1: 'Very high-resolution NOAA imagery (20–50 cm)',
@@ -112,11 +108,7 @@ const addDays = (ymd: string, n: number): string => {
 export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates, availableHuc8s }: FilterSidebarProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
   const handleTierToggle = (value: string) => {
-    const already = filters.tiers.includes(value);
-    const updated = already
-      ? filters.tiers.filter(t => t !== value)
-      : [...filters.tiers, value];
-    setFilters({ ...filters, tiers: updated });
+    setFilters({ ...filters, tiers: toggleInArray(filters.tiers, value) });
   };
 
   const handleHuc8Change = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,11 +117,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   };
 
   const handleStateToggle = (value: string) => {
-    const already = filters.states.includes(value);
-    const updated = already
-      ? filters.states.filter(s => s !== value)
-      : [...filters.states, value];
-    setFilters({ ...filters, states: updated });
+    setFilters({ ...filters, states: toggleInArray(filters.states, value) });
   };
 
   const handleReturnPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

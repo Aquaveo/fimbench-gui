@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useColorMode } from '../src/context/colorMode';
-import { tierColors } from '../src/utils/tierColors';
+import { tierColors, TIER_LABELS } from '../src/utils/tierColors';
 import maplibregl, {
   type ExpressionSpecification,
   type LngLatLike,
@@ -13,6 +13,8 @@ import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalo
 import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 import { pickContrastColor } from '../src/utils/contrast';
+import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
+import { COLORS } from '../src/theme';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
 function parseStates(raw: unknown): string[] {
@@ -137,17 +139,12 @@ function toDisplayStr(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : '';
 }
 
-// Inlined download icon (from public/download-icon_svg-vector_svgrepo-com.svg).
-// stroke="currentColor" means the icon automatically inherits the button's CSS
-// text color, so it stays correct whether the button uses dark or white text.
-const DOWNLOAD_ICON_SVG = `<svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="M17 17H17.01M17.4 14H18C18.9319 14 19.3978 14 19.7654 14.1522C20.2554 14.3552 20.6448 14.7446 20.8478 15.2346C21 15.6022 21 16.0681 21 17C21 17.9319 21 18.3978 20.8478 18.7654C20.6448 19.2554 20.2554 19.6448 19.7654 19.8478C19.3978 20 18.9319 20 18 20H6C5.06812 20 4.60218 20 4.23463 19.8478C3.74458 19.6448 3.35523 19.2554 3.15224 18.7654C3 18.3978 3 17.9319 3 17C3 16.0681 3 15.6022 3.15224 15.2346C3.35523 14.7446 3.74458 14.3552 4.23463 14.1522C4.60218 14 5.06812 14 6 14H6.6M12 15V4M12 15L9 12M12 15L15 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-// Returns '#ffffff' or '#152428' depending on whether the hex background color
-// is dark or light. Uses the standard 128 luminance midpoint.
+// Returns '#ffffff' or the brand ink depending on whether the hex background
+// color is dark or light. Uses the standard 128 luminance midpoint.
 const buttonTextColor = (hex: string) =>
-  pickContrastColor(hex, { onLight: '#152428' });
+  pickContrastColor(hex, { onLight: COLORS.ink });
 
-const FIM_DOWNLOAD_COLOR = '#25C2DF'; // matches "FIMbench" header text
+const FIM_DOWNLOAD_COLOR = COLORS.brand; // matches "FIMbench" header text
 
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
   const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
@@ -260,13 +257,6 @@ function buildTierColorExpr(colors: Record<string, string>): ExpressionSpecifica
 }
 
 // Keep a name-only lookup for labels (no colors here)
-const TIER_LABELS: Record<string, string> = {
-  Tier_1: 'Tier 1',
-  Tier_2: 'Tier 2',
-  Tier_3: 'Tier 3',
-  Tier_4: 'Tier 4',
-  HWM:    'High Water FIM',
-};
 
 
 const CENTROID_OPACITY_EXPR: ExpressionSpecification = [
