@@ -63,7 +63,10 @@ export default function Footer() {
 
       {/* Right: copyright notice */}
       <p style={{ ...attributionStyle, flex: 1, textAlign: 'right' }}>
-        © 2026 FIMbench Contributors |{' '}
+        <a href="https://sdml.ua.edu/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+          © 2026 SDML
+        </a>{' '}
+        |{' '}
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
           CC BY 4.0
         </a>
