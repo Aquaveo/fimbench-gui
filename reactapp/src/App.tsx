@@ -64,6 +64,12 @@ function App() {
     setSelectedSiteIds(prev => toggleInSet(prev, siteId));
   };
 
+  const handleFiltersChange = (next: Filters) => {
+    setFilters(next);
+    setSelectedSiteIds(new Set());
+    mapRef.current?.resetSelectionVisuals?.();
+  };
+
   const handleFeatureClick = (feature: FeatureProperties | null, additive = false) => {
     if (!feature) { setSelectedSiteIds(new Set()); return; }
     if (additive) toggleSelection(feature.site_id);
@@ -106,6 +112,8 @@ function App() {
       startDate: catalogDateBounds?.minDate ?? '',
       endDate:   catalogDateBounds?.maxDate ?? '',
     });
+    setSelectedSiteIds(new Set());
+    mapRef.current?.resetSelectionVisuals?.();
   };
 
   return (
@@ -118,7 +126,7 @@ function App() {
       {/* Left sidebar */}
       <FilterSidebar
         filters={filters}
-        setFilters={setFilters}
+        setFilters={handleFiltersChange}
         onResetFilters={handleResetFilters}
         availableStates={availableStates}
         availableHuc8s={availableHuc8s}
