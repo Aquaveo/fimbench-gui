@@ -112,7 +112,7 @@ function AccessibilityIcon({ color }: { color: string }) {
 }
 
 const wrapperStyle: React.CSSProperties = {
-  position: 'fixed',
+  position: 'absolute',
   bottom: '1.75rem',
   right: '1rem',
   zIndex: 8500,

@@ -6,64 +6,71 @@ export default function Footer() {
   return (
     <footer style={footerStyle}>
 
-      {/* Logos section */}
-      <div style={logosSectionStyle}>
-        <div style={logosContainerStyle}>
-          <a href="https://ciroh.ua.edu/" target="_blank" rel="noreferrer">
-            <img
-              src={`${LOGO_BASE}/1_CIROH-Horizontal-Logo_AI-Canva-470x125px.png`}
-              alt="CIROH"
-              style={logoStyle}
-            />
-          </a>
+      {/* Left: MapLibre + Esri attribution */}
+      <p style={{ ...attributionStyle, flex: 1 }}>
+        Map powered by{' '}
+        <a href="https://maplibre.org" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+          MapLibre
+        </a>{' '}
+        | Basemap tiles ©{' '}
+        <a href="https://www.esri.com" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+          Esri
+        </a>
+      </p>
 
-          <a href="https://www.ua.edu/" target="_blank" rel="noreferrer">
-            <img
-              src={`${LOGO_BASE}/3_UA-University-of-Alabama_Logo.png`}
-              alt="University of Alabama"
-              style={logoStyle}
-            />
-          </a>
+      {/* Center: logos */}
+      <div style={logosContainerStyle}>
+        <a href="https://ciroh.ua.edu/" target="_blank" rel="noreferrer">
+          <img
+            src={`${LOGO_BASE}/1_CIROH-Horizontal-Logo_AI-Canva-470x125px.png`}
+            alt="CIROH"
+            style={logoStyle}
+          />
+        </a>
 
-          <a href="https://sdml.ua.edu/" target="_blank" rel="noreferrer">
-            <img
-              src={`${LOGO_BASE}/4_SDML-lab_logo.png`}
-              alt="Surface Dynamics Modeling Lab"
-              style={logoStyle}
-            />
-          </a>
+        <a href="https://www.ua.edu/" target="_blank" rel="noreferrer">
+          <img
+            src={`${LOGO_BASE}/3_UA-University-of-Alabama_Logo.png`}
+            alt="University of Alabama"
+            style={logoStyle}
+          />
+        </a>
 
-          <a href="https://www.byu.edu/" target="_blank" rel="noreferrer">
-            <img
-              src={`${LOGO_BASE}/5_BYU-Brigham-Young-University_Logo.png`}
-              alt="Brigham Young University"
-              style={logoStyle}
-            />
-          </a>
+        <a href="https://sdml.ua.edu/" target="_blank" rel="noreferrer">
+          <img
+            src={`${LOGO_BASE}/4_SDML-lab_logo.png`}
+            alt="Surface Dynamics Modeling Lab"
+            style={logoStyle}
+          />
+        </a>
 
-          <a href="https://aquaveo.com/" target="_blank" rel="noreferrer">
-            <img
-              src={`${LOGO_BASE}/6_Aquaveo-blue-black_Logo.png`}
-              alt="Aquaveo"
-              style={logoStyle}
-            />
-          </a>
-        </div>
+        <a href="https://www.byu.edu/" target="_blank" rel="noreferrer">
+          <img
+            src={`${LOGO_BASE}/5_BYU-Brigham-Young-University_Logo.png`}
+            alt="Brigham Young University"
+            style={logoStyle}
+          />
+        </a>
+
+        <a href="https://aquaveo.com/" target="_blank" rel="noreferrer">
+          <img
+            src={`${LOGO_BASE}/6_Aquaveo-blue-black_Logo.png`}
+            alt="Aquaveo"
+            style={logoStyle}
+          />
+        </a>
       </div>
 
-      {/* Attribution section */}
-      <div style={attributionSectionStyle}>
-        <p style={attributionStyle}>
-          Map powered by{' '}
-          <a href="https://maplibre.org" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
-            MapLibre
-          </a>{' '}
-          | Basemap tiles ©{' '}
-          <a href="https://www.esri.com" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
-            Esri
-          </a>
-        </p>
-      </div>
+      {/* Right: copyright notice */}
+      <p style={{ ...attributionStyle, flex: 1, textAlign: 'right' }}>
+        <a href="https://sdml.ua.edu/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+          © 2026 SDML
+        </a>{' '}
+        |{' '}
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+          CC BY 4.0
+        </a>
+      </p>
 
     </footer>
   );
@@ -78,18 +85,12 @@ const footerStyle: React.CSSProperties = {
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
-  padding: '1rem 0',
-};
-
-/* =======================
-   Logos section (top)
-======================= */
-
-const logosSectionStyle: React.CSSProperties = {
+  padding: '1rem 2rem',
   display: 'flex',
-  justifyContent: 'center',
-  paddingBottom: '0.5rem', // 👈 space between logos and attribution
+  flexDirection: 'row',
+  alignItems: 'center',
 };
+
 
 const logosContainerStyle: React.CSSProperties = {
   display: 'flex',
@@ -97,23 +98,13 @@ const logosContainerStyle: React.CSSProperties = {
   justifyContent: 'center',
   gap: '2rem',
   flexWrap: 'wrap',
-};
-
-/* =======================
-   Attribution section (bottom)
-======================= */
-
-const attributionSectionStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  paddingTop: '0.25rem', // 👈 extra separation control if needed
+  flexShrink: 0,
 };
 
 const attributionStyle: React.CSSProperties = {
   margin: 0,
-  fontSize: '0.625rem',
-  color: '#4a5a60',
-  textAlign: 'center',
+  fontSize: '0.6875rem',
+  color: '#ffffff',
 };
 
 const logoStyle: React.CSSProperties = {

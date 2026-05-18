@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import ColorblindToggle from '../components/ColorblindToggle';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
 import FilterSidebar from '../components/FilterSidebar';
@@ -135,7 +136,8 @@ function App() {
       {/* Right: map on top, table on bottom */}
       <div ref={splitContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        <div style={{ flex: `${mapPercent} 1 0`, minHeight: 0 }}>
+        <div style={{ flex: `${mapPercent} 1 0`, minHeight: 0, position: 'relative' }}>
+          <ColorblindToggle />
           <Map
             ref={mapRef}
             filters={filters}
