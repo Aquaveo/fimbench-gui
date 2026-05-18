@@ -372,6 +372,7 @@ export type MapHandle = {
   // the user can pick it out at a glance after clicking "Zoom" on a row.
   zoomToBbox: (bbox: Bbox, focusSiteId?: string) => void;
   clearPopup: () => void;
+  resetSelectionVisuals: () => void;
 };
 
 type ViewState = {
@@ -936,6 +937,22 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     clearPopup: () => {
       currentClickPopupRef.current?.remove();
       currentClickPopupRef.current = null;
+    },
+    resetSelectionVisuals: () => {
+      const map = mapRef.current;
+      if (!map?.isStyleLoaded()) return;
+      zoomFocusSiteIdRef.current = null;
+      currentClickPopupRef.current?.remove();
+      currentClickPopupRef.current = null;
+      selectedSiteIdsRef.current = new Set();
+      (map.getSource('centroids') as maplibregl.GeoJSONSource | undefined)
+        ?.setData(buildCentroidGeoJSON(filtersRef.current));
+      applySelectionEmphasis(
+        map,
+        new Set(),
+        buildTierColorExpr(tierColors(colorModeRef.current)),
+        null,
+      );
     },
   }), []);
 
