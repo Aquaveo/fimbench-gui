@@ -8,6 +8,7 @@ import FIMTable from '../components/FIMTable';
 import WelcomeModal from '../components/WelcomeModal';
 import type { FeatureProperties } from './types/catalog';
 import './App.css';
+import { toggleInSet } from './utils/toggle';
 
 function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -24,6 +25,33 @@ function App() {
 
   const mapRef = useRef<MapHandle | null>(null);
 
+  const [mapPercent, setMapPercent] = useState(60);
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const [handleHover, setHandleHover] = useState(false);
+  const [resizing, setResizing] = useState(false);
+
+  const handleSeparatorMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const container = splitContainerRef.current;
+    if (!container) return;
+    setResizing(true);
+    const startY = e.clientY;
+    const startPercent = mapPercent;
+    const containerHeight = container.getBoundingClientRect().height;
+
+    const onMove = (ev: MouseEvent) => {
+      const deltaPercent = ((ev.clientY - startY) / containerHeight) * 100;
+      setMapPercent(Math.min(80, Math.max(20, startPercent + deltaPercent)));
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setResizing(false);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [mapPercent]);
+
   const handleCloseWelcome = useCallback((dontShowAgain: boolean) => {
     try {
       if (dontShowAgain) localStorage.setItem('fimbench.welcomeSeen', '1');
@@ -33,12 +61,7 @@ function App() {
   }, []);
 
   const toggleSelection = (siteId: string) => {
-    setSelectedSiteIds(prev => {
-      const next = new Set(prev);
-      if (next.has(siteId)) next.delete(siteId);
-      else next.add(siteId);
-      return next;
-    });
+    setSelectedSiteIds(prev => toggleInSet(prev, siteId));
   };
 
   const handleFeatureClick = (feature: FeatureProperties | null, additive = false) => {
@@ -52,6 +75,17 @@ function App() {
     setSelectedSiteIds(prev => {
       const next = new Set(prev);
       for (const id of ids) next.delete(id);
+      return next;
+    });
+  };
+
+  // Shift+drag spatial selection on the map — additive to existing selection
+  // so users can build a multi-region selection across separate drags.
+  const handleMultiFeatureSelect = (siteIds: string[]) => {
+    if (siteIds.length === 0) return;
+    setSelectedSiteIds(prev => {
+      const next = new Set(prev);
+      for (const id of siteIds) next.add(id);
       return next;
     });
   };
@@ -91,9 +125,9 @@ function App() {
       />
 
       {/* Right: map on top, table on bottom */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div ref={splitContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        <div style={{ flex: '0 0 60%', minHeight: 0 }}>
+        <div style={{ flex: `${mapPercent} 1 0`, minHeight: 0 }}>
           <Map
             ref={mapRef}
             filters={filters}
@@ -103,11 +137,28 @@ function App() {
             onCatalogHuc8s={setAvailableHuc8s}
             onCatalogDateBounds={handleCatalogDateBounds}
             onPruneSelections={handlePruneSelections}
+            onMultiFeatureSelect={handleMultiFeatureSelect}
             selectedSiteIds={selectedSiteIds}
           />
         </div>
 
-        <div style={{ flex: '0 0 40%', minHeight: 0, overflow: 'hidden' }}>
+        <div
+          onMouseDown={handleSeparatorMouseDown}
+          onMouseEnter={() => setHandleHover(true)}
+          onMouseLeave={() => setHandleHover(false)}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize map and table panels"
+          style={{
+            height: '0.4rem',
+            flexShrink: 0,
+            cursor: 'row-resize',
+            background: (handleHover || resizing) ? '#888' : '#ddd',
+            transition: 'background 0.15s ease',
+          }}
+        />
+
+        <div style={{ flex: `${100 - mapPercent} 1 0`, minHeight: 0, overflow: 'hidden' }}>
           <FIMTable
             features={visibleFeatures}
             selectedSiteIds={selectedSiteIds}
@@ -116,7 +167,7 @@ function App() {
               mapRef.current?.clearPopup?.();
             }}
             onClearSelection={() => setSelectedSiteIds(new Set())}
-            onZoomToFeature={(bbox) => mapRef.current?.zoomToBbox(bbox)}
+            onZoomToFeature={(bbox, siteId) => mapRef.current?.zoomToBbox(bbox, siteId)}
           />
         </div>
 

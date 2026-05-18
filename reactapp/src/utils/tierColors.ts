@@ -37,6 +37,17 @@ export const TIER_PALETTES: Record<ColorMode, Record<string, string>> = {
 
 export const TIER_KEYS = ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'] as const;
 
+// Canonical user-facing labels for each tier key. Components that need a
+// different label in a specific context (e.g. WelcomeModal annotates Tier_4
+// as "Tier 4 (BLE)") may override per-key locally.
+export const TIER_LABELS: Record<string, string> = {
+  Tier_1: 'Tier 1',
+  Tier_2: 'Tier 2',
+  Tier_3: 'Tier 3',
+  Tier_4: 'Tier 4',
+  HWM:    'High Water FIM',
+};
+
 export function tierColors(mode: ColorMode): Record<string, string> {
   return TIER_PALETTES[mode];
 }

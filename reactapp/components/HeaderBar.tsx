@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useMatch } from 'react-router-dom';
+import { COLORS } from '../src/theme';
 
 export default function HeaderBar() {
   const onDocs = !!useMatch('/docs');
@@ -24,8 +25,8 @@ export default function HeaderBar() {
           to="/docs"
           style={{
             ...docLinkStyle,
-            backgroundColor: hovered || onDocs ? '#1da8c4' : '#25C2DF',
-            color: '#152428',
+            backgroundColor: hovered || onDocs ? COLORS.brandHover : COLORS.brand,
+            color: COLORS.ink,
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -39,12 +40,12 @@ export default function HeaderBar() {
 
 const docLinkStyle: React.CSSProperties = {
   display: 'inline-block',
-  border: '2px solid #25C2DF',
-  borderRadius: '999px',
-  padding: '3px 12px',
-  fontSize: 13,
+  border: `0.125rem solid ${COLORS.brand}`,
+  borderRadius: '62.4375rem',
+  padding: '0.1875rem 0.75rem',
+  fontSize: '0.8125rem',
   fontWeight: 600,
-  color: '#25C2DF',
+  color: COLORS.brand,
   textDecoration: 'none',
   lineHeight: 1.5,
 };
@@ -53,25 +54,25 @@ const headerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '8px 20px',
+  padding: '0.5rem 1.25rem',
   backgroundImage: 'url(/static/fimbench_gui/images/Header-HQ.png)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
-  color: '#D1EFF6',
+  color: COLORS.inkLight,
   flexShrink: 0,
 };
 
 const titleStyle: React.CSSProperties = {
   margin: 0,
-  fontSize: 22,
+  fontSize: '1.375rem',
   fontWeight: 700,
-  letterSpacing: 0.5,
-  color: '#152428',
+  letterSpacing: '0.03125rem',
+  color: COLORS.ink,
 };
 
 const taglineStyle: React.CSSProperties = {
-  margin: '2px 0 0 0',
-  fontSize: 13,
-  color: '#1b4332',
+  margin: '0.125rem 0 0 0',
+  fontSize: '0.8125rem',
+  color: COLORS.taglineGreen,
 };
