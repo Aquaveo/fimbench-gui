@@ -54,9 +54,9 @@ function InfoBadge({ description }: { description: string }) {
         style={infoBadgeStyle}
       >
         <svg width="0.75rem" height="0.75rem" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ display: 'block' }}>
-          <path d="M9 10C9 9.44772 9.44772 9 10 9C10.5523 9 11 9.44772 11 10V14C11 14.5523 10.5523 15 10 15C9.44772 15 9 14.5523 9 14V10Z" fill="#000000" />
-          <circle cx="10" cy="7" r="1" fill="#000000" />
-          <path fillRule="evenodd" clipRule="evenodd" d="M2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10ZM16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10Z" fill="#000000" />
+          <path d="M9 10C9 9.44772 9.44772 9 10 9C10.5523 9 11 9.44772 11 10V14C11 14.5523 10.5523 15 10 15C9.44772 15 9 14.5523 9 14V10Z" fill="currentColor" />
+          <circle cx="10" cy="7" r="1" fill="currentColor" />
+          <path fillRule="evenodd" clipRule="evenodd" d="M2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10ZM16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10Z" fill="currentColor" />
         </svg>
       </span>
       {hovered && createPortal(
@@ -157,12 +157,18 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
 
   return (
-    <div style={{ width: '15.625rem', padding: '1rem', backgroundColor: '#f2f2f2', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-      <h2>Filters</h2>
+    <div style={{ width: '15.625rem', padding: '1rem', backgroundColor: '#3564A1', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
+      <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <img src="/static/fimbench_gui/images/funnel-svgrepo-com.svg" alt="" style={{ width: '1.25rem', height: '1.25rem', filter: 'brightness(0) invert(1)' }} />
+        Filters
+      </h2>
 
       {/* ── Tier (multi-select checkboxes) ── */}
       <div style={{ marginBottom: '0.75rem' }}>
-        <label style={{ fontWeight: 600 }}>FIM Tier:</label>
+        <label style={{ fontWeight: 600 }}>
+          <img src="/static/fimbench_gui/images/steps-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          FIM Tier:
+        </label>
         <div style={{ marginTop: '0.375rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {TIER_OPTIONS.map(({ value, label }) => (
             <label
@@ -185,14 +191,17 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
 
       {/* ── HUC8 ID ── */}
       <div style={{ marginBottom: '0.75rem' }}>
-        <label htmlFor="huc8Id" style={{ fontWeight: 600 }}>HUC8 ID:</label>
+        <label htmlFor="huc8Id" style={{ fontWeight: 600 }}>
+          <img src="/static/fimbench_gui/images/id-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          HUC8 ID:
+        </label>
         <input
           id="huc8Id"
           type="text"
           value={filters.huc8Id}
           onChange={handleHuc8Change}
           placeholder="e.g. 12100201"
-          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', borderRadius: '0.5rem', color: '#222' }}
         />
         {!huc8Empty && !huc8FormatOk && (
           <span style={{ fontSize: '0.6875rem', color: '#c0392b', marginTop: '0.1875rem', display: 'block' }}>
@@ -205,7 +214,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           </span>
         )}
         {huc8FormatOk && huc8InCatalog && (
-          <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.75)', marginTop: '0.1875rem', display: 'block' }}>
             State &amp; date filters are inactive while HUC8 is set
           </span>
         )}
@@ -213,7 +222,10 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
 
       {/* ── State (dropdown multi-select) ── */}
       <div style={{ marginBottom: '0.75rem', opacity: huc8FormatOk ? 0.4 : 1, position: 'relative' }}>
-        <label style={{ fontWeight: 600 }}>State:</label>
+        <label style={{ fontWeight: 600 }}>
+          <img src="/static/fimbench_gui/images/map-location-pin-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          State:
+        </label>
         <button
           type="button"
           disabled={huc8FormatOk}
@@ -221,7 +233,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           style={{
             display: 'block', width: '100%', marginTop: '0.25rem', padding: '0.3125rem 0.5rem',
             fontFamily: 'inherit', fontSize: '0.8125rem', textAlign: 'left',
-            border: '0.0625rem solid #bbb', borderRadius: '0.25rem', backgroundColor: '#fff',
+            border: '0.0625rem solid #bbb', borderRadius: '0.5rem', backgroundColor: '#fff', color: '#222',
             cursor: huc8FormatOk ? 'default' : 'pointer', boxSizing: 'border-box',
           }}
         >
@@ -261,29 +273,35 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
 
       {/* ── Date range ── */}
       <div style={{ marginBottom: '0.75rem', opacity: onlyTier4 ? 0.4 : 1 }}>
-        <label htmlFor="startDate">Start Date:</label>
+        <label htmlFor="startDate">
+          <img src="/static/fimbench_gui/images/play-button-o-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          Start Date:
+        </label>
         <input
           id="startDate"
           type="date"
           value={filters.startDate}
           onChange={handleStartDateChange}
           disabled={onlyTier4}
-          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit', borderRadius: '0.5rem', color: '#222' }}
         />
       </div>
 
       <div style={{ marginBottom: '0.75rem', opacity: onlyTier4 ? 0.4 : 1 }}>
-        <label htmlFor="endDate">End Date:</label>
+        <label htmlFor="endDate">
+          <img src="/static/fimbench_gui/images/stop-button-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          End Date:
+        </label>
         <input
           id="endDate"
           type="date"
           value={filters.endDate}
           onChange={handleEndDateChange}
           disabled={onlyTier4}
-          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit' }}
+          style={{ display: 'block', marginTop: '0.25rem', fontFamily: 'inherit', borderRadius: '0.5rem', color: '#222' }}
         />
         {onlyTier4 && (
-          <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
+          <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.75)', marginTop: '0.1875rem', display: 'block' }}>
             Tier 4 is synthetic — no observation date
           </span>
         )}
@@ -291,7 +309,10 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
 
       {/* ── Return Period ── */}
       <div style={{ marginBottom: '0.75rem', opacity: tier4Selected ? 1 : 0.4 }}>
-        <label htmlFor="returnPeriod">Return Period:</label>
+        <label htmlFor="returnPeriod">
+          <img src="/static/fimbench_gui/images/hourglass-svgrepo-com.svg" alt="" style={{ width: '1rem', height: '1rem', filter: 'brightness(0) invert(1)', verticalAlign: 'middle', marginRight: '0.375rem' }} />
+          Return Period:
+        </label>
         <select
           id="returnPeriod"
           value={filters.returnPeriod}
@@ -299,13 +320,14 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           disabled={!tier4Selected}
           style={{
             display: 'block', marginTop: '0.25rem', fontFamily: 'inherit',
+            borderRadius: '0.5rem', color: '#222',
             cursor: tier4Selected ? 'pointer' : 'default',
           }}
         >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>
-        <span style={{ fontSize: '0.6875rem', color: '#666', marginTop: '0.1875rem', display: 'block' }}>
+        <span style={{ fontSize: '0.6875rem', color: 'rgba(255,255,255,0.75)', marginTop: '0.1875rem', display: 'block' }}>
           Only applies to Tier 4 (BLE)
         </span>
       </div>
@@ -345,8 +367,8 @@ const tooltipStyle: React.CSSProperties = {
 
 const btnStyle: React.CSSProperties = {
   padding: '0.375rem 0.625rem',
-  fontSize: '0.8125rem',
   fontFamily: 'inherit',
+  fontWeight: 600,
   cursor: 'pointer',
   border: '0.0625rem solid #bbb',
   borderRadius: '0.25rem',
