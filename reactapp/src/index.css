@@ -20,3 +20,8 @@ a:hover {
 #root {
   min-height: 100vh;
 }
+
+.api-link                { color: #002EFF; text-decoration: underline; }
+.api-link:hover          { color: #0078FF; }
+.api-link:visited        { color: #A300FF; }
+.api-link:visited:hover  { color: #A300FF; }

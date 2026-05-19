@@ -175,6 +175,18 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
   const [infoRecord, setInfoRecord] = useState<FIMRecord | null>(null);
+  const [showCapModal, setShowCapModal] = useState(false);
+  const [capTriggered, setCapTriggered] = useState(false);
+
+  const DOWNLOAD_CAP = 10;
+  const overCap = selectedIds.size > DOWNLOAD_CAP;
+
+  useEffect(() => {
+    if (selectedIds.size <= DOWNLOAD_CAP) {
+      setCapTriggered(false);
+      setShowCapModal(false);
+    }
+  }, [selectedIds.size]);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -387,14 +399,29 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
               Downloading {downloadProgress.done} / {downloadProgress.total}…
             </span>
           ) : (
-            <button
-              onClick={handleBulkDownload}
-              disabled={!hasSelection}
-              style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
-              title={hasSelection ? `Download ${selectedIds.size} selected record(s) as a zip` : 'Select rows to enable bulk download'}
-            >
-              Download Selected ({selectedIds.size})
-            </button>
+            <>
+              {capTriggered && (
+                <span style={{ fontSize: '0.75rem', color: '#c0392b' }}>
+                  Limit is {DOWNLOAD_CAP} items —{' '}
+                  <a href="https://pypi.org/project/fimeval/" target="_blank" rel="noreferrer" className="api-link">use the FIMeval Python API</a>
+                  {' '}for larger downloads
+                </span>
+              )}
+              <button
+                onClick={() => overCap ? (setShowCapModal(true), setCapTriggered(true)) : handleBulkDownload()}
+                disabled={!hasSelection || capTriggered}
+                style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !capTriggered) ? 1 : 0.4, cursor: (hasSelection && !capTriggered) ? 'pointer' : 'default' }}
+                title={
+                  capTriggered
+                    ? `Deselect items to re-enable (limit: ${DOWNLOAD_CAP})`
+                    : hasSelection
+                      ? `Download ${selectedIds.size} selected record(s) as a zip`
+                      : 'Select rows to enable bulk download'
+                }
+              >
+                Download Selected ({selectedIds.size})
+              </button>
+            </>
           )}
           <button
             onClick={onClearSelection}
@@ -414,6 +441,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       </div>
 
       {infoRecord && <MetaModal record={infoRecord} onClose={() => setInfoRecord(null)} />}
+      {showCapModal && <CapModal cap={DOWNLOAD_CAP} onClose={() => setShowCapModal(false)} />}
 
       {/* Table */}
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
@@ -548,6 +576,36 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
           <button onClick={handleDownloadJson} style={modalDlBtnStyle(COLORS.brand, COLORS.ink)}>
             <DownloadIcon /> Download .json
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cap modal ─────────────────────────────────────────────────
+function CapModal({ cap, onClose }: { cap: number; onClose: () => void }) {
+  useEscapeKey(onClose);
+  return (
+    <div style={modalBackdropStyle} onClick={onClose}>
+      <div style={{ ...modalCardStyle, maxWidth: '26rem' }} onClick={e => e.stopPropagation()}>
+        <div style={modalHeaderStyle}>
+          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>Bulk Download Limit Reached</span>
+          <button style={modalCloseBtnStyle} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div style={{ ...modalBodyStyle, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+          <p style={{ margin: '0 0 0.75rem' }}>
+            Bulk download is capped at <strong>{cap} records</strong> to keep things running smoothly for everyone.
+          </p>
+          <p style={{ margin: 0 }}>
+            Need more?{' '}
+            <a href="https://pypi.org/project/fimeval/" target="_blank" rel="noreferrer">
+              Use the FIMeval Python API
+            </a>
+            {' '}— it's designed for large-scale batch access and has no item limit.
+          </p>
+        </div>
+        <div style={modalFooterStyle}>
+          <button onClick={onClose} style={modalDlBtnStyle('#e8e8e8', '#333')}>Got it</button>
         </div>
       </div>
     </div>
