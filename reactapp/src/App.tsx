@@ -67,8 +67,12 @@ function App() {
 
   const handleFiltersChange = (next: Filters) => {
     setFilters(next);
-    setSelectedSiteIds(new Set());
-    mapRef.current?.resetSelectionVisuals?.();
+    // Don't blanket-clear selection here. The filter useEffect in Map.tsx
+    // prunes only the site IDs that no longer match the new filters via
+    // onPruneSelections, so a selection of Tier_1 centroids survives a
+    // Tier_2 filter toggle. resetSelectionVisuals is still called by the
+    // explicit Reset Filters button (handleResetFilters).
+    mapRef.current?.clearPopup?.();
   };
 
   const handleFeatureClick = (feature: FeatureProperties | null, additive = false) => {

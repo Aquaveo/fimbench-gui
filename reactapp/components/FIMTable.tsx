@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
+import { useDownloadManager } from '../src/context/download';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
@@ -173,7 +173,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const anchorSiteId = React.useRef<string | null>(null);
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-  const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
+  const { progress: downloadProgress, isActive: downloadActive, startDownload } = useDownloadManager();
   const [infoRecord, setInfoRecord] = useState<FIMRecord | null>(null);
   const [showCapModal, setShowCapModal] = useState(false);
   const [capTriggered, setCapTriggered] = useState(false);
@@ -284,38 +284,15 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     }
   };
 
-  const handleBulkDownload = async () => {
-    const selected = records.filter(r => selectedIds.has(r.siteId));
-    if (selected.length === 0) return;
-
-    let done = 0;
-    setDownloadProgress({ done, total: selected.length });
-
-    const zip = new JSZip();
-
-    await Promise.all(selected.map(async (r) => {
-      const folder = zip.folder(r.siteId)!;
-
-      await Promise.all([
-        fetch(r.tifUrl).then(res => {
-          if (res.ok) return res.blob().then(b => {
-            folder.file(r.tifUrl.split('/').pop()!, b, { compression: 'STORE' });
-          });
-        }).catch(() => {}),
-        fetch(r.metaUrl).then(res => {
-          if (res.ok) return res.blob().then(b => {
-            folder.file(r.metaUrl.split('/').pop()!, b);
-          });
-        }).catch(() => {}),
-      ]);
-
-      done++;
-      setDownloadProgress({ done, total: selected.length });
-    }));
-
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    saveAs(zipBlob, `fim_${selected.length}_records.zip`);
-    setDownloadProgress(null);
+  const handleBulkDownload = () => {
+    const selected = features
+      .filter(f => selectedIds.has(f.site_id))
+      .map(f => ({
+        siteId: f.site_id,
+        tifUrl: buildTifUrl(f.s3_prefix, f.file_name),
+        metaUrl: buildMetaUrl(f.s3_prefix, f.file_name),
+      }));
+    startDownload(selected);
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
@@ -409,8 +386,8 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
               )}
               <button
                 onClick={() => overCap ? (setShowCapModal(true), setCapTriggered(true)) : handleBulkDownload()}
-                disabled={!hasSelection || capTriggered}
-                style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !capTriggered) ? 1 : 0.4, cursor: (hasSelection && !capTriggered) ? 'pointer' : 'default' }}
+                disabled={!hasSelection || capTriggered || downloadActive}
+                style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !capTriggered && !downloadActive) ? 1 : 0.4, cursor: (hasSelection && !capTriggered && !downloadActive) ? 'pointer' : 'default' }}
                 title={
                   capTriggered
                     ? `Deselect items to re-enable (limit: ${DOWNLOAD_CAP})`
@@ -425,7 +402,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
           )}
           <button
             onClick={onClearSelection}
-            disabled={!hasSelection || !!downloadProgress}
+            disabled={!hasSelection || downloadActive}
             style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !downloadProgress) ? 1 : 0.4, cursor: (hasSelection && !downloadProgress) ? 'pointer' : 'default' }}
           >
             Clear Selection
