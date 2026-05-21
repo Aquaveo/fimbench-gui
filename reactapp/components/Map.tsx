@@ -834,20 +834,23 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         }
 
         // Populate the centroid source once catalog is loaded.
-        // If the map style is already loaded, update immediately.
-        // If the map is still initializing, wait for its 'load' event —
-        // otherwise the setData call is a no-op (source doesn't exist yet).
+        // Check for the centroid source directly rather than isStyleLoaded() —
+        // MapLibre v5 briefly marks the style as not loaded while reprocessing
+        // layers added in the load handler, so isStyleLoaded() can return false
+        // even after the load event has already fired.
         const map = mapRef.current;
-        if (map?.isStyleLoaded()) {
+        if (map) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filtersRef.current));
-          map.once('idle', () => emitFeaturesRef.current?.());
-        } else if (map) {
-          map.once('load', () => {
-            const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-            src?.setData(buildCentroidGeoJSON(filtersRef.current));
+          if (src) {
+            src.setData(buildCentroidGeoJSON(filtersRef.current));
             map.once('idle', () => emitFeaturesRef.current?.());
-          });
+          } else {
+            map.once('load', () => {
+              const src2 = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
+              src2?.setData(buildCentroidGeoJSON(filtersRef.current));
+              map.once('idle', () => emitFeaturesRef.current?.());
+            });
+          }
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
