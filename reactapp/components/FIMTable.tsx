@@ -161,6 +161,7 @@ type Props = {
   onZoomToFeature?: (bbox: Bbox, siteId: string) => void;
 };
 const PAGE_SIZE = 20;
+const DOWNLOAD_CAP = 10;
 
 // ── Component ─────────────────────────────────────────────────
 export default function FIMTable({ features, selectedSiteIds, onSelectionChange, onClearSelection, onZoomToFeature }: Props) {
@@ -178,7 +179,6 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const [showCapModal, setShowCapModal] = useState(false);
   const [capTriggered, setCapTriggered] = useState(false);
 
-  const DOWNLOAD_CAP = 10;
   const overCap = selectedIds.size > DOWNLOAD_CAP;
 
   useEffect(() => {

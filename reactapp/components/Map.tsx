@@ -147,8 +147,10 @@ const buttonTextColor = (hex: string) =>
 
 const FIM_DOWNLOAD_COLOR = COLORS.brand; // matches "FIMbench" header text
 
+const tierLabel = (rec: Partial<CatalogRecord>) =>
+  (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
+
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
-  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
   const huc8Str   = toDisplayStr(rec?.huc8);
@@ -161,7 +163,7 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
 
   return `
     <div style="font-size:0.75rem;line-height:1.45;min-width:11.25rem">
-      ${line('Tier',   tierLabel)}
+      ${line('Tier',   tierLabel(rec))}
       ${line('Basin',  basinStr)}
       ${line('State',  stateStr)}
       ${line('HUC8',   huc8Str)}
@@ -171,7 +173,6 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
 }
 
 function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
-  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
   const huc8Str   = toDisplayStr(rec?.huc8);
@@ -211,7 +212,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   return `
     <div style="font-size:0.8125rem;line-height:1.5;min-width:13.75rem">
       <table style="border-collapse:collapse;width:100%">
-        ${row('Tier',       tierLabel)}
+        ${row('Tier',       tierLabel(rec))}
         ${row('Basin',      basinStr)}
         ${row('State',      stateStr)}
         ${row('Quality',    qualStr)}
@@ -440,6 +441,8 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 
   const filtersRef = useRef(filters);
 
+  const currentTierColorExpr = (): ExpressionSpecification => buildTierColorExpr(tierColors(colorModeRef.current));
+
   const buildCentroidGeoJSON = (f: Filters) => {
     return {
       type: 'FeatureCollection' as const,
@@ -540,7 +543,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // ── Centroid circle layer (visible below crossfade zone) ──
-      const initTierColorExpr = buildTierColorExpr(tierColors(colorModeRef.current));
+      const initTierColorExpr = currentTierColorExpr();
       map.addLayer({
         id: 'centroids-layer',
         type: 'circle',
@@ -778,7 +781,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)
-      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, currentTierColorExpr(), zoomFocusSiteIdRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -915,7 +918,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     selectedSiteIdsRef.current = ids;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, ids, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+    applySelectionEmphasis(map, ids, currentTierColorExpr(), zoomFocusSiteIdRef.current);
   }, [selectedSiteIds]);
 
   // Re-apply tier colors whenever the color mode changes
@@ -935,7 +938,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
       // Bump the focus target's z-order so it renders above its neighbours.
       zoomFocusSiteIdRef.current = focusSiteId ?? null;
-      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, currentTierColorExpr(), zoomFocusSiteIdRef.current);
     },
     clearPopup: () => {
       currentClickPopupRef.current?.remove();
@@ -951,7 +954,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       applySelectionEmphasis(
         map,
         new Set(),
-        buildTierColorExpr(tierColors(colorModeRef.current)),
+        currentTierColorExpr(),
         null,
       );
     },
