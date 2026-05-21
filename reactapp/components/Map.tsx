@@ -945,8 +945,6 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       currentClickPopupRef.current?.remove();
       currentClickPopupRef.current = null;
       selectedSiteIdsRef.current = new Set();
-      (map.getSource('centroids') as maplibregl.GeoJSONSource | undefined)
-        ?.setData(buildCentroidGeoJSON(filtersRef.current));
       applySelectionEmphasis(
         map,
         new Set(),
