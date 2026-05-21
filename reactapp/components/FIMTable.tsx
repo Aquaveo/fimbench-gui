@@ -183,6 +183,8 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
 
   useEffect(() => {
     if (selectedIds.size <= DOWNLOAD_CAP) {
+      // Reset cap UI when the user deselects back below the cap threshold.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCapTriggered(false);
       setShowCapModal(false);
     }
@@ -200,6 +202,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     if (features.length === 0) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setPage(1);
 
@@ -229,7 +232,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   // the selected set. For 0 or 1 selections, show everything.
   const filteredRecords = useMemo(
     () => (selectedIds.size >= 2 ? records.filter(r => selectedIds.has(r.siteId)) : records),
-    [records, selectedIds]
+    [records, selectedSiteIds] // eslint-disable-line react-hooks/exhaustive-deps -- selectedIds derives from selectedSiteIds; using the prop avoids a new-Set-on-every-render false dep
   );
 
   // Sort records — memoized so it only reruns when records/sort state changes
@@ -241,6 +244,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   // When entering "focused" mode (size ≥ 2), reset to page 1 so the selected
   // rows are visible from the top.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (selectedIds.size >= 2) setPage(1);
   }, [selectedIds.size]);
 
@@ -250,6 +254,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     const siteId = [...selectedSiteIds][0];
     const idx = sortedRecords.findIndex(r => r.siteId === siteId);
     if (idx === -1) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(Math.ceil((idx + 1) / PAGE_SIZE));
   }, [selectedSiteIds, sortedRecords]);
 
