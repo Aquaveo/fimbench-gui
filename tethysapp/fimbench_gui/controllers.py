@@ -17,9 +17,12 @@ def home(request):
 @controller(url="tile-proxy/{z}/{x}/{tile}", login_required=False)
 def tile_proxy(request, z, x, tile):
     y = tile[:-4] if tile.endswith(".pbf") else tile
-    
+
+    if not (z.isdigit() and x.isdigit() and y.isdigit()):
+        return HttpResponse("Invalid tile coordinates", status=400)
+
     # print("request:", request)
-    
+
     upstream_url = f"http://127.0.0.1:9000/fimbench/FIM_Viz/tiles/{z}/{x}/{y}.pbf"
     
     # print("upstream_url:", upstream_url)

@@ -1,5 +1,6 @@
 # Most of your test classes should inherit from TethysTestCase
 from tethys_sdk.testing import TethysTestCase
+from unittest.mock import patch, MagicMock
 
 # For testing rendered HTML templates it may be helpful to use BeautifulSoup.
 # from bs4 import BeautifulSoup
@@ -113,6 +114,65 @@ class TestCase(TethysTestCase):
         self.assertFalse(not self.is_tethys_platform_great())
         self.assertIs(self.is_tethys_platform_great(), True)
         self.assertIsNot(self.is_tethys_platform_great(), False)
+
+    def test_tile_proxy_rejects_nonnumeric_z(self):
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp1", password="pass", email="tp1@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/abc/0/0.pbf')
+        self.assertEqual(response.status_code, 400)
+
+    def test_tile_proxy_rejects_nonnumeric_x(self):
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp2", password="pass", email="tp2@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/0/abc/0.pbf')
+        self.assertEqual(response.status_code, 400)
+
+    def test_tile_proxy_rejects_nonnumeric_y(self):
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp3", password="pass", email="tp3@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/0/0/abc.pbf')
+        self.assertEqual(response.status_code, 400)
+
+    def test_tile_proxy_rejects_path_traversal(self):
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp4", password="pass", email="tp4@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/0%2F..%2F..%2Fetc/0/0.pbf')
+        self.assertEqual(response.status_code, 400)
+
+    @patch('tethysapp.fimbench_gui.controllers.requests.get')
+    def test_tile_proxy_valid_coordinates_proxied(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {}
+        mock_resp.raw.read.return_value = b'\x1f\x8b'  # gzip magic bytes
+        mock_get.return_value = mock_resp
+
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp5", password="pass", email="tp5@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/8/72/96.pbf')
+
+        mock_get.assert_called_once()
+        called_url = mock_get.call_args[0][0]
+        self.assertIn('/8/72/96.pbf', called_url)
+        self.assertEqual(response.status_code, 200)
+
+    @patch('tethysapp.fimbench_gui.controllers.requests.get')
+    def test_tile_proxy_404_upstream_returns_204(self, mock_get):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 404
+        mock_get.return_value = mock_resp
+
+        c = self.get_test_client()
+        user = self.create_test_user(username="tp6", password="pass", email="tp6@test.com")
+        c.force_login(user)
+        response = c.get('/apps/fimbench-gui/tile-proxy/8/72/96.pbf')
+
+        self.assertEqual(response.status_code, 204)
 
     def test_home_controller(self):
         """
