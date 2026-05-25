@@ -680,7 +680,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         const rec = catalogRef.current.find(r => String(r.site_id) === siteId) ?? feats[0].properties;
         hoverPopup.setHTML(buildTooltipHtml(rec));
         if (!hoverPopup.isOpen()) {
-          hoverPopup.addTo(map).trackPointer();
+          hoverPopup.setLngLat(e.lngLat).addTo(map).trackPointer();
         }
       });
 
