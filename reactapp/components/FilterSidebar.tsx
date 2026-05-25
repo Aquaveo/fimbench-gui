@@ -11,6 +11,9 @@ type FilterSidebarProps = {
   onResetFilters: () => void;
   availableStates: string[];
   availableHuc8s: Set<string>;
+  isOpen: boolean;
+  onClose: () => void;
+  isMobile: boolean;
 };
 
 const TIER_OPTIONS = TIER_KEYS.map(k => ({ value: k, label: TIER_LABELS[k] }));
@@ -31,20 +34,19 @@ const TIER_COLORS: Record<string, string> = {
   HWM:    '#EC6FA3',
 };
 
-// Small "i" badge + custom hover tooltip. Portal'd to document.body so it
+// Small "i" badge + custom hover/tap tooltip. Portal'd to document.body so it
 // escapes the sidebar's scroll container.
 function InfoBadge({ description }: { description: string }) {
-  const [hovered, setHovered] = useState(false);
+  const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const ref = useRef<HTMLSpanElement>(null);
 
-  const handleEnter = () => {
+  const updatePos = () => {
     const el = ref.current;
     if (el) {
       const r = el.getBoundingClientRect();
       setPos({ top: r.top + r.height / 2, left: r.right + 8 });
     }
-    setHovered(true);
   };
 
   return (
@@ -52,11 +54,9 @@ function InfoBadge({ description }: { description: string }) {
       <span
         ref={ref}
         aria-label={description}
-        onMouseEnter={handleEnter}
-        onMouseLeave={() => setHovered(false)}
-        // stopPropagation prevents the click from bubbling up to the tier row's
-        // onClick, which would accidentally toggle the tier.
-        onClick={(e) => e.stopPropagation()}
+        onMouseEnter={() => { updatePos(); setOpen(true); }}
+        onMouseLeave={() => setOpen(false)}
+        onClick={(e) => { e.stopPropagation(); updatePos(); setOpen(prev => !prev); }}
         style={infoBadgeStyle}
       >
         <svg width="0.75rem" height="0.75rem" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ display: 'block' }}>
@@ -65,7 +65,7 @@ function InfoBadge({ description }: { description: string }) {
           <path fillRule="evenodd" clipRule="evenodd" d="M2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10ZM16 10C16 13.3137 13.3137 16 10 16C6.68629 16 4 13.3137 4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10Z" fill="currentColor" />
         </svg>
       </span>
-      {hovered && createPortal(
+      {open && createPortal(
         <div
           className="tier-info-tooltip"
           style={{ ...tooltipStyle, top: pos.top, left: pos.left }}
@@ -107,7 +107,7 @@ const addDays = (ymd: string, n: number): string => {
   return d.toISOString().slice(0, 10);
 };
 
-export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates, availableHuc8s }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, setFilters, onResetFilters, availableStates, availableHuc8s, isOpen, onClose, isMobile }: FilterSidebarProps) {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
 
   const handleTierToggle = (value: string) => {
@@ -155,12 +155,21 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
 
   return (
-    <div style={{ width: '15.625rem', padding: '1.25rem 1rem 1.5rem', backgroundImage: 'url(/static/fimbench_gui/images/FilterSidebar.png)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
+    <div className={`filter-sidebar${isOpen ? ' filter-sidebar--open' : ''}`} style={{ width: '15.625rem', padding: '1.25rem 1rem 1.5rem', backgroundImage: 'url(/static/fimbench_gui/images/FilterSidebar.png)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
 
       {/* ── Header ── */}
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.04em', paddingBottom: '0.875rem', marginBottom: 0, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
         <img src="/static/fimbench_gui/images/funnel-svgrepo-com.svg" alt="" style={{ width: '1.125rem', height: '1.125rem', filter: 'brightness(0) invert(1)', flexShrink: 0 }} />
         Filters
+        {isMobile && (
+          <button
+            onClick={onClose}
+            aria-label="Close filters"
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '1.125rem', padding: '0.125rem 0.25rem', lineHeight: 1 }}
+          >
+            ✕
+          </button>
+        )}
       </h2>
 
       {/* ── Tier (custom rows) ── */}
