@@ -138,3 +138,10 @@ a:hover {
   border-color: rgba(255,255,255,0.55);
   color: #fff;
 }
+
+/* ─── Responsive: header ─── */
+@media (max-width: 30rem) {
+  .header-tagline {
+    display: none;
+  }
+}

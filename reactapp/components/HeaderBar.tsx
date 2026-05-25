@@ -15,7 +15,7 @@ export default function HeaderBar() {
         />
         <div>
           <h1 style={titleStyle}>FIMbench</h1>
-          <p style={taglineStyle}>
+          <p className="header-tagline" style={taglineStyle}>
             Explore and download benchmark Flood Inundation Maps across the U.S.
           </p>
         </div>
