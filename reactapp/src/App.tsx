@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ColorblindToggle from '../components/ColorblindToggle';
 import HeaderBar from '../components/HeaderBar';
 import Footer from '../components/Footer';
@@ -24,7 +24,24 @@ function App() {
     catch { return true; } // localStorage unavailable (e.g. private browsing restrictions)
   });
 
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
+  const [tableVisible, setTableVisible] = useState(() => window.innerWidth > 768);
+
   const mapRef = useRef<MapHandle | null>(null);
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(true);
+        setTableVisible(true);
+      }
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const [mapPercent, setMapPercent] = useState(60);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
@@ -128,6 +145,18 @@ function App() {
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 199,
+          }}
+        />
+      )}
+
       {/* Left sidebar */}
       <FilterSidebar
         filters={filters}
@@ -135,13 +164,46 @@ function App() {
         onResetFilters={handleResetFilters}
         availableStates={availableStates}
         availableHuc8s={availableHuc8s}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isMobile={isMobile}
       />
 
       {/* Right: map on top, table on bottom */}
       <div ref={splitContainerRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        <div style={{ flex: `${mapPercent} 1 0`, minHeight: 0, position: 'relative' }}>
+        <div style={
+          isMobile
+            ? { flex: 'none', height: tableVisible ? '35%' : '100%', minHeight: 0, position: 'relative', transition: 'height 0.25s ease' }
+            : { flex: `${mapPercent} 1 0`, minHeight: 0, position: 'relative' }
+        }>
           <ColorblindToggle />
+          {isMobile && !sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open filters"
+              style={{
+                position: 'absolute',
+                top: '0.75rem',
+                left: '0.75rem',
+                zIndex: 10,
+                background: '#25C2DF',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '1.5rem',
+                padding: '0.375rem 0.75rem',
+                fontSize: '0.8125rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.2)',
+              }}
+            >
+              ☰ Filters
+            </button>
+          )}
           <Map
             ref={mapRef}
             filters={filters}
@@ -154,25 +216,56 @@ function App() {
             onMultiFeatureSelect={handleMultiFeatureSelect}
             selectedSiteIds={selectedSiteIds}
           />
+          {isMobile && (
+            <div
+              onClick={() => setTableVisible(v => !v)}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'rgba(255,255,255,0.95)',
+                borderTop: '0.0625rem solid #ddd',
+                padding: '0.5rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                color: '#25C2DF',
+                zIndex: 5,
+                userSelect: 'none',
+              }}
+            >
+              {tableVisible ? '▼ Hide Table' : `▲ Show Table (${visibleFeatures.length} results)`}
+            </div>
+          )}
         </div>
 
-        <div
-          onMouseDown={handleSeparatorMouseDown}
-          onMouseEnter={() => setHandleHover(true)}
-          onMouseLeave={() => setHandleHover(false)}
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize map and table panels"
-          style={{
-            height: '0.4rem',
-            flexShrink: 0,
-            cursor: 'row-resize',
-            background: (handleHover || resizing) ? '#888' : '#ddd',
-            transition: 'background 0.15s ease',
-          }}
-        />
+        {!isMobile && (
+          <div
+            onMouseDown={handleSeparatorMouseDown}
+            onMouseEnter={() => setHandleHover(true)}
+            onMouseLeave={() => setHandleHover(false)}
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize map and table panels"
+            style={{
+              height: '0.4rem',
+              flexShrink: 0,
+              cursor: 'row-resize',
+              background: (handleHover || resizing) ? '#888' : '#ddd',
+              transition: 'background 0.15s ease',
+            }}
+          />
+        )}
 
-        <div style={{ flex: `${100 - mapPercent} 1 0`, minHeight: 0, overflow: 'hidden' }}>
+        <div style={
+          isMobile
+            ? { flex: 'none', height: '65%', minHeight: 0, overflow: 'hidden', display: tableVisible ? 'flex' : 'none', flexDirection: 'column' }
+            : { flex: `${100 - mapPercent} 1 0`, minHeight: 0, overflow: 'hidden' }
+        }>
           <FIMTable
             features={visibleFeatures}
             selectedSiteIds={selectedSiteIds}
