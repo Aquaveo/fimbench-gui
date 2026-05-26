@@ -942,6 +942,7 @@ export default function DocsPage() {
             </p>
           </section>
         </main>
+        <div style={{ width: '15rem', flexShrink: 0 }} />
       </div>
       <Footer />
     </div>
@@ -992,6 +993,7 @@ const sidebarStyle: React.CSSProperties = {
 
 const mainStyle: React.CSSProperties = {
   flex: 1,
+  margin: '0 auto',
   padding: '1.75rem 3rem 3rem',
   boxSizing: 'border-box',
   minWidth: 0,

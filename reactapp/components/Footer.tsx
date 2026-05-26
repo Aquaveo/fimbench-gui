@@ -4,7 +4,7 @@ const LOGO_BASE = '/static/fimbench_gui/images';
 
 export default function Footer() {
   return (
-    <footer style={footerStyle}>
+    <footer className="site-footer" style={footerStyle}>
 
       {/* Left: MapLibre + Esri attribution */}
       <p style={{ ...attributionStyle, flex: 1 }}>
@@ -19,7 +19,7 @@ export default function Footer() {
       </p>
 
       {/* Center: logos */}
-      <div style={logosContainerStyle}>
+      <div className="footer-logos" style={logosContainerStyle}>
         <a href="https://ciroh.ua.edu/" target="_blank" rel="noreferrer">
           <img
             src={`${LOGO_BASE}/1_CIROH-Horizontal-Logo_AI-Canva-470x125px.png`}
@@ -62,7 +62,7 @@ export default function Footer() {
       </div>
 
       {/* Right: copyright notice */}
-      <p style={{ ...attributionStyle, flex: 1, textAlign: 'right' }}>
+      <p className="footer-copyright" style={{ ...attributionStyle, flex: 1 }}>
         <a href="https://sdml.ua.edu/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
           © 2026 SDML
         </a>{' '}
@@ -81,13 +81,7 @@ export default function Footer() {
 ======================= */
 
 const footerStyle: React.CSSProperties = {
-  backgroundImage: 'url(/static/fimbench_gui/images/Footer-HQ.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundRepeat: 'no-repeat',
-  padding: '1rem 2rem',
   display: 'flex',
-  flexDirection: 'row',
   alignItems: 'center',
 };
 

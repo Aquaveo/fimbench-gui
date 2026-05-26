@@ -11,100 +11,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Filters } from '../src/types/filters';
 import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
 import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
+import { parseStates, computeDateBounds, recordMatchesFilters } from '../src/utils/filters';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 import { pickContrastColor } from '../src/utils/contrast';
 import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
 import { COLORS } from '../src/theme';
 import { formatYmd } from '../src/utils/dateFormat';
-
-// Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
-function parseStates(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map(String);
-  if (typeof raw === 'string') return raw.split(',').map(s => s.trim()).filter(Boolean);
-  return [];
-}
-
-// Returns true if the record's states overlap with any of the selected states.
-function stateMatches(recordState: unknown, selected: string[]): boolean {
-  if (selected.length === 0) return true;
-  const recStates = parseStates(recordState);
-  return recStates.some(s => selected.includes(s));
-}
-
-// Safely parse a strict YYYY-MM-DD string into a UTC timestamp.
-// Returns null for anything that isn't exactly YYYY-MM-DD or isn't a real calendar date.
-// The regex gate is important because new Date() is lenient — it would otherwise accept
-// "2010", "2010-3-29", "03/29/2010", etc.
-const YMD_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-function parseYmd(str: unknown): number | null {
-  if (typeof str !== 'string' || !YMD_REGEX.test(str)) return null;
-  const ts = new Date(str).getTime();
-  return Number.isNaN(ts) ? null : ts;
-}
-
-// Scan every record's date_ymd / start_date_ymd / end_date_ymd for valid
-// YYYY-MM-DD strings and return the min/max. Returns null if no valid dates
-// exist (e.g. a catalog full of Tier 4 synthetic events with only return periods).
-function computeDateBounds(records: CatalogRecord[]): { minDate: string; maxDate: string } | null {
-  let min: string | null = null;
-  let max: string | null = null;
-  const consider = (v: unknown) => {
-    if (typeof v !== 'string' || !YMD_REGEX.test(v)) return;
-    if (min === null || v < min) min = v;
-    if (max === null || v > max) max = v;
-  };
-  for (const r of records) {
-    consider(r.date_ymd);
-    consider(r.start_date_ymd);
-    consider(r.end_date_ymd);
-  }
-  return min && max ? { minDate: min, maxDate: max } : null;
-}
-
-// Returns true if the record's return period matches the selected filter.
-// Records with no return_period (null/undefined) always pass — only Tier 4 (FEMA BLE)
-// records carry this field; everything else is event-based and has no return period.
-function returnPeriodMatches(record: CatalogRecord, selectedPeriod: string): boolean {
-  const rp = record.return_period;
-  if (rp == null) return true;
-  return String(rp) === selectedPeriod;
-}
-
-// Returns true if the record's date (single or range) overlaps the filter window.
-// Records with no valid date info are included (we don't hide data we can't place in time).
-// All inputs are parsed via parseYmd; malformed or empty values become unconstrained
-// bounds (filter side) or are treated as missing (record side).
-function dateMatches(record: CatalogRecord, startDate: string, endDate: string): boolean {
-  const filterStart = parseYmd(startDate) ?? -Infinity;
-  const filterEnd   = parseYmd(endDate)   ?? Infinity;
-
-  const single   = parseYmd(record.date_ymd);
-  const recStart = parseYmd(record.start_date_ymd);
-  const recEnd   = parseYmd(record.end_date_ymd);
-
-  if (single !== null) return single >= filterStart && single <= filterEnd;
-  if (recStart !== null && recEnd !== null) {
-    return recStart <= filterEnd && recEnd >= filterStart;
-  }
-  if (recStart !== null) return recStart >= filterStart && recStart <= filterEnd;
-  if (recEnd   !== null) return recEnd   >= filterStart && recEnd   <= filterEnd;
-  return true;  // no valid date info — include
-}
-
-// Single source of truth for whether a catalog record passes the active filters.
-// HUC mode (valid 8-digit huc8Id) bypasses state and date checks — HUC-based
-// filtering is logically separate per the original filter spec.
-function recordMatchesFilters(rec: CatalogRecord, f: Filters): boolean {
-  const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = f;
-  if (!tiers.includes(rec.tier)) return false;
-  if (!returnPeriodMatches(rec, returnPeriod)) return false;
-  if (isValidHuc8(huc8Id)) {
-    return toHuc8Array(rec).some(h => h === huc8Id);
-  }
-  if (!stateMatches(rec.state, states)) return false;
-  if (!dateMatches(rec, startDate, endDate)) return false;
-  return true;
-}
 
 // Escape HTML so catalog-sourced strings can't inject markup into the tooltip.
 function escapeHtml(s: unknown): string {
@@ -147,8 +59,10 @@ const buttonTextColor = (hex: string) =>
 
 const FIM_DOWNLOAD_COLOR = COLORS.brand; // matches "FIMbench" header text
 
+const tierLabel = (rec: Partial<CatalogRecord>) =>
+  (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
+
 function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
-  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
   const huc8Str   = toDisplayStr(rec?.huc8);
@@ -161,7 +75,7 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
 
   return `
     <div style="font-size:0.75rem;line-height:1.45;min-width:11.25rem">
-      ${line('Tier',   tierLabel)}
+      ${line('Tier',   tierLabel(rec))}
       ${line('Basin',  basinStr)}
       ${line('State',  stateStr)}
       ${line('HUC8',   huc8Str)}
@@ -171,7 +85,6 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
 }
 
 function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
-  const tierLabel = (rec?.tier && TIER_LABELS[rec.tier]) ?? rec?.tier ?? '';
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
   const huc8Str   = toDisplayStr(rec?.huc8);
@@ -211,7 +124,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   return `
     <div style="font-size:0.8125rem;line-height:1.5;min-width:13.75rem">
       <table style="border-collapse:collapse;width:100%">
-        ${row('Tier',       tierLabel)}
+        ${row('Tier',       tierLabel(rec))}
         ${row('Basin',      basinStr)}
         ${row('State',      stateStr)}
         ${row('Quality',    qualStr)}
@@ -440,6 +353,8 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
 
   const filtersRef = useRef(filters);
 
+  const currentTierColorExpr = (): ExpressionSpecification => buildTierColorExpr(tierColors(colorModeRef.current));
+
   const buildCentroidGeoJSON = (f: Filters) => {
     return {
       type: 'FeatureCollection' as const,
@@ -540,7 +455,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // ── Centroid circle layer (visible below crossfade zone) ──
-      const initTierColorExpr = buildTierColorExpr(tierColors(colorModeRef.current));
+      const initTierColorExpr = currentTierColorExpr();
       map.addLayer({
         id: 'centroids-layer',
         type: 'circle',
@@ -765,7 +680,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         const rec = catalogRef.current.find(r => String(r.site_id) === siteId) ?? feats[0].properties;
         hoverPopup.setHTML(buildTooltipHtml(rec));
         if (!hoverPopup.isOpen()) {
-          hoverPopup.addTo(map).trackPointer();
+          hoverPopup.setLngLat(e.lngLat).addTo(map).trackPointer();
         }
       });
 
@@ -778,7 +693,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       });
 
       // Re-apply selection emphasis after every map reload (e.g. basemap switch)
-      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, currentTierColorExpr(), zoomFocusSiteIdRef.current);
 
       map.on('moveend', emitFeatures);
       map.on('zoomend', emitFeatures);
@@ -834,20 +749,23 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         }
 
         // Populate the centroid source once catalog is loaded.
-        // If the map style is already loaded, update immediately.
-        // If the map is still initializing, wait for its 'load' event —
-        // otherwise the setData call is a no-op (source doesn't exist yet).
+        // Check for the centroid source directly rather than isStyleLoaded() —
+        // MapLibre v5 briefly marks the style as not loaded while reprocessing
+        // layers added in the load handler, so isStyleLoaded() can return false
+        // even after the load event has already fired.
         const map = mapRef.current;
-        if (map?.isStyleLoaded()) {
+        if (map) {
           const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-          src?.setData(buildCentroidGeoJSON(filtersRef.current));
-          map.once('idle', () => emitFeaturesRef.current?.());
-        } else if (map) {
-          map.once('load', () => {
-            const src = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
-            src?.setData(buildCentroidGeoJSON(filtersRef.current));
+          if (src) {
+            src.setData(buildCentroidGeoJSON(filtersRef.current));
             map.once('idle', () => emitFeaturesRef.current?.());
-          });
+          } else {
+            map.once('load', () => {
+              const src2 = map.getSource('centroids') as maplibregl.GeoJSONSource | undefined;
+              src2?.setData(buildCentroidGeoJSON(filtersRef.current));
+              map.once('idle', () => emitFeaturesRef.current?.());
+            });
+          }
         }
       })
       .catch(err => console.error('Failed to load catalog:', err));
@@ -912,7 +830,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
     selectedSiteIdsRef.current = ids;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
-    applySelectionEmphasis(map, ids, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+    applySelectionEmphasis(map, ids, currentTierColorExpr(), zoomFocusSiteIdRef.current);
   }, [selectedSiteIds]);
 
   // Re-apply tier colors whenever the color mode changes
@@ -932,7 +850,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 16, duration: 800 });
       // Bump the focus target's z-order so it renders above its neighbours.
       zoomFocusSiteIdRef.current = focusSiteId ?? null;
-      applySelectionEmphasis(map, selectedSiteIdsRef.current, buildTierColorExpr(tierColors(colorModeRef.current)), zoomFocusSiteIdRef.current);
+      applySelectionEmphasis(map, selectedSiteIdsRef.current, currentTierColorExpr(), zoomFocusSiteIdRef.current);
     },
     clearPopup: () => {
       currentClickPopupRef.current?.remove();
@@ -945,12 +863,10 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       currentClickPopupRef.current?.remove();
       currentClickPopupRef.current = null;
       selectedSiteIdsRef.current = new Set();
-      (map.getSource('centroids') as maplibregl.GeoJSONSource | undefined)
-        ?.setData(buildCentroidGeoJSON(filtersRef.current));
       applySelectionEmphasis(
         map,
         new Set(),
-        buildTierColorExpr(tierColors(colorModeRef.current)),
+        currentTierColorExpr(),
         null,
       );
     },

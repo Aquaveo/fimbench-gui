@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
+import { useDownloadManager } from '../src/context/download';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
@@ -161,6 +161,7 @@ type Props = {
   onZoomToFeature?: (bbox: Bbox, siteId: string) => void;
 };
 const PAGE_SIZE = 20;
+const DOWNLOAD_CAP = 10;
 
 // ── Component ─────────────────────────────────────────────────
 export default function FIMTable({ features, selectedSiteIds, onSelectionChange, onClearSelection, onZoomToFeature }: Props) {
@@ -173,8 +174,21 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const anchorSiteId = React.useRef<string | null>(null);
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
-  const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(null);
+  const { progress: downloadProgress, isActive: downloadActive, startDownload } = useDownloadManager();
   const [infoRecord, setInfoRecord] = useState<FIMRecord | null>(null);
+  const [showCapModal, setShowCapModal] = useState(false);
+  const [capTriggered, setCapTriggered] = useState(false);
+
+  const overCap = selectedIds.size > DOWNLOAD_CAP;
+
+  useEffect(() => {
+    if (selectedIds.size <= DOWNLOAD_CAP) {
+      // Reset cap UI when the user deselects back below the cap threshold.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCapTriggered(false);
+      setShowCapModal(false);
+    }
+  }, [selectedIds.size]);
 
   useEffect(() => {
     // When features is empty, the render short-circuits to the empty-state
@@ -188,6 +202,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     if (features.length === 0) return;
 
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setPage(1);
 
@@ -217,7 +232,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   // the selected set. For 0 or 1 selections, show everything.
   const filteredRecords = useMemo(
     () => (selectedIds.size >= 2 ? records.filter(r => selectedIds.has(r.siteId)) : records),
-    [records, selectedIds]
+    [records, selectedSiteIds] // eslint-disable-line react-hooks/exhaustive-deps -- selectedIds derives from selectedSiteIds; using the prop avoids a new-Set-on-every-render false dep
   );
 
   // Sort records — memoized so it only reruns when records/sort state changes
@@ -229,6 +244,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   // When entering "focused" mode (size ≥ 2), reset to page 1 so the selected
   // rows are visible from the top.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (selectedIds.size >= 2) setPage(1);
   }, [selectedIds.size]);
 
@@ -238,6 +254,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     const siteId = [...selectedSiteIds][0];
     const idx = sortedRecords.findIndex(r => r.siteId === siteId);
     if (idx === -1) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(Math.ceil((idx + 1) / PAGE_SIZE));
   }, [selectedSiteIds, sortedRecords]);
 
@@ -272,38 +289,15 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     }
   };
 
-  const handleBulkDownload = async () => {
-    const selected = records.filter(r => selectedIds.has(r.siteId));
-    if (selected.length === 0) return;
-
-    let done = 0;
-    setDownloadProgress({ done, total: selected.length });
-
-    const zip = new JSZip();
-
-    await Promise.all(selected.map(async (r) => {
-      const folder = zip.folder(r.siteId)!;
-
-      await Promise.all([
-        fetch(r.tifUrl).then(res => {
-          if (res.ok) return res.blob().then(b => {
-            folder.file(r.tifUrl.split('/').pop()!, b, { compression: 'STORE' });
-          });
-        }).catch(() => {}),
-        fetch(r.metaUrl).then(res => {
-          if (res.ok) return res.blob().then(b => {
-            folder.file(r.metaUrl.split('/').pop()!, b);
-          });
-        }).catch(() => {}),
-      ]);
-
-      done++;
-      setDownloadProgress({ done, total: selected.length });
-    }));
-
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    saveAs(zipBlob, `fim_${selected.length}_records.zip`);
-    setDownloadProgress(null);
+  const handleBulkDownload = () => {
+    const selected = features
+      .filter(f => selectedIds.has(f.site_id))
+      .map(f => ({
+        siteId: f.site_id,
+        tifUrl: buildTifUrl(f.s3_prefix, f.file_name),
+        metaUrl: buildMetaUrl(f.s3_prefix, f.file_name),
+      }));
+    startDownload(selected);
   };
 
   const allColumns = useMemo<ColDef[]>(() => [
@@ -387,18 +381,33 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
               Downloading {downloadProgress.done} / {downloadProgress.total}…
             </span>
           ) : (
-            <button
-              onClick={handleBulkDownload}
-              disabled={!hasSelection}
-              style={{ ...tableHeaderBtnStyle, opacity: hasSelection ? 1 : 0.4, cursor: hasSelection ? 'pointer' : 'default' }}
-              title={hasSelection ? `Download ${selectedIds.size} selected record(s) as a zip` : 'Select rows to enable bulk download'}
-            >
-              Download Selected ({selectedIds.size})
-            </button>
+            <>
+              {capTriggered && (
+                <span style={{ fontSize: '0.75rem', color: '#c0392b' }}>
+                  Limit is {DOWNLOAD_CAP} items —{' '}
+                  <a href="https://pypi.org/project/fimeval/" target="_blank" rel="noreferrer" className="api-link">use the FIMeval Python API</a>
+                  {' '}for larger downloads
+                </span>
+              )}
+              <button
+                onClick={() => overCap ? (setShowCapModal(true), setCapTriggered(true)) : handleBulkDownload()}
+                disabled={!hasSelection || capTriggered || downloadActive}
+                style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !capTriggered && !downloadActive) ? 1 : 0.4, cursor: (hasSelection && !capTriggered && !downloadActive) ? 'pointer' : 'default' }}
+                title={
+                  capTriggered
+                    ? `Deselect items to re-enable (limit: ${DOWNLOAD_CAP})`
+                    : hasSelection
+                      ? `Download ${selectedIds.size} selected record(s) as a zip`
+                      : 'Select rows to enable bulk download'
+                }
+              >
+                Download Selected ({selectedIds.size})
+              </button>
+            </>
           )}
           <button
             onClick={onClearSelection}
-            disabled={!hasSelection || !!downloadProgress}
+            disabled={!hasSelection || downloadActive}
             style={{ ...tableHeaderBtnStyle, opacity: (hasSelection && !downloadProgress) ? 1 : 0.4, cursor: (hasSelection && !downloadProgress) ? 'pointer' : 'default' }}
           >
             Clear Selection
@@ -414,6 +423,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       </div>
 
       {infoRecord && <MetaModal record={infoRecord} onClose={() => setInfoRecord(null)} />}
+      {showCapModal && <CapModal cap={DOWNLOAD_CAP} onClose={() => setShowCapModal(false)} />}
 
       {/* Table */}
       <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1 }}>
@@ -548,6 +558,36 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
           <button onClick={handleDownloadJson} style={modalDlBtnStyle(COLORS.brand, COLORS.ink)}>
             <DownloadIcon /> Download .json
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cap modal ─────────────────────────────────────────────────
+function CapModal({ cap, onClose }: { cap: number; onClose: () => void }) {
+  useEscapeKey(onClose);
+  return (
+    <div style={modalBackdropStyle} onClick={onClose}>
+      <div style={{ ...modalCardStyle, maxWidth: '26rem' }} onClick={e => e.stopPropagation()}>
+        <div style={modalHeaderStyle}>
+          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>Bulk Download Limit Reached</span>
+          <button style={modalCloseBtnStyle} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div style={{ ...modalBodyStyle, fontSize: '0.8125rem', lineHeight: 1.6 }}>
+          <p style={{ margin: '0 0 0.75rem' }}>
+            Bulk download is capped at <strong>{cap} records</strong> to keep things running smoothly for everyone.
+          </p>
+          <p style={{ margin: 0 }}>
+            Need more?{' '}
+            <a href="https://pypi.org/project/fimeval/" target="_blank" rel="noreferrer">
+              Use the FIMeval Python API
+            </a>
+            {' '}— it's designed for large-scale batch access and has no item limit.
+          </p>
+        </div>
+        <div style={modalFooterStyle}>
+          <button onClick={onClose} style={modalDlBtnStyle('#e8e8e8', '#333')}>Got it</button>
         </div>
       </div>
     </div>

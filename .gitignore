@@ -72,3 +72,5 @@ tethysapp/fimbench_gui/public/workspaces/user_workspaces/*
 # =====================================================
 .DS_Store
 Thumbs.db
+# Visual brainstorming sessions
+.superpowers/
