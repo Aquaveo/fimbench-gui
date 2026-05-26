@@ -155,7 +155,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
 
   return (
-    <div className={`filter-sidebar${isOpen ? ' filter-sidebar--open' : ''}`} style={{ width: '15.625rem', padding: '1.25rem 1rem 1.5rem', backgroundImage: 'url(/static/fimbench_gui/images/FilterSidebar.png)', backgroundSize: 'cover', backgroundPosition: 'center', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
+    <div className={`filter-sidebar${isOpen ? ' filter-sidebar--open' : ''}`} style={{ width: '15.625rem', padding: '1.25rem 1rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
 
       {/* ── Header ── */}
       <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: 700, letterSpacing: '0.04em', paddingBottom: '0.875rem', marginBottom: 0, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
