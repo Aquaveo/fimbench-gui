@@ -7,7 +7,7 @@ export default function HeaderBar() {
   const [hovered, setHovered] = useState(false);
   return (
     <header style={headerStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <a href="https://tethys.ciroh.org/apps/fimbench-gui/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit' }}>
         <img
           src="/static/fimbench_gui/images/android-chrome-512x512.png"
           alt="FIMbench logo"
@@ -19,7 +19,7 @@ export default function HeaderBar() {
             Explore and download benchmark Flood Inundation Maps across the U.S.
           </p>
         </div>
-      </div>
+      </a>
       <nav>
         <Link
           to="/docs"
