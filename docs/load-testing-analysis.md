@@ -202,6 +202,15 @@ Every static-asset request that hits Django consumes a worker. An nginx `locatio
 
 The JS bundle and CSS rarely change. Setting `Cache-Control: max-age=31536000, immutable` (with content-hash filenames from Vite — already done) means repeat visitors never touch Django for assets. This eliminates the static-asset queue for returning users.
 
+This is configured via WhiteNoise in the Tethys portal's `settings.py` or `portal_config.yml` — it cannot be set from within the app code itself:
+
+```python
+# settings.py (Tethys portal configuration — requires server access)
+WHITENOISE_MAX_AGE = 31536000  # 1 year in seconds
+```
+
+This is safe because Vite already produces content-hashed filenames (e.g. `main.abc123.js`). The filename changes whenever the bundle changes, so browsers can cache the current file indefinitely without any risk of serving stale code to returning users.
+
 ### 7.4 Add a CDN in front of static assets *(medium effort)*
 
 CloudFront or Fastly in front of `/static/fimbench_gui/` would cache static files at edge nodes globally, removing the static-asset load from Django entirely even for first visits.
