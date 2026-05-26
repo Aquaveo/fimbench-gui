@@ -37,6 +37,9 @@ function App() {
       if (!mobile) {
         setSidebarOpen(true);
         setTableVisible(true);
+      } else {
+        setSidebarOpen(false);
+        setTableVisible(false);
       }
     };
     window.addEventListener('resize', onResize);
@@ -151,7 +154,7 @@ function App() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.4)',
+            background: 'rgba(37, 194, 223, 0.25)',
             zIndex: 199,
           }}
         />
