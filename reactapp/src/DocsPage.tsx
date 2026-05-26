@@ -339,7 +339,7 @@ export default function DocsPage() {
       <HeaderBar />
       <div style={bodyWrapStyle}>
         {/* ── Sticky TOC sidebar ── */}
-        <aside style={sidebarStyle}>
+        <aside style={sidebarStyle} className="docs-sidebar">
           <nav aria-label="Table of contents">
             <p style={tocTitleStyle}>Contents</p>
             <ol style={tocListStyle}>
@@ -382,8 +382,31 @@ export default function DocsPage() {
           `}
           </style>
           <Link to="/" style={backLinkStyle} className="back-link">← Back to Map</Link>
-          
+
           <h1 style={pageTitleStyle}>FIMbench Documentation</h1>
+
+          {/* ── Mobile-only collapsible TOC ── */}
+          <details className="docs-toc-mobile">
+            <summary className="docs-toc-mobile__summary">Contents</summary>
+            <nav style={{ padding: '0.5rem 0 0.25rem' }}>
+              <ol style={tocListStyle}>
+                {TOC.map((entry) => (
+                  <li key={entry.id} style={tocItemStyle}>
+                    <a href={`#${entry.id}`} style={tocLinkStyle}>{entry.label}</a>
+                    {entry.sub && (
+                      <ol style={tocSubListStyle}>
+                        {entry.sub.map((sub) => (
+                          <li key={sub.id}>
+                            <a href={`#${sub.id}`} style={tocLinkStyle}>{sub.label}</a>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </details>
           
           {/* ── 1. Overview ── */}
           <section id="overview" style={sectionStyle}>
@@ -407,9 +430,9 @@ export default function DocsPage() {
             </ul>
 
             <Figure
-              src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
-              alt="Structure of FIMbench"
-              caption="Fig. 1: Structure of FIMbench"
+              src="/static/fimbench_gui/images/Flowchart.png"
+              alt="FIMbench data workflow"
+              caption="Fig. 1: FIMbench data workflow"
             />
           </section>
           
@@ -701,6 +724,12 @@ export default function DocsPage() {
               <li><strong>Spatial Resolution:</strong> 20–50 cm</li>
               <li><strong>NoData Value:</strong> -9999</li>
             </ul>
+            <p style={sourceStyle}>
+              <strong>Data source:</strong>{' '}
+              <a href="https://storms.ngs.noaa.gov/" target="_blank" rel="noreferrer">NOAA Emergency Response Imagery (ERI)</a>.{' '}
+              Spatial resolution ranges from 20 to 50 cm (derived from reprojected flood maps),
+              capturing major flood events across the CONUS (Figure 1a).
+            </p>
 
             <h3 id="tier-2" style={h3Style}>4.2 Tier 2 — PlanetScope</h3>
             <p style={tierBadgeWrapStyle}>
@@ -716,6 +745,12 @@ export default function DocsPage() {
               <li><strong>Spatial Resolution:</strong> 3–5 m</li>
               <li><strong>NoData Value:</strong> -9999</li>
             </ul>
+            <p style={sourceStyle}>
+              <strong>Data source:</strong>{' '}
+              <a href="https://www.planet.com/products/satellite-monitoring" target="_blank" rel="noreferrer">PlanetScope Scene (PSS) and RapidEye Ortho Tile (REO)</a>.{' '}
+              Imagery is integrated with a hydrologically guided region-growing algorithm and
+              the Remote-Sensing based Flood Extent and Depth (RS-FloodXDepth).
+            </p>
 
             <h3 id="tier-3" style={h3Style}>4.3 Tier 3 — Sentinel-1</h3>
             <p style={tierBadgeWrapStyle}>
@@ -732,6 +767,11 @@ export default function DocsPage() {
               <li><strong>Spatial Resolution:</strong> 10 m</li>
               <li><strong>NoData Value:</strong> -9999</li>
             </ul>
+            <p style={sourceStyle}>
+              <strong>Data source:</strong>{' '}
+              <a href="https://dataspace.copernicus.eu/data-collections/copernicus-sentinel-missions/sentinel-1" target="_blank" rel="noreferrer">Copernicus Sentinel-1</a>{' '}
+              satellite sensor at 10 m spatial resolution (Figure 1c).
+            </p>
 
             <h3 id="tier-4" style={h3Style}>4.4 Tier 4 — FEMA BLE</h3>
             <p style={tierBadgeWrapStyle}>
@@ -747,6 +787,11 @@ export default function DocsPage() {
               <li><strong>Spatial Resolution:</strong> 10 m</li>
               <li><strong>NoData Value:</strong> -9999</li>
             </ul>
+            <p style={sourceStyle}>
+              <strong>Data source:</strong>{' '}
+              <a href="https://webapps.usgs.gov/infrm/estbfe/" target="_blank" rel="noreferrer">FEMA Base Level Engineering (BLE)</a>{' '}
+              on the Hydrologically Unit Code (HUC) 8 level of the watershed (Figure 1e).
+            </p>
 
             <h3 id="hwm" style={h3Style}>4.5 High Water FIM (HWM)</h3>
             <p style={tierBadgeWrapStyle}>
@@ -761,6 +806,19 @@ export default function DocsPage() {
               <li><strong>Spatial Resolution:</strong> 10 m</li>
               <li><strong>NoData Value:</strong> -9999</li>
             </ul>
+            <p style={sourceStyle}>
+              <strong>Data source:</strong>{' '}
+              <a href="https://apps.usgs.gov/fev/event/" target="_blank" rel="noreferrer">USGS Flood Event Viewer</a>.{' '}
+              High-water marks collected by the U.S. Geological Survey were used to construct
+              observation-based flood inundation maps generated with a 10 m resolution DEM.
+            </p>
+
+            <Figure
+              src="/static/fimbench_gui/images/FIMbench-Image-Sources.png"
+              alt="FIMbench image sources across all tiers"
+              caption="Figure 1: Sources and the FIM generated (a) NOAA's ERI (left panel) and Binary FIM with non-flooded and HC flooded pixels (right panel) (Tier 1) (b) Raw PlanetScope Scene image (left panel) and Binary FIM with non-flooded, HC flooded pixels and LC flooded pixels (right panel) (Tier 2) (c) Raw Sentinel-1A image (left panel) and Binary FIM with non-flooded, HC flooded pixels and LC flooded pixels (right panel) (d) USGS surveyed high water marks (in red dots) (left panel) and Binary FIM with non-flooded and flooded pixels (right panel), (e) Binary FIM of FEMA's Base Level Engineering with non-flooded and flooded pixels (right panel) (Tier 4)."
+              maxWidth="55rem"
+            />
           </section>
 
           <hr style={hrStyle} />
@@ -773,7 +831,7 @@ export default function DocsPage() {
             <ul style={specListStyle}>
               <li>
                 The folder structure in the database S3 Bucket is organized by quality
-                levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 2).
+                levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 8).
               </li>
               <li>
                 Under each Level folder, there are subfolders consisting of flood maps
@@ -831,6 +889,12 @@ export default function DocsPage() {
               <strong>Example:</strong>{' '}
               <code>S1A_10m_20190527T002655_953144W310436N_BM.tif</code>
             </p>
+
+            <Figure
+              src="/static/fimbench_gui/images/Structure-of-FIMBench.png"
+              alt="Structure of FIMbench"
+              caption="Fig. 8: Structure of FIMbench"
+            />
           </section>
 
           <hr style={hrStyle} />
@@ -942,7 +1006,7 @@ export default function DocsPage() {
             </p>
           </section>
         </main>
-        <div style={{ width: '15rem', flexShrink: 0 }} />
+        <div className="docs-right-spacer" style={{ width: '15rem', flexShrink: 0 }} />
       </div>
       <Footer />
     </div>
@@ -1118,5 +1182,12 @@ const detailsBodyStyle: React.CSSProperties = {
   padding: '1rem',
   borderTop: '0.0625rem solid #d0d7de',
   fontSize: '0.875rem',
+  lineHeight: 1.7,
+};
+
+const sourceStyle: React.CSSProperties = {
+  margin: '0.5rem 0 0',
+  fontSize: '0.8125rem',
+  color: '#444',
   lineHeight: 1.7,
 };

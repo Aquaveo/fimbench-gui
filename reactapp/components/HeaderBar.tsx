@@ -6,7 +6,7 @@ export default function HeaderBar() {
   const onDocs = !!useMatch('/docs');
   const [hovered, setHovered] = useState(false);
   return (
-    <header style={headerStyle}>
+    <header className="site-header" style={headerStyle}>
       <a href="https://tethys.ciroh.org/apps/fimbench-gui/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit' }}>
         <img
           src="/static/fimbench_gui/images/android-chrome-512x512.png"
@@ -55,10 +55,6 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '0.5rem 1.25rem',
-  backgroundImage: 'url(/static/fimbench_gui/images/Header-HQ.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundRepeat: 'no-repeat',
   color: COLORS.inkLight,
   flexShrink: 0,
 };
