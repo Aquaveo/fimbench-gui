@@ -22,8 +22,8 @@ class App(TethysAppBase):
     # Ensuring that 404 is avoided
     catch_all = 'home'
 
-    # Optional metadata
     icon = f'{package}/images/android-chrome-512x512.png'
+    # Optional metadata
     description = 'FIMbench app with Tethys backend'
     color = '#007bff'
     tags = 'FIM, Flood Mapping, Flood Inundation Mapping, Hydrology, Benchmark data, GIS'
