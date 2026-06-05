@@ -78,6 +78,7 @@ function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: str
     platform,
     returnPeriod,
     bbox,
+    s3Prefix,
     tifUrl:  buildTifUrl(s3Prefix, fileName),
     metaUrl: buildMetaUrl(s3Prefix, fileName),
   };
@@ -294,8 +295,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       .filter(f => selectedIds.has(f.site_id))
       .map(f => ({
         siteId: f.site_id,
-        tifUrl: buildTifUrl(f.s3_prefix, f.file_name),
-        metaUrl: buildMetaUrl(f.s3_prefix, f.file_name),
+        s3Prefix: f.s3_prefix,
       }));
     startDownload(selected);
   };
@@ -329,8 +329,19 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
         </button>
       ),
     },
+    { label: 'Download All',  width: '5.625rem',
+      render: r => (
+        <button
+          className="fim-dl-all"
+          onClick={(e) => { e.stopPropagation(); startDownload([{ siteId: r.siteId, s3Prefix: r.s3Prefix }]); }}
+          disabled={downloadActive}
+          title="Download all files in this folder as a zip"
+        >
+          Download
+        </button>
+      ) },
     { label: 'Download FIM',  width: '5.625rem',
-      render: r => <a href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+      render: r => <a className="fim-dl-fim" href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
     { label: 'Info',           width: '3.75rem',
       render: r => (
         <button
@@ -341,7 +352,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
           ⓘ
         </button>
       ) },
-  ], [onZoomToFeature]);
+  ], [onZoomToFeature, startDownload, downloadActive]);
 
   const handleHeaderClick = (key: SortKey | undefined) => {
     if (!key) return;

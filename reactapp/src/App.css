@@ -191,6 +191,44 @@
   background-color: #f9f9f9;
 }
 
+/* ─── FIM table download links ─── */
+/* "Download All": link-styled button matching the current download link
+   (close to cyan); on hover turns brighter cyan, bold and underlined. */
+.fim-dl-all {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+.fim-dl-all:hover {
+  color: #1BC3E3;
+  font-weight: 700;
+  text-decoration: underline;
+}
+.fim-dl-all:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.fim-dl-all:disabled:hover {
+  color: var(--color-link);
+  font-weight: inherit;
+  text-decoration: none;
+}
+
+/* "Download FIM": deep blue, darkening to navy (bold + underlined) on hover. */
+.fim-dl-fim {
+  color: #1434A4;
+  text-decoration: none;
+}
+.fim-dl-fim:hover {
+  color: #00008B;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 /* Hover tooltip on map features: must not intercept pointer events,
    otherwise the popup sits under the cursor and blocks the map's
    mousemove handler, causing the tooltip to freeze. */

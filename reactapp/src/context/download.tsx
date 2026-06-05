@@ -2,15 +2,16 @@ import { createContext, useContext, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { listFolderUrls } from '../utils/minio';
 
-export type DownloadRecord = { siteId: string; tifUrl: string; metaUrl: string };
+export type DownloadFolder = { siteId: string; s3Prefix: string };
 
 type Progress = { done: number; total: number };
 
 type DownloadCtx = {
   progress: Progress | null;
   isActive: boolean;
-  startDownload: (records: DownloadRecord[]) => void;
+  startDownload: (folders: DownloadFolder[]) => void;
   cancel: () => void;
 };
 
@@ -32,42 +33,40 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     setProgress(null);
   };
 
-  const startDownload = async (records: DownloadRecord[]) => {
-    if (records.length === 0 || isActive) return;
+  const startDownload = async (folders: DownloadFolder[]) => {
+    if (folders.length === 0 || isActive) return;
 
     const controller = new AbortController();
     abortRef.current = controller;
     const { signal } = controller;
 
     let done = 0;
-    setProgress({ done, total: records.length });
+    setProgress({ done, total: folders.length });
 
     try {
       const zip = new JSZip();
 
-      await Promise.all(records.map(async (r) => {
-        const folder = zip.folder(r.siteId)!;
-        await Promise.all([
-          fetch(r.tifUrl, { signal }).then(res => {
+      await Promise.all(folders.map(async (f) => {
+        const folder = zip.folder(f.siteId)!;
+        // Enumerate the folder's full contents, then fetch every object.
+        const objects = await listFolderUrls(f.s3Prefix, signal).catch(() => []);
+        await Promise.all(objects.map(o =>
+          fetch(o.url, { signal }).then(res => {
             if (res.ok) return res.blob().then(b => {
-              folder.file(r.tifUrl.split('/').pop()!, b, { compression: 'STORE' });
+              // Skip recompressing the (already large) raster; DEFLATE the rest.
+              folder.file(o.name, b, o.name.toLowerCase().endsWith('.tif') ? { compression: 'STORE' } : undefined);
             });
-          }).catch(() => {}),
-          fetch(r.metaUrl, { signal }).then(res => {
-            if (res.ok) return res.blob().then(b => {
-              folder.file(r.metaUrl.split('/').pop()!, b);
-            });
-          }).catch(() => {}),
-        ]);
+          }).catch(() => {})
+        ));
 
         if (signal.aborted) return;
         done++;
-        setProgress({ done, total: records.length });
+        setProgress({ done, total: folders.length });
       }));
 
       if (!signal.aborted) {
         const zipBlob = await zip.generateAsync({ type: 'blob' });
-        saveAs(zipBlob, `fim_${records.length}_records.zip`);
+        saveAs(zipBlob, folders.length === 1 ? `${folders[0].siteId}.zip` : `fim_${folders.length}_records.zip`);
       }
     } finally {
       setProgress(null);

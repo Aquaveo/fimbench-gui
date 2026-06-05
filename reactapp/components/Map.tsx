@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useColorMode } from '../src/context/colorMode';
+import { useDownloadManager } from '../src/context/download';
 import { tierColors, TIER_LABELS } from '../src/utils/tierColors';
 import maplibregl, {
   type ExpressionSpecification,
@@ -98,6 +99,9 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const fileName = typeof rec?.file_name  === 'string' ? rec.file_name  : '';
   const tifUrl  = s3Prefix && fileName ? buildTifUrl(s3Prefix, fileName)  : '';
   const metaUrl = s3Prefix && fileName ? buildMetaUrl(s3Prefix, fileName) : '';
+  // "Download All" zips the whole folder; the JS handler is wired after the
+  // popup mounts (see map.on('click')), keyed off the data-folder-download marker.
+  const hasFolder = !!s3Prefix;
 
   // Only renders a table row when val is non-empty — no '—' placeholders.
   const row = (k: string, v: string) =>
@@ -111,7 +115,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
     'padding:0.25rem 0.625rem', 'font-size:0.75rem', 'font-family:inherit',
     'border:0.0625rem solid #ccc', 'border-radius:0.25rem',
     `background:${bg}`, `color:${color}`,
-    'cursor:pointer', 'text-decoration:none', 'font-weight:500',
+    'cursor:pointer', 'text-decoration:none', 'font-weight:500', 'white-space:nowrap',
   ].join(';');
 
   const fimColor  = buttonTextColor(FIM_DOWNLOAD_COLOR);
@@ -120,6 +124,10 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
 
   const btn = (href: string, label: string, style: string) =>
     `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer" style="${style}">${DOWNLOAD_ICON_SVG}${escapeHtml(label)}</a>`;
+
+  // Folder-zip trigger: an anchor marked for the post-mount click handler to find.
+  // Uses the brand style (the colour "Download FIM" previously had).
+  const allBtn = `<a href="#" role="button" data-folder-download style="${fimStyle}">${DOWNLOAD_ICON_SVG}Download All</a>`;
 
   return `
     <div style="font-size:0.8125rem;line-height:1.5;min-width:13.75rem">
@@ -132,10 +140,11 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${row('Resolution', resStr)}
         ${hasDate ? row(label, value) : ''}
       </table>
-      ${tifUrl || metaUrl ? `
-      <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:wrap">
-        ${tifUrl  ? btn(tifUrl,  'Download FIM',      fimStyle)  : ''}
-        ${metaUrl ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
+      ${tifUrl || metaUrl || hasFolder ? `
+      <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:nowrap">
+        ${hasFolder ? allBtn : ''}
+        ${tifUrl   ? btn(tifUrl,  'Download FIM',      metaStyle) : ''}
+        ${metaUrl  ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
       </div>` : ''}
     </div>
   `;
@@ -346,6 +355,12 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const onMultiFeatureSelectRef = useRef(onMultiFeatureSelect);
   useEffect(() => { onMultiFeatureSelectRef.current = onMultiFeatureSelect; }, [onMultiFeatureSelect]);
 
+  // Held in a ref so the click-popup handler (registered once in map.on('load'))
+  // always calls the latest startDownload, which re-binds on each provider render.
+  const { startDownload } = useDownloadManager();
+  const startDownloadRef = useRef(startDownload);
+  useEffect(() => { startDownloadRef.current = startDownload; }, [startDownload]);
+
   // The site_id of the feature the user most recently clicked "Zoom" on,
   // used by the centroid/extent sort-key so the zoom target renders above
   // neighbouring selected features. Persists until another Zoom click.
@@ -542,11 +557,22 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               closeButton: true,
               closeOnClick: false,
               offset: 15,
-              maxWidth: '18.75rem',
+              maxWidth: '30rem',
               className: 'fim-click-popup',
               anchor,
             });
             currentClickPopupRef.current.setLngLat(coords).setHTML(buildClickPopupHtml(rec)).addTo(map);
+
+            // Wire the "Download All" button to zip the whole folder. Site id and
+            // prefix come from this closure, so no data-attributes are needed.
+            const s3Prefix = typeof rec?.s3_prefix === 'string' ? rec.s3_prefix : '';
+            const dlAllBtn = currentClickPopupRef.current.getElement()?.querySelector('[data-folder-download]');
+            if (dlAllBtn && siteId && s3Prefix) {
+              dlAllBtn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                startDownloadRef.current?.([{ siteId, s3Prefix }]);
+              });
+            }
             return;
           }
         }
