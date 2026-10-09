@@ -2,90 +2,14 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { saveAs } from 'file-saver';
 import type { FeatureProperties, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
-import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
+import { buildMetaUrl } from '../src/utils/minio';
+import { parseRecord, type FIMRecord } from '../src/utils/parseRecord';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
 import { toggleInSet } from '../src/utils/toggle';
 import { useEscapeKey } from '../src/hooks/useEscapeKey';
-import { formatYmd } from '../src/utils/dateFormat';
-
-const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
-const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-
-// ── Normalize one metadata JSON into a display record ─────────
-function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: string, siteId: string, bbox: Bbox | undefined) {
-  const basinRaw = j['River Basin Name'];
-  const basin = Array.isArray(basinRaw)
-    ? basinRaw.join(', ')
-    : (typeof basinRaw === 'string' ? basinRaw : '—');
-
-  const huc8Raw = j['HUC8'];
-  const huc8 = Array.isArray(huc8Raw)
-    ? huc8Raw.join(', ')
-    : (typeof huc8Raw === 'string' ? huc8Raw : '—');
-
-  const rawEvent  = asString(j['Flooding Event']);
-  const startDate = asString(j['Start Date of the Flood']);
-  const endDate   = asString(j['End Date of the Flood']);
-
-  // Keep a sortable ISO date string alongside the display string
-  let year = '—';
-  let date = '—';
-  let dateSortKey = '';   // ISO string for reliable date sorting
-
-  if (rawEvent) {
-    year = rawEvent.slice(0, 4);
-    date = formatYmd(rawEvent);
-    dateSortKey = formatYmd(rawEvent);
-  } else if (startDate) {
-    year = startDate.slice(0, 4);
-    date = endDate && endDate !== startDate
-      ? `${formatYmd(startDate)} – ${formatYmd(endDate)}`
-      : formatYmd(startDate);
-    dateSortKey = formatYmd(startDate);
-  }
-
-  let platform =
-    asString(j['Full form of the sensor code']) ||
-    asString(j['Sensor']) ||
-    asString(j['Platform']) ||
-    '';
-  if (!platform && j['BLE']) platform = 'Base Level Engineering (FEMA BLE)';
-  if (!platform) platform = '—';
-
-  const qualityRaw = j['Quality'];
-  const quality = typeof qualityRaw === 'string' ? qualityRaw : (startDate ? 'HWM' : '—');
-
-  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
-  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
-  const returnPeriod: number | null =
-    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
-      ? Number(rpRaw)
-      : null;
-
-  const stateRaw = j['State'];
-
-  return {
-    siteId,
-    riverBasin:   basin,
-    state:        typeof stateRaw === 'string' ? stateRaw : '—',
-    year,
-    date,
-    dateSortKey,
-    resolution:   asNumber(j['Resolution in meter']),
-    huc8,
-    quality,
-    platform,
-    returnPeriod,
-    bbox,
-    s3Prefix,
-    tifUrl:  buildTifUrl(s3Prefix, fileName),
-    metaUrl: buildMetaUrl(s3Prefix, fileName),
-  };
-}
 
 // ── Sorting ───────────────────────────────────────────────────
-type FIMRecord = ReturnType<typeof parseRecord>;
 
 type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'quality' | 'platform' | 'returnPeriod';
 type SortDir = 'asc' | 'desc';
@@ -215,7 +139,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
             const res = await fetch(metaUrl);
             if (!res.ok) return null;
             const j = await res.json();
-            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id, f.bbox);
+            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id, f.bbox, f.quality);
           } catch { return null; }
         })
       );

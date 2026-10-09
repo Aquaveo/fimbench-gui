@@ -1,0 +1,84 @@
+import type { Bbox } from '../types/catalog';
+import { buildTifUrl, buildMetaUrl } from './minio';
+import { formatYmd } from './dateFormat';
+
+const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
+const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+
+// ── Normalize one metadata JSON into a display record ─────────
+export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: string, siteId: string, bbox: Bbox | undefined, catalogQuality?: string) {
+  const basinRaw = j['River Basin Name'];
+  const basin = Array.isArray(basinRaw)
+    ? basinRaw.join(', ')
+    : (typeof basinRaw === 'string' ? basinRaw : '—');
+
+  const huc8Raw = j['HUC8'];
+  const huc8 = Array.isArray(huc8Raw)
+    ? huc8Raw.join(', ')
+    : (typeof huc8Raw === 'string' ? huc8Raw : '—');
+
+  const rawEvent  = asString(j['Flooding Event']);
+  const startDate = asString(j['Start Date of the Flood']);
+  const endDate   = asString(j['End Date of the Flood']);
+
+  // Keep a sortable ISO date string alongside the display string
+  let year = '—';
+  let date = '—';
+  let dateSortKey = '';   // ISO string for reliable date sorting
+
+  if (rawEvent) {
+    year = rawEvent.slice(0, 4);
+    date = formatYmd(rawEvent);
+    dateSortKey = formatYmd(rawEvent);
+  } else if (startDate) {
+    year = startDate.slice(0, 4);
+    date = endDate && endDate !== startDate
+      ? `${formatYmd(startDate)} – ${formatYmd(endDate)}`
+      : formatYmd(startDate);
+    dateSortKey = formatYmd(startDate);
+  }
+
+  let platform =
+    asString(j['Full form of the sensor code']) ||
+    asString(j['Sensor']) ||
+    asString(j['Platform']) ||
+    '';
+  if (!platform && j['BLE']) platform = 'Base Level Engineering (FEMA BLE)';
+  if (!platform) platform = '—';
+
+  // Quality: catalog value first (FEMA BLE / HWM metadata files carry no "Quality" key),
+  // then the metadata key, then the legacy fallback.
+  const qualityRaw = j['Quality'];
+  const quality =
+    catalogQuality ||
+    (typeof qualityRaw === 'string' ? qualityRaw : (startDate ? 'HWM' : '—'));
+
+  // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
+  const rpRaw = j['Synthetic Flooding Event (return period (years))'];
+  const returnPeriod: number | null =
+    rpRaw != null && rpRaw !== '' && Number.isFinite(Number(rpRaw))
+      ? Number(rpRaw)
+      : null;
+
+  const stateRaw = j['State'];
+
+  return {
+    siteId,
+    riverBasin:   basin,
+    state:        typeof stateRaw === 'string' ? stateRaw : '—',
+    year,
+    date,
+    dateSortKey,
+    resolution:   asNumber(j['Resolution in meter']),
+    huc8,
+    quality,
+    platform,
+    returnPeriod,
+    bbox,
+    s3Prefix,
+    tifUrl:  buildTifUrl(s3Prefix, fileName),
+    metaUrl: buildMetaUrl(s3Prefix, fileName),
+  };
+}
+
+export type FIMRecord = ReturnType<typeof parseRecord>;
