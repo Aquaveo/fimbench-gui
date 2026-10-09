@@ -114,6 +114,6 @@ Vite's dev proxy (`vite.config.ts`) forwards `/apps` → `http://127.0.0.1:8000`
 ### Map Layer Configuration
 
 Vector tile layers in `Map.tsx` use tier-based colors with zoom-level crossfade (zoom 7–8):
-- Tier_1: `#E74C3C` (red), Tier_2: `#F39C12` (orange), Tier_3: `#2ECC71` (green), Tier_4: `#9B59B6` (purple), HWM: `#EC6FA3` (pink)
+- Tier_1: `#E74C3C` (red), Tier_2: `#F39C12` (orange), Tier_3: `#2ECC71` (green), FEMA_BLE: `#9B59B6` (purple), HWM: `#EC6FA3` (pink)
 
 Basemap options: Street, Topographic, Satellite (ESRI sources).

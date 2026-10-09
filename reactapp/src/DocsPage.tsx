@@ -775,7 +775,7 @@ export default function DocsPage() {
 
             <h3 id="tier-4" style={h3Style}>4.4 Tier 4 — FEMA BLE</h3>
             <p style={tierBadgeWrapStyle}>
-              <TierBadge color={tc['Tier_4']}>Tier 4 (BLE)</TierBadge>
+              <TierBadge color={tc['FEMA_BLE']}>Tier 4 (BLE)</TierBadge>
             </p>
             <p>
               This tier contains FEMA's Base Level Engineering (BLE) flood maps representing

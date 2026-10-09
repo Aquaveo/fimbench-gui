@@ -18,7 +18,7 @@ FAILED_LOG = Path("failed_downloads.json")
 # -----------------------------
 # CONFIG
 # -----------------------------
-TARGET_TIER = "Tier_4"     # "HWM", "Tier_1", "Tier_2", etc.
+TARGET_TIER = "FEMA_BLE"   # "HWM", "Tier_1", "Tier_2", etc.
 RETRY_ONLY_FAILED = False  # 🔥 set to True for 2nd run
 
 

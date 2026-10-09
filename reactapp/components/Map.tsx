@@ -29,7 +29,7 @@ function escapeHtml(s: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-// Produce the Date/Return-Period line for a catalog record. Tier 4 (FEMA BLE) uses
+// Produce the Date/Return-Period line for a catalog record. FEMA BLE uses
 // return period; others use date(_ymd) or a start/end range. Missing values → em-dash.
 function dateOrReturnPeriod(rec: Partial<CatalogRecord>): { label: string; value: string } {
   const rp = rec?.return_period;
@@ -173,7 +173,7 @@ function buildTierColorExpr(colors: Record<string, string>): ExpressionSpecifica
     'Tier_1', colors.Tier_1,
     'Tier_2', colors.Tier_2,
     'Tier_3', colors.Tier_3,
-    'Tier_4', colors.Tier_4,
+    'FEMA_BLE', colors.FEMA_BLE,
     'HWM',    colors.HWM,
     '#aaaaaa',
   ];
@@ -194,11 +194,11 @@ const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
   ZOOM_CROSSFADE_END,   0.6,
 ];
 
-// Tier 4 (FEMA BLE) renders at the bottom of the extent stack; HWM at the top.
+// FEMA BLE renders at the bottom of the extent stack; HWM at the top.
 // Selected features are given a higher key so they always float above everything.
 const TIER_SORT_EXPR: ExpressionSpecification = [
   'match', ['get', 'tier'],
-  'Tier_4', 1,
+  'FEMA_BLE', 1,
   'Tier_3', 2,
   'Tier_2', 3,
   'Tier_1', 4,

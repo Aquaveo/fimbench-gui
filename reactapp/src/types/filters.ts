@@ -11,7 +11,7 @@ export type Filters = {
 // first load (see App.tsx handleCatalogDateBounds). Empty strings are treated
 // as unconstrained by dateMatches() in Map.tsx.
 export const DEFAULT_FILTERS: Filters = {
-  tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
+  tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'FEMA_BLE', 'HWM'],
   states: [],
   huc8Id: '',
   returnPeriod: '100',

@@ -102,11 +102,10 @@ export default function WelcomeModal({ onClose }: Props) {
   );
 }
 
-// Welcome-modal-specific labels: annotate Tier 4 as "(BLE)" for first-time
-// readers; everything else uses the canonical label.
+// Tier rows use the canonical labels.
 const TIERS = TIER_KEYS.map(k => ({
   key: k,
-  label: k === 'Tier_4' ? 'Tier 4 (BLE)' : TIER_LABELS[k],
+  label: TIER_LABELS[k],
 }));
 
 const floatingArrowStyle: React.CSSProperties = {

@@ -22,7 +22,7 @@ const TIER_DESCRIPTIONS: Record<string, string> = {
   Tier_1: 'Very high-resolution NOAA imagery (20–50 cm)',
   Tier_2: 'PlanetScope + hydrologically guided algorithm (3–5 m)',
   Tier_3: 'Sentinel-1A + gap-filled algorithm (10 m)',
-  Tier_4: 'FEMA Base Level Engineering synthetic events (10 m)',
+  FEMA_BLE: 'FEMA Base Level Engineering synthetic events (10 m)',
   HWM:    'FIMs derived using USGS high watermarks',
 };
 
@@ -30,7 +30,7 @@ const TIER_COLORS: Record<string, string> = {
   Tier_1: '#E74C3C',
   Tier_2: '#F39C12',
   Tier_3: '#2ECC71',
-  Tier_4: '#9B59B6',
+  FEMA_BLE: '#9B59B6',
   HWM:    '#EC6FA3',
 };
 
@@ -151,8 +151,8 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
   const huc8Empty = huc8 === '';
   const huc8FormatOk = isValidHuc8(huc8);
   const huc8InCatalog = huc8FormatOk && availableHuc8s.has(huc8);
-  const tier4Selected = filters.tiers.includes('Tier_4');
-  const onlyTier4 = filters.tiers.length === 1 && filters.tiers[0] === 'Tier_4';
+  const bleSelected = filters.tiers.includes('FEMA_BLE');
+  const onlyBle = filters.tiers.length === 1 && filters.tiers[0] === 'FEMA_BLE';
 
   return (
     <div className={`filter-sidebar${isOpen ? ' filter-sidebar--open' : ''}`} style={{ width: '15.625rem', padding: '1.25rem 1rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', color: '#fff' }}>
@@ -276,7 +276,7 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
       </div>
 
       {/* ── Start Date ── */}
-      <div style={{ ...sectionStyle, opacity: onlyTier4 ? 0.4 : 1 }}>
+      <div style={{ ...sectionStyle, opacity: onlyBle ? 0.4 : 1 }}>
         <label htmlFor="startDate" style={sectionLabelStyle}>
           <img src="/static/fimbench_gui/images/play-button-o-svgrepo-com.svg" alt="" style={iconStyle} />
           Start Date
@@ -286,13 +286,13 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           type="date"
           value={filters.startDate}
           onChange={handleStartDateChange}
-          disabled={onlyTier4}
+          disabled={onlyBle}
           className="filter-glass-input"
         />
       </div>
 
       {/* ── End Date ── */}
-      <div style={{ ...sectionStyle, opacity: onlyTier4 ? 0.4 : 1 }}>
+      <div style={{ ...sectionStyle, opacity: onlyBle ? 0.4 : 1 }}>
         <label htmlFor="endDate" style={sectionLabelStyle}>
           <img src="/static/fimbench_gui/images/stop-button-svgrepo-com.svg" alt="" style={iconStyle} />
           End Date
@@ -302,16 +302,16 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           type="date"
           value={filters.endDate}
           onChange={handleEndDateChange}
-          disabled={onlyTier4}
+          disabled={onlyBle}
           className="filter-glass-input"
         />
-        {onlyTier4 && (
-          <span style={infoHintStyle}>Tier 4 is synthetic — no observation date</span>
+        {onlyBle && (
+          <span style={infoHintStyle}>FEMA BLE is synthetic — no observation date</span>
         )}
       </div>
 
       {/* ── Return Period ── */}
-      <div style={{ padding: '0.75rem 0', opacity: tier4Selected ? 1 : 0.4 }}>
+      <div style={{ padding: '0.75rem 0', opacity: bleSelected ? 1 : 0.4 }}>
         <label htmlFor="returnPeriod" style={sectionLabelStyle}>
           <img src="/static/fimbench_gui/images/hourglass-svgrepo-com.svg" alt="" style={iconStyle} />
           Return Period
@@ -320,13 +320,13 @@ export default function FilterSidebar({ filters, setFilters, onResetFilters, ava
           id="returnPeriod"
           value={filters.returnPeriod}
           onChange={handleReturnPeriodChange}
-          disabled={!tier4Selected}
+          disabled={!bleSelected}
           className="filter-glass-select"
         >
           <option value="100">100-year</option>
           <option value="500">500-year</option>
         </select>
-        <span style={infoHintStyle}>Only applies to Tier 4 (BLE)</span>
+        <span style={infoHintStyle}>Only applies to FEMA BLE</span>
       </div>
 
       {/* ── Actions ── */}
