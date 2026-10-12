@@ -62,6 +62,17 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
 
   const stateRaw = j['State'];
 
+  // Event magnitude, provenance and access fields (metadata rewritten Oct 2026).
+  // Recurrence strings are kept raw — they may be an "unavailable" sentence rather
+  // than a value; see isUsableRecurrence() in eventMagnitude.ts.
+  const strOrNull = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
+  const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const gaugeRaw = j['USGS Gauge ID'];
+  const gaugeId: string | null =
+    typeof gaugeRaw === 'number' ? String(gaugeRaw) : strOrNull(gaugeRaw);
+  const refsRaw = j['References'];
+  const references: string[] = Array.isArray(refsRaw) ? refsRaw.map(String) : [];
+
   return {
     siteId,
     riverBasin:   basin,
@@ -74,6 +85,16 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
     quality,
     platform,
     returnPeriod,
+    recurrenceUsgs:  strOrNull(j['Event Recurrence Interval (USGS)']),
+    recurrenceNwm:   strOrNull(j['Event Recurrence Interval (NWM)']),
+    dischargeUsgs:   numOrNull(j['Event Discharge (USGS) [cms]']),
+    dischargeNwm:    numOrNull(j['Event Discharge (NWM) [cms]']),
+    gaugeId,
+    acquisitionTime: strOrNull(j['Acquisition Time in UTC']),
+    source:          strOrNull(j['Source']),
+    accessRights:    strOrNull(j['Access_Rights']),
+    description:     strOrNull(j['Description']),
+    references,
     bbox,
     s3Prefix,
     tifUrl:  buildTifUrl(s3Prefix, fileName),

@@ -14,6 +14,8 @@ import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalo
 import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
 import { parseStates, computeDateBounds, recordMatchesFilters } from '../src/utils/filters';
 import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
+import { parseRecord } from '../src/utils/parseRecord';
+import { eventMagnitude } from '../src/utils/eventMagnitude';
 import { pickContrastColor } from '../src/utils/contrast';
 import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
 import { COLORS } from '../src/theme';
@@ -85,6 +87,28 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
   `;
 }
 
+// One label/value row of the click popup. Only renders when val is non-empty —
+// no '—' placeholders. Module-level because the "Event magnitude" row is appended
+// after the popup mounts (see map.on('click')), once the metadata JSON arrives.
+const popupRow = (k: string, v: string) =>
+  v ? `<tr>
+         <td style="color:#000;font-weight:600;padding:0.125rem 0.625rem 0.125rem 0;white-space:nowrap">${escapeHtml(k)}</td>
+         <td>${escapeHtml(v)}</td>
+       </tr>` : '';
+
+const INFO_ICON_SVG =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none">' +
+  '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>';
+
+// Footer pointing at the table's Info view, where the full record lives.
+const POPUP_FOOTER_HTML =
+  '<div style="margin-top:0.625rem;padding-top:0.5rem;border-top:0.0625rem solid #eee;' +
+  'font-size:0.72rem;color:#4a5a5e;display:flex;align-items:center;gap:0.375rem">' +
+  INFO_ICON_SVG +
+  '<span>Full metadata (recurrence intervals, discharge, source, references) is in the table’s Info view.</span>' +
+  '</div>';
+
 function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
@@ -102,13 +126,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   // "Download All" zips the whole folder; the JS handler is wired after the
   // popup mounts (see map.on('click')), keyed off the data-folder-download marker.
   const hasFolder = !!s3Prefix;
-
-  // Only renders a table row when val is non-empty — no '—' placeholders.
-  const row = (k: string, v: string) =>
-    v ? `<tr>
-           <td style="color:#000;font-weight:600;padding:0.125rem 0.625rem 0.125rem 0;white-space:nowrap">${escapeHtml(k)}</td>
-           <td>${escapeHtml(v)}</td>
-         </tr>` : '';
+  const row = popupRow;
 
   const mkBtnStyle = (bg: string, color: string) => [
     'display:inline-flex', 'align-items:center', 'gap:0.3125rem',
@@ -146,6 +164,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${tifUrl   ? btn(tifUrl,  'Download FIM',      metaStyle) : ''}
         ${metaUrl  ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
       </div>` : ''}
+      ${POPUP_FOOTER_HTML}
     </div>
   `;
 }
@@ -352,6 +371,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
   const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
+  // Per-site metadata JSON, fetched on first popup open; feeds the "Event magnitude" row.
+  // (Plain object, not a JS Map — the identifier `Map` is this component.)
+  const metaCacheRef = useRef<Record<string, Promise<Record<string, unknown> | null>>>({});
   const onMultiFeatureSelectRef = useRef(onMultiFeatureSelect);
   useEffect(() => { onMultiFeatureSelectRef.current = onMultiFeatureSelect; }, [onMultiFeatureSelect]);
 
@@ -571,6 +593,29 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               dlAllBtn.addEventListener('click', (ev) => {
                 ev.preventDefault();
                 startDownloadRef.current?.([{ siteId, s3Prefix }]);
+              });
+            }
+
+            // "Event magnitude" (recurrence interval) lives only in the per-record
+            // metadata JSON, not the catalog, so the popup opens at once from the
+            // catalog and this row is appended when the fetch resolves. FEMA BLE
+            // already shows its return period, so it is skipped.
+            const fileName = typeof rec?.file_name === 'string' ? rec.file_name : '';
+            if (rec?.tier !== 'FEMA_BLE' && siteId && s3Prefix && fileName) {
+              const popup = currentClickPopupRef.current;
+              let pending = metaCacheRef.current[siteId];
+              if (!pending) {
+                pending = fetch(buildMetaUrl(s3Prefix, fileName))
+                  .then(r => (r.ok ? r.json() : null))
+                  .catch(() => null);
+                metaCacheRef.current[siteId] = pending;
+              }
+              pending.then((j) => {
+                if (!j || currentClickPopupRef.current !== popup) return;   // popup closed or replaced
+                const value = eventMagnitude(parseRecord(j, s3Prefix, fileName, siteId, undefined));
+                if (!value) return;
+                popup.getElement()?.querySelector('table')
+                  ?.insertAdjacentHTML('beforeend', popupRow('Event magnitude', value));
               });
             }
             return;

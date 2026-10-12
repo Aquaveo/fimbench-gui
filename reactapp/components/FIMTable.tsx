@@ -4,6 +4,7 @@ import type { FeatureProperties, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
 import { buildMetaUrl } from '../src/utils/minio';
 import { parseRecord, type FIMRecord } from '../src/utils/parseRecord';
+import { isUsableRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
 import { toggleInSet } from '../src/utils/toggle';
@@ -426,24 +427,101 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
 }
 
 // ── Metadata info modal ───────────────────────────────────────
+type ModalRow = [string, string];
+type ModalGroup = { title: string; rows: ModalRow[] };
+
+const fmtCms = (n: number) => `${n.toLocaleString('en-US', { maximumFractionDigits: 2 })} cms`;
+
+// Rows whose value is null are dropped — unusable recurrence sentences and
+// absent fields hide rather than print a placeholder. The .txt export is the
+// exception: it writes every raw value so nothing is lost.
+function buildModalGroups(record: FIMRecord): ModalGroup[] {
+  const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
+  const candidates: { title: string; rows: [string, string | null][] }[] = [
+    { title: 'Location', rows: [
+      ['River / Basin', record.riverBasin],
+      ['State',         record.state],
+      ['HUC8',          record.huc8],
+    ]},
+    { title: 'Event', rows: [
+      ['Date',                   record.date],
+      ['Year',                   record.year],
+      ['Acquisition time (UTC)', record.acquisitionTime],
+      ['Return Period',          record.returnPeriod != null ? `${record.returnPeriod}-year` : null],
+      ['Recurrence (USGS)',      isUsableRecurrence(record.recurrenceUsgs) ? record.recurrenceUsgs : null],
+      ['Recurrence (NWM)',       isUsableRecurrence(record.recurrenceNwm)  ? record.recurrenceNwm  : null],
+      ['Discharge (USGS)',       record.dischargeUsgs != null ? fmtCms(record.dischargeUsgs) : null],
+      ['Discharge (NWM)',        record.dischargeNwm  != null ? fmtCms(record.dischargeNwm)  : null],
+      ['USGS Gauge ID',          record.gaugeId],
+    ]},
+    { title: 'Data', rows: [
+      ['Resolution', `${record.resolution} m`],
+      ['Platform',   record.platform],
+      ['Quality',    quality],
+      ['Access',     record.accessRights],
+    ]},
+    { title: 'Provenance', rows: [
+      ['Source', record.source],
+    ]},
+  ];
+  return candidates
+    .map(g => ({ title: g.title, rows: g.rows.filter((r): r is ModalRow => r[1] != null) }))
+    .filter(g => g.rows.length > 0);
+}
+
+// Plain-text export: every field, raw values, grouped like the modal.
+function buildMetadataText(record: FIMRecord): string {
+  const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
+  const line = (label: string, value: string | number | null) =>
+    `${(label + ':').padEnd(26)}${value == null ? '—' : value}`;
+  const parts: string[] = [
+    line('Site ID', record.siteId),
+    '',
+    '[Location]',
+    line('River / Basin', record.riverBasin),
+    line('State', record.state),
+    line('HUC8', record.huc8),
+    '',
+    '[Event]',
+    line('Date', record.date),
+    line('Year', record.year),
+  ];
+  if (record.acquisitionTime) parts.push(line('Acquisition time (UTC)', record.acquisitionTime));
+  if (record.returnPeriod != null) parts.push(line('Return Period', `${record.returnPeriod}-year`));
+  if (record.returnPeriod == null) {
+    parts.push(
+      line('Recurrence (USGS)', record.recurrenceUsgs),
+      line('Recurrence (NWM)', record.recurrenceNwm),
+      line('Discharge (USGS) [cms]', record.dischargeUsgs),
+      line('Discharge (NWM) [cms]', record.dischargeNwm),
+      line('USGS Gauge ID', record.gaugeId),
+    );
+  }
+  parts.push(
+    '',
+    '[Data]',
+    line('Resolution', `${record.resolution} m`),
+    line('Platform', record.platform),
+    line('Quality', quality),
+    line('Access', record.accessRights),
+    '',
+    '[Provenance]',
+    line('Source', record.source),
+    line('Description', record.description),
+  );
+  if (record.references.length) {
+    parts.push('References:');
+    record.references.forEach(r => parts.push(`  ${r}`));
+  }
+  return parts.join('\n');
+}
+
 function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void }) {
   useEscapeKey(onClose);
+  const [showMore, setShowMore] = useState(false);
 
   const handleDownloadText = () => {
-    const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
-    const parts: string[] = [
-      `Site ID:        ${record.siteId}`,
-      `River / Basin:  ${record.riverBasin}`,
-      `State:          ${record.state}`,
-      `Date:           ${record.date}`,
-      `Year:           ${record.year}`,
-      `Resolution:     ${record.resolution} m`,
-      `HUC8:           ${record.huc8}`,
-      `Quality:        ${quality}`,
-      `Platform:       ${record.platform}`,
-    ];
-    if (record.returnPeriod != null) parts.push(`Return Period:  ${record.returnPeriod}-year`);
-    saveAs(new Blob([parts.join('\n')], { type: 'text/plain' }), `${record.siteId}_metadata.txt`);
+    saveAs(new Blob([buildMetadataText(record)], { type: 'text/plain' }), `${record.siteId}_metadata.txt`);
   };
 
   const handleDownloadJson = async () => {
@@ -454,18 +532,12 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
     } catch { /* silent */ }
   };
 
-  const rows: [string, string][] = [
-    ['Site ID',       record.siteId],
-    ['River / Basin', record.riverBasin],
-    ['State',         record.state],
-    ['Date',          record.date],
-    ['Year',          record.year],
-    ['Resolution',    `${record.resolution} m`],
-    ['HUC8',          record.huc8],
-    ['Quality',       record.quality === 'HWM' ? 'High Water FIM' : record.quality],
-    ['Platform',      record.platform],
-    ...(record.returnPeriod != null ? [['Return Period', `${record.returnPeriod}-year`] as [string, string]] : []),
-  ];
+  const groups = buildModalGroups(record);
+  const hasMore = !!record.description || record.references.length > 0;
+  const moreLabel = [
+    record.description ? 'description' : '',
+    record.references.length ? `references (${record.references.length})` : '',
+  ].filter(Boolean).join(', ');
 
   return (
     <div style={modalBackdropStyle} onClick={onClose}>
@@ -474,17 +546,43 @@ function MetaModal({ record, onClose }: { record: FIMRecord; onClose: () => void
           <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>FIM Record — {record.siteId}</span>
           <button style={modalCloseBtnStyle} onClick={onClose} aria-label="Close">✕</button>
         </div>
-        <div style={modalBodyStyle}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
-            <tbody>
-              {rows.map(([label, value]) => (
-                <tr key={label} style={{ borderBottom: '0.0625rem solid #f0f0f0' }}>
-                  <td style={modalLabelCellStyle}>{label}</td>
-                  <td style={modalValueCellStyle}>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ ...modalBodyStyle, display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+          {groups.map(group => (
+            <div key={group.title}>
+              <div style={modalSectionTitleStyle}>{group.title}</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem' }}>
+                <tbody>
+                  {group.rows.map(([label, value]) => (
+                    <tr key={label} style={{ borderBottom: '0.0625rem solid #f0f0f0' }}>
+                      <td style={modalLabelCellStyle}>{label}</td>
+                      <td style={modalValueCellStyle}>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {group.title === 'Provenance' && hasMore && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowMore(s => !s)}
+                    aria-expanded={showMore}
+                    style={modalMoreBtnStyle}
+                  >
+                    <span>More details — {moreLabel}</span>
+                    <span aria-hidden="true" style={{ display: 'inline-block', transform: showMore ? 'rotate(180deg)' : 'none' }}>▾</span>
+                  </button>
+                  {showMore && (
+                    <div style={modalMoreBodyStyle}>
+                      {record.description && <p style={{ margin: '0 0 0.5rem' }}>{record.description}</p>}
+                      {record.references.map((ref, i) => (
+                        <p key={i} style={{ margin: '0 0 0.375rem' }}>{ref}</p>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
         </div>
         <div style={modalFooterStyle}>
           <button onClick={handleDownloadText} style={modalDlBtnStyle('#e8e8e8', '#333')}>
@@ -595,6 +693,24 @@ const modalCloseBtnStyle: React.CSSProperties = {
 
 const modalBodyStyle: React.CSSProperties = {
   padding: '0.75rem 1rem', overflowY: 'auto', maxHeight: '60vh',
+};
+
+const modalSectionTitleStyle: React.CSSProperties = {
+  fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+  color: '#3f6b76', padding: '0.25rem 0 0.125rem', borderBottom: '0.0625rem solid #e3eef1',
+};
+
+const modalMoreBtnStyle: React.CSSProperties = {
+  marginTop: '0.375rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  width: '100%', boxSizing: 'border-box', padding: '0.5rem 0.625rem',
+  background: '#f4f8f9', border: '0.0625rem solid #dce7ea', borderRadius: '0.25rem',
+  color: COLORS.ink, fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+  textAlign: 'left', fontFamily: 'inherit',
+};
+
+const modalMoreBodyStyle: React.CSSProperties = {
+  padding: '0.5rem 0.625rem 0.125rem', fontSize: '0.78rem', lineHeight: 1.5, color: '#333',
+  overflowWrap: 'anywhere',
 };
 
 const modalLabelCellStyle: React.CSSProperties = {
