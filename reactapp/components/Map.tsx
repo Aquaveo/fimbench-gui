@@ -878,6 +878,10 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         .setData(buildCentroidGeoJSON(filters));
     }
 
+    // Re-emit visible features once the updated layers have rendered so the
+    // table reflects the new filters without waiting for a map move.
+    map.once('idle', () => emitFeaturesRef.current?.());
+
     // Prune any selected features that no longer pass the updated filters.
     const currentIds = selectedSiteIdsRef.current;
     if (currentIds.size > 0) {
