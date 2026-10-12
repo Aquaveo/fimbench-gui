@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildTifUrl, buildMetaUrl, S3_BASE } from './minio';
+import { buildTifUrl, buildMetaUrl, buildGpkgUrl, S3_BASE } from './minio';
 
 describe('buildTifUrl', () => {
   it('joins base, prefix, and filename with slashes', () => {
@@ -10,6 +10,13 @@ describe('buildTifUrl', () => {
   it('works for HWM tier prefix', () => {
     expect(buildTifUrl('FIM_Database/HWM/HWM_20100329', 'HWM_10_0m_20100329_BM.tif'))
       .toBe(`${S3_BASE}/FIM_Database/HWM/HWM_20100329/HWM_10_0m_20100329_BM.tif`);
+  });
+});
+
+describe('buildGpkgUrl', () => {
+  it('replaces _BM.tif with _AOI.gpkg in the same folder', () => {
+    expect(buildGpkgUrl('FIM_Database/FEMA_BLE/BLE_100_1000404W323634N', 'BLE_10_1m_100_1000404W323634N_BM.tif'))
+      .toBe(`${S3_BASE}/FIM_Database/FEMA_BLE/BLE_100_1000404W323634N/BLE_10_1m_100_1000404W323634N_AOI.gpkg`);
   });
 });
 

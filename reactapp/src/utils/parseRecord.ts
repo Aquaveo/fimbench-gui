@@ -1,5 +1,5 @@
 import type { Bbox } from '../types/catalog';
-import { buildTifUrl, buildMetaUrl } from './minio';
+import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from './minio';
 import { formatYmd } from './dateFormat';
 
 const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -99,6 +99,7 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
     s3Prefix,
     tifUrl:  buildTifUrl(s3Prefix, fileName),
     metaUrl: buildMetaUrl(s3Prefix, fileName),
+    gpkgUrl: buildGpkgUrl(s3Prefix, fileName),
   };
 }
 

@@ -13,7 +13,7 @@ import type { Filters } from '../src/types/filters';
 import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalog';
 import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
 import { parseStates, computeDateBounds, recordMatchesFilters } from '../src/utils/filters';
-import { buildTifUrl, buildMetaUrl } from '../src/utils/minio';
+import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from '../src/utils/minio';
 import { parseRecord } from '../src/utils/parseRecord';
 import { eventMagnitude } from '../src/utils/eventMagnitude';
 import { pickContrastColor } from '../src/utils/contrast';
@@ -123,6 +123,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const fileName = typeof rec?.file_name  === 'string' ? rec.file_name  : '';
   const tifUrl  = s3Prefix && fileName ? buildTifUrl(s3Prefix, fileName)  : '';
   const metaUrl = s3Prefix && fileName ? buildMetaUrl(s3Prefix, fileName) : '';
+  const gpkgUrl = s3Prefix && fileName ? buildGpkgUrl(s3Prefix, fileName) : '';
   // "Download All" zips the whole folder; the JS handler is wired after the
   // popup mounts (see map.on('click')), keyed off the data-folder-download marker.
   const hasFolder = !!s3Prefix;
@@ -159,10 +160,11 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${hasDate ? row(label, value) : ''}
       </table>
       ${tifUrl || metaUrl || hasFolder ? `
-      <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:nowrap">
+      <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:wrap">
         ${hasFolder ? allBtn : ''}
         ${tifUrl   ? btn(tifUrl,  'Download FIM',      metaStyle) : ''}
         ${metaUrl  ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
+        ${gpkgUrl  ? btn(gpkgUrl, 'Download AOI',      metaStyle) : ''}
       </div>` : ''}
       ${POPUP_FOOTER_HTML}
     </div>

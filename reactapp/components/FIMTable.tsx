@@ -267,6 +267,8 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       ) },
     { label: 'Download FIM',  width: '5.625rem',
       render: r => <a className="fim-dl-fim" href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
+    { label: 'Download AOI',  width: '5.625rem',
+      render: r => <a className="fim-dl-fim" href={r.gpkgUrl} target="_blank" rel="noreferrer" title="Area of interest polygon (.gpkg)">Download</a> },
     { label: 'Info',           width: '3.75rem',
       render: r => (
         <button

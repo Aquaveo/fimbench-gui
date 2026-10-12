@@ -8,6 +8,12 @@ export function buildMetaUrl(s3Prefix: string, fileName: string): string {
   return `${S3_BASE}/${s3Prefix}/${fileName.replace('_BM.tif', '_metadata.json')}`;
 }
 
+// Area-of-interest polygon that accompanies every FIM; same folder and stem as
+// the GeoTIFF (verified against all catalog records on 2026-10-12).
+export function buildGpkgUrl(s3Prefix: string, fileName: string): string {
+  return `${S3_BASE}/${s3Prefix}/${fileName.replace('_BM.tif', '_AOI.gpkg')}`;
+}
+
 // List every object under a folder prefix via S3 ListObjectsV2, returning the
 // file name and absolute URL for each. This is the source of truth for "download
 // the full folder" — folder contents vary (e.g. Tier 4 includes an extra FLOWS

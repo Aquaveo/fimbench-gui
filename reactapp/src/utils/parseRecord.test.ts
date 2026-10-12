@@ -95,3 +95,12 @@ describe('parseRecord event and provenance fields', () => {
     expect(r.gaugeId).toBe('5064500');
   });
 });
+
+// ─── download URLs ────────────────────────────────────────────────────────────
+
+describe('parseRecord download URLs', () => {
+  it('exposes the AOI geopackage URL next to the GeoTIFF and metadata URLs', () => {
+    const r = parseRecord({}, 'FIM_Database/Tier_1/SITE_001', 'SITE_001_BM.tif', 'SITE_001', undefined);
+    expect(r.gpkgUrl).toBe('https://sdmlab.s3.amazonaws.com/FIM_Database/Tier_1/SITE_001/SITE_001_AOI.gpkg');
+  });
+});
