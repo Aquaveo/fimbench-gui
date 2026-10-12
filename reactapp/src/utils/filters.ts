@@ -3,10 +3,13 @@ import { isValidHuc8, toHuc8Array } from '../types/catalog';
 import type { Filters } from '../types/filters';
 
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
+// The catalog's state field is "TX, USA"-style; the trailing country token is
+// dropped so "USA" never shows up as a state option or matches a state filter.
 export function parseStates(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map(String);
-  if (typeof raw === 'string') return raw.split(',').map(s => s.trim()).filter(Boolean);
-  return [];
+  let states: string[] = [];
+  if (Array.isArray(raw)) states = raw.map(String);
+  else if (typeof raw === 'string') states = raw.split(',').map(s => s.trim()).filter(Boolean);
+  return states.filter(s => s !== 'USA');
 }
 
 // Returns true if the record's states overlap with any of the selected states.

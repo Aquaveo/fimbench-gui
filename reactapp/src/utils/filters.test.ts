@@ -40,7 +40,13 @@ function makeFilters(overrides: Partial<Filters> = {}): Filters {
 
 describe('parseStates', () => {
   it('splits a comma-separated string into trimmed abbreviations', () => {
-    expect(parseStates('MA, RI, USA')).toEqual(['MA', 'RI', 'USA']);
+    expect(parseStates('MA, RI')).toEqual(['MA', 'RI']);
+  });
+
+  it('drops the USA country token so it never appears as a state', () => {
+    expect(parseStates('MA, RI, USA')).toEqual(['MA', 'RI']);
+    expect(parseStates(['TX', 'USA'])).toEqual(['TX']);
+    expect(parseStates('USA')).toEqual([]);
   });
 
   it('handles a string array', () => {
