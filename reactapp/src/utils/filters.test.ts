@@ -26,7 +26,7 @@ function makeRecord(overrides: Partial<CatalogRecord> = {}): CatalogRecord {
 
 function makeFilters(overrides: Partial<Filters> = {}): Filters {
   return {
-    tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'Tier_4', 'HWM'],
+    tiers: ['Tier_1', 'Tier_2', 'Tier_3', 'FEMA_BLE', 'HWM'],
     states: [],
     huc8Id: '',
     returnPeriod: '100',
@@ -40,7 +40,13 @@ function makeFilters(overrides: Partial<Filters> = {}): Filters {
 
 describe('parseStates', () => {
   it('splits a comma-separated string into trimmed abbreviations', () => {
-    expect(parseStates('MA, RI, USA')).toEqual(['MA', 'RI', 'USA']);
+    expect(parseStates('MA, RI')).toEqual(['MA', 'RI']);
+  });
+
+  it('drops the USA country token so it never appears as a state', () => {
+    expect(parseStates('MA, RI, USA')).toEqual(['MA', 'RI']);
+    expect(parseStates(['TX', 'USA'])).toEqual(['TX']);
+    expect(parseStates('USA')).toEqual([]);
   });
 
   it('handles a string array', () => {
@@ -251,9 +257,9 @@ describe('recordMatchesFilters', () => {
     expect(recordMatchesFilters(makeRecord({ tier: 'Tier_2' }), makeFilters({ tiers: ['Tier_1'] }))).toBe(false);
   });
 
-  it('returns false when return period does not match (Tier_4 record)', () => {
-    const rec = makeRecord({ tier: 'Tier_4', return_period: 500 });
-    expect(recordMatchesFilters(rec, makeFilters({ tiers: ['Tier_4'], returnPeriod: '100' }))).toBe(false);
+  it('returns false when return period does not match (FEMA_BLE record)', () => {
+    const rec = makeRecord({ tier: 'FEMA_BLE', return_period: 500 });
+    expect(recordMatchesFilters(rec, makeFilters({ tiers: ['FEMA_BLE'], returnPeriod: '100' }))).toBe(false);
   });
 
   it('returns true for Tier_1 records regardless of returnPeriod filter (no return period field)', () => {
