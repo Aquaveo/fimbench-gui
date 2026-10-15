@@ -302,7 +302,7 @@ export type CatalogDateBounds = { minDate: string; maxDate: string };
 
 type MapProps = {
   filters: Filters;
-  onFeaturesChange?: (features: FeatureProperties[]) => void;
+  onFeaturesChange?: (features: CatalogRecord[]) => void;
   onFeatureClick?: (feature: FeatureProperties | null, additive?: boolean) => void;
   onCatalogStates?: (states: string[]) => void;
   onCatalogHuc8s?: (huc8s: Set<string>) => void;
@@ -477,14 +477,17 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
         seen.add(sid);
         return true;
       });
-      // MapLibre serializes array properties (e.g. bbox) to JSON strings when
-      // they pass through queryRenderedFeatures. Look bbox up from the catalog
-      // by site_id — authoritative, and covers features that come from the
-      // extent MVT source too.
-      onFeaturesChange(unique.map(f => {
-        const props = f.properties as unknown as FeatureProperties;
-        const rec = catalogRef.current.find(r => r.site_id === props.site_id);
-        return { ...props, bbox: rec?.bbox };
+      // Emit the catalog record for each rendered feature rather than the
+      // feature's own properties: MapLibre flattens array properties to JSON
+      // strings, and the table builds its rows from the full catalog record.
+      // Any rendered site_id missing from the catalog (should not happen) is
+      // skipped.
+      // (Plain object, not a JS Map — the identifier `Map` is this component.)
+      const bySiteId: Record<string, CatalogRecord> = {};
+      for (const r of catalogRef.current) bySiteId[r.site_id] = r;
+      onFeaturesChange(unique.flatMap(f => {
+        const rec = bySiteId[String(f.properties?.site_id)];
+        return rec ? [rec] : [];
       }));
     };
     emitFeaturesRef.current = emitFeatures;

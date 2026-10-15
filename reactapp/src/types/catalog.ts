@@ -29,6 +29,10 @@ export type CatalogRecord = {
   basin?: string | string[];
   huc8?: string | string[];
   quality?: string;
+  source?: string | null;
+  access_rights?: string | null;
+  description?: string | null;
+  references?: string[];
   // Event magnitude fields (absent for FEMA_BLE). Recurrence strings are either
   // a short "50 yr" / "> 100 yr" form or an "unavailable" sentence.
   recurrence_usgs?: string | null;
