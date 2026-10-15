@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { saveAs } from 'file-saver';
-import type { FeatureProperties, Bbox } from '../src/types/catalog';
+import type { CatalogRecord, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
-import { buildMetaUrl } from '../src/utils/minio';
-import { parseRecord, type FIMRecord } from '../src/utils/parseRecord';
+import type { FIMRecord } from '../src/utils/parseRecord';
+import { recordFromCatalog } from '../src/utils/recordFromCatalog';
 import { isUsableRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
@@ -80,7 +80,7 @@ type ColDef = {
 
 // ── Types ─────────────────────────────────────────────────────
 type Props = {
-  features: FeatureProperties[];
+  features: CatalogRecord[];
   selectedSiteIds?: Set<string>;
   onSelectionChange?: (newIds: Set<string>) => void;
   onClearSelection?: () => void;
@@ -93,8 +93,9 @@ const DOWNLOAD_CAP = 10;
 export default function FIMTable({ features, selectedSiteIds, onSelectionChange, onClearSelection, onZoomToFeature }: Props) {
   const selectedIds = selectedSiteIds ?? new Set<string>();
   const hasSelection = selectedIds.size > 0;
-  const [records, setRecords] = useState<FIMRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Rows come straight from the catalog records the map reports as visible;
+  // no per-row metadata request is needed any more.
+  const records = useMemo<FIMRecord[]>(() => features.map(recordFromCatalog), [features]);
   const [page, setPage]       = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -116,41 +117,10 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     }
   }, [selectedIds.size]);
 
+  // Reset shift-anchor whenever the visible feature set changes so stale
+  // anchor IDs from a previous viewport don't produce unexpected ranges.
   useEffect(() => {
-    // When features is empty, the render short-circuits to the empty-state
-    // before reading `records`, so no need to clear state here (would trigger
-    // an extra render cycle). Stale records get replaced on the next non-empty
-    // fetch.
-    // Reset shift-anchor whenever the visible feature set changes so stale
-    // anchor IDs from a previous viewport don't produce unexpected ranges.
     anchorSiteId.current = null;
-
-    if (features.length === 0) return;
-
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    setPage(1);
-
-    (async () => {
-      const settled = await Promise.all(
-        features.map(async (f) => {
-          try {
-            const metaUrl = buildMetaUrl(f.s3_prefix, f.file_name);
-            const res = await fetch(metaUrl);
-            if (!res.ok) return null;
-            const j = await res.json();
-            return parseRecord(j, f.s3_prefix, f.file_name, f.site_id, f.bbox, f.quality);
-          } catch { return null; }
-        })
-      );
-      if (!cancelled) {
-        setRecords(settled.filter(Boolean) as FIMRecord[]);
-        setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
   }, [features]);
 
   // When 2+ items are selected (e.g. via Shift+drag spatial select on the map),
@@ -295,12 +265,6 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
   if (features.length === 0) return (
     <div style={containerStyle}>
       <p style={{ color: '#888', padding: '0.75rem' }}>No FIM extents visible in current map view.</p>
-    </div>
-  );
-
-  if (loading) return (
-    <div style={containerStyle}>
-      <p style={{ padding: '0.75rem' }}>⏳ Loading records…</p>
     </div>
   );
 

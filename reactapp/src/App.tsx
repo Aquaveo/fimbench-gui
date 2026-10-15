@@ -7,14 +7,14 @@ import { DEFAULT_FILTERS, type Filters } from './types/filters';
 import Map, { type MapHandle, type CatalogDateBounds } from '../components/Map';
 import FIMTable from '../components/FIMTable';
 import WelcomeModal from '../components/WelcomeModal';
-import type { FeatureProperties } from './types/catalog';
+import type { CatalogRecord, FeatureProperties } from './types/catalog';
 import './App.css';
 import { toggleInSet } from './utils/toggle';
 
 function App() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
-  const [visibleFeatures, setVisibleFeatures] = useState<FeatureProperties[]>([]);
+  const [visibleFeatures, setVisibleFeatures] = useState<CatalogRecord[]>([]);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [availableHuc8s, setAvailableHuc8s] = useState<Set<string>>(new Set());
   const [catalogDateBounds, setCatalogDateBounds] = useState<CatalogDateBounds | null>(null);
