@@ -14,8 +14,7 @@ import type { CatalogRecord, FeatureProperties, Bbox } from '../src/types/catalo
 import { isValidHuc8, toHuc8Array } from '../src/types/catalog';
 import { parseStates, computeDateBounds, recordMatchesFilters } from '../src/utils/filters';
 import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from '../src/utils/minio';
-import { parseRecord } from '../src/utils/parseRecord';
-import { eventMagnitude } from '../src/utils/eventMagnitude';
+import { eventMagnitudeFromCatalog } from '../src/utils/eventMagnitude';
 import { pickContrastColor } from '../src/utils/contrast';
 import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
 import { COLORS } from '../src/theme';
@@ -88,8 +87,7 @@ function buildTooltipHtml(rec: Partial<CatalogRecord>): string {
 }
 
 // One label/value row of the click popup. Only renders when val is non-empty —
-// no '—' placeholders. Module-level because the "Event magnitude" row is appended
-// after the popup mounts (see map.on('click')), once the metadata JSON arrives.
+// no '—' placeholders.
 const popupRow = (k: string, v: string) =>
   v ? `<tr>
          <td style="color:#000;font-weight:600;padding:0.125rem 0.625rem 0.125rem 0;white-space:nowrap">${escapeHtml(k)}</td>
@@ -117,6 +115,8 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const resStr    = rec?.resolution_m != null ? `${rec.resolution_m} m` : '';
   const { label, value } = dateOrReturnPeriod(rec);
   const hasDate = value !== '—';
+  // FEMA BLE already shows its return period and carries no recurrence fields.
+  const magnitude = rec?.tier === 'FEMA_BLE' ? null : eventMagnitudeFromCatalog(rec);
 
   // Build download URLs via shared utility (same source of truth as FIMTable)
   const s3Prefix = typeof rec?.s3_prefix === 'string' ? rec.s3_prefix : '';
@@ -158,6 +158,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${row('HUC8',       huc8Str)}
         ${row('Resolution', resStr)}
         ${hasDate ? row(label, value) : ''}
+        ${magnitude ? row('Event magnitude', magnitude) : ''}
       </table>
       ${tifUrl || metaUrl || hasFolder ? `
       <div style="margin-top:0.625rem;display:flex;gap:0.5rem;flex-wrap:wrap">
@@ -373,9 +374,6 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   const selectedSiteIdsRef = useRef<Set<string>>(selectedSiteIds ?? new Set());  // readable inside map.on('load') closure
   const emitFeaturesRef = useRef<(() => void) | null>(null); // stable handle so async effects can call emitFeatures
   const currentClickPopupRef = useRef<maplibregl.Popup | null>(null); // persists across basemap switches
-  // Per-site metadata JSON, fetched on first popup open; feeds the "Event magnitude" row.
-  // (Plain object, not a JS Map — the identifier `Map` is this component.)
-  const metaCacheRef = useRef<Record<string, Promise<Record<string, unknown> | null>>>({});
   const onMultiFeatureSelectRef = useRef(onMultiFeatureSelect);
   useEffect(() => { onMultiFeatureSelectRef.current = onMultiFeatureSelect; }, [onMultiFeatureSelect]);
 
@@ -598,28 +596,6 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
               });
             }
 
-            // "Event magnitude" (recurrence interval) lives only in the per-record
-            // metadata JSON, not the catalog, so the popup opens at once from the
-            // catalog and this row is appended when the fetch resolves. FEMA BLE
-            // already shows its return period, so it is skipped.
-            const fileName = typeof rec?.file_name === 'string' ? rec.file_name : '';
-            if (rec?.tier !== 'FEMA_BLE' && siteId && s3Prefix && fileName) {
-              const popup = currentClickPopupRef.current;
-              let pending = metaCacheRef.current[siteId];
-              if (!pending) {
-                pending = fetch(buildMetaUrl(s3Prefix, fileName))
-                  .then(r => (r.ok ? r.json() : null))
-                  .catch(() => null);
-                metaCacheRef.current[siteId] = pending;
-              }
-              pending.then((j) => {
-                if (!j || currentClickPopupRef.current !== popup) return;   // popup closed or replaced
-                const value = eventMagnitude(parseRecord(j, s3Prefix, fileName, siteId, undefined));
-                if (!value) return;
-                popup.getElement()?.querySelector('table')
-                  ?.insertAdjacentHTML('beforeend', popupRow('Event magnitude', value));
-              });
-            }
             return;
           }
         }
