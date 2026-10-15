@@ -210,10 +210,13 @@ const CENTROID_OPACITY_EXPR: ExpressionSpecification = [
   ZOOM_CROSSFADE_END,   0,
 ];
 
+const EXTENT_OPACITY_MAX    = 0.6;   // fully faded-in extent
+const EXTENT_OPACITY_DIMMED = 0.12;  // non-selected extent while a selection exists
+
 const EXTENT_OPACITY_EXPR: ExpressionSpecification = [
   'interpolate', ['linear'], ['zoom'],
   ZOOM_CROSSFADE_START, 0,
-  ZOOM_CROSSFADE_END,   0.6,
+  ZOOM_CROSSFADE_END,   EXTENT_OPACITY_MAX,
 ];
 
 // FEMA BLE renders at the bottom of the extent stack; HWM at the top.
@@ -283,10 +286,12 @@ function applySelectionEmphasis(
     map.setPaintProperty('fim-layer', 'fill-outline-color', [
       'case', isSelected, '#003B8E', '#aaaaaa',
     ]);
+    // MapLibre allows only one zoom-based interpolate per expression, so the
+    // selection test goes inside the stop value rather than around two curves.
     map.setPaintProperty('fim-layer', 'fill-opacity', [
-      'case', isSelected,
-      EXTENT_OPACITY_EXPR,
-      ['interpolate', ['linear'], ['zoom'], ZOOM_CROSSFADE_START, 0, ZOOM_CROSSFADE_END, 0.12],
+      'interpolate', ['linear'], ['zoom'],
+      ZOOM_CROSSFADE_START, 0,
+      ZOOM_CROSSFADE_END,   ['case', isSelected, EXTENT_OPACITY_MAX, EXTENT_OPACITY_DIMMED],
     ]);
     map.setLayoutProperty('centroids-layer', 'circle-sort-key', sortKeyExpr);
     map.setLayoutProperty('fim-layer', 'fill-sort-key', sortKeyExpr);
