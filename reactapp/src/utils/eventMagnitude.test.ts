@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isUsableRecurrence, formatRecurrence, eventMagnitude } from './eventMagnitude';
+import { isUsableRecurrence, formatRecurrence, eventMagnitude, eventMagnitudeFromCatalog } from './eventMagnitude';
 
 describe('isUsableRecurrence', () => {
   it('accepts plain, bounded-above and bounded-below year values', () => {
@@ -45,5 +45,23 @@ describe('eventMagnitude', () => {
     expect(eventMagnitude({ recurrenceUsgs: 'No usable USGS Gauge', recurrenceNwm: 'NWM discharge unavailable: x', gaugeId: null }))
       .toBeNull();
     expect(eventMagnitude({ recurrenceUsgs: null, recurrenceNwm: null, gaugeId: null })).toBeNull();
+  });
+});
+
+describe('eventMagnitudeFromCatalog', () => {
+  it('reads the catalog recurrence and gauge fields', () => {
+    expect(eventMagnitudeFromCatalog({
+      recurrence_usgs: '50 yr', recurrence_nwm: '25 yr', usgs_gauge_id: '05416900',
+    })).toBe('50-year (USGS gauge 05416900)');
+  });
+
+  it('falls back to NWM when the USGS value is a sentence or the gauge is null', () => {
+    expect(eventMagnitudeFromCatalog({
+      recurrence_usgs: 'No usable USGS Gauge', recurrence_nwm: '2 yr', usgs_gauge_id: null,
+    })).toBe('2-year (NWM)');
+  });
+
+  it('returns null for a record without the fields (FEMA BLE)', () => {
+    expect(eventMagnitudeFromCatalog({})).toBeNull();
   });
 });

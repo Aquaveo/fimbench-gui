@@ -1,3 +1,5 @@
+import type { CatalogRecord } from '../types/catalog';
+
 // Recurrence-interval helpers shared by the map popup and the table Info modal.
 //
 // Upstream metadata stores "Event Recurrence Interval (USGS|NWM)" as a short
@@ -33,4 +35,15 @@ export function eventMagnitude({ recurrenceUsgs, recurrenceNwm, gaugeId }: Magni
     return `${formatRecurrence(recurrenceNwm)} (NWM)`;
   }
   return null;
+}
+
+// Same value, read straight from a catalog record. The catalog carries the
+// recurrence, discharge and gauge fields (added 2026-10-13) for every tier
+// except FEMA BLE, so the popup can show the row without fetching metadata.
+export function eventMagnitudeFromCatalog(rec: Partial<CatalogRecord>): string | null {
+  return eventMagnitude({
+    recurrenceUsgs: rec.recurrence_usgs ?? null,
+    recurrenceNwm:  rec.recurrence_nwm ?? null,
+    gaugeId:        rec.usgs_gauge_id ?? null,
+  });
 }

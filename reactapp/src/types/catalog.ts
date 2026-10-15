@@ -29,6 +29,14 @@ export type CatalogRecord = {
   basin?: string | string[];
   huc8?: string | string[];
   quality?: string;
+  // Event magnitude fields (absent for FEMA_BLE). Recurrence strings are either
+  // a short "50 yr" / "> 100 yr" form or an "unavailable" sentence.
+  recurrence_usgs?: string | null;
+  recurrence_nwm?: string | null;
+  discharge_usgs_cms?: number | null;
+  discharge_nwm_cms?: number | null;
+  usgs_gauge_id?: string | null;
+  acquisition_time_utc?: string | null;
 };
 
 export type CatalogResponse = {
