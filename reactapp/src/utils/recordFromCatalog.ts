@@ -3,10 +3,8 @@ import type { FIMRecord } from './parseRecord';
 import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from './minio';
 import { formatYmd } from './dateFormat';
 
-// Sensor/platform name per tier. The catalog does not carry the metadata's
-// "Full form of the sensor code", but it is identical for every record within
-// a tier (checked across all 204 metadata files on 2026-10-15). Replace with a
-// catalog field if one is ever added upstream.
+// Fallback sensor/platform name per tier, used only when a catalog record has
+// no `platform` field (added upstream 2026-10-22).
 export const PLATFORM_BY_TIER: Record<string, string> = {
   Tier_1:   'Aerial Imagery',
   Tier_2:   'Planet Scope Scene',
@@ -19,6 +17,7 @@ const joinOrDash = (v: unknown): string =>
   Array.isArray(v) ? v.join(', ') : (typeof v === 'string' ? v : '—');
 const strOrNull = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
 const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const recurrenceOrNull = (v: unknown): number | string | null => numOrNull(v) ?? strOrNull(v);
 
 // Build the table/Info-modal display record straight from a catalog record.
 // Produces the same shape and values as parseRecord(metadata JSON), so the
@@ -55,10 +54,10 @@ export function recordFromCatalog(rec: CatalogRecord): FIMRecord {
     resolution:   numOrNull(rec.resolution_m) ?? 0,
     huc8:         joinOrDash(rec.huc8),
     quality:      rec.quality || (start ? 'HWM' : '—'),
-    platform:     PLATFORM_BY_TIER[rec.tier] ?? '—',
+    platform:     strOrNull(rec.platform) ?? PLATFORM_BY_TIER[rec.tier] ?? '—',
     returnPeriod,
-    recurrenceUsgs:  strOrNull(rec.recurrence_usgs),
-    recurrenceNwm:   strOrNull(rec.recurrence_nwm),
+    recurrenceUsgs:  recurrenceOrNull(rec.recurrence_usgs),
+    recurrenceNwm:   recurrenceOrNull(rec.recurrence_nwm),
     dischargeUsgs:   numOrNull(rec.discharge_usgs_cms),
     dischargeNwm:    numOrNull(rec.discharge_nwm_cms),
     gaugeId:         strOrNull(rec.usgs_gauge_id),

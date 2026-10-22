@@ -67,6 +67,7 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
   // than a value; see isUsableRecurrence() in eventMagnitude.ts.
   const strOrNull = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
   const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const recurrenceOrNull = (v: unknown): number | string | null => numOrNull(v) ?? strOrNull(v);
   const gaugeRaw = j['USGS Gauge ID'];
   const gaugeId: string | null =
     typeof gaugeRaw === 'number' ? String(gaugeRaw) : strOrNull(gaugeRaw);
@@ -85,8 +86,8 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
     quality,
     platform,
     returnPeriod,
-    recurrenceUsgs:  strOrNull(j['Event Recurrence Interval (USGS)']),
-    recurrenceNwm:   strOrNull(j['Event Recurrence Interval (NWM)']),
+    recurrenceUsgs:  recurrenceOrNull(j['Event Recurrence Interval (USGS)']),
+    recurrenceNwm:   recurrenceOrNull(j['Event Recurrence Interval (NWM)']),
     dischargeUsgs:   numOrNull(j['Event Discharge (USGS) [cms]']),
     dischargeNwm:    numOrNull(j['Event Discharge (NWM) [cms]']),
     gaugeId,

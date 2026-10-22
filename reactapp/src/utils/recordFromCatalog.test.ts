@@ -84,6 +84,17 @@ describe('recordFromCatalog', () => {
     expect(recordFromCatalog({ ...tier1, tier: 'Tier_3' }).platform).toBe('Sentinel-1A');
   });
 
+  it('prefers the catalog platform field (added 2026-10-22) over the tier map', () => {
+    expect(recordFromCatalog({ ...tier1, tier: 'Tier_2', platform: 'RapidEye Ortho Tile' }).platform)
+      .toBe('RapidEye Ortho Tile');
+  });
+
+  it('passes numeric and bare-bound recurrence values through unchanged', () => {
+    const r = recordFromCatalog({ ...tier1, recurrence_usgs: 5, recurrence_nwm: '< 2' });
+    expect(r.recurrenceUsgs).toBe(5);
+    expect(r.recurrenceNwm).toBe('< 2');
+  });
+
   it('falls back to a dash for an unknown tier', () => {
     expect(recordFromCatalog({ ...tier1, tier: 'Tier_9' }).platform).toBe('—');
   });

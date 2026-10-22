@@ -13,7 +13,14 @@ describe('isUsableRecurrence', () => {
     expect(isUsableRecurrence('NWM discharge unavailable: retrospective discharge empty/NaN between 2011-04-10 and 2011-04-14')).toBe(false);
     expect(isUsableRecurrence(null)).toBe(false);
     expect(isUsableRecurrence(undefined)).toBe(false);
-    expect(isUsableRecurrence(50)).toBe(false);
+    expect(isUsableRecurrence(NaN)).toBe(false);
+  });
+
+  it('accepts the 2026-10-22 catalog forms: plain numbers and bare "< 2" / "> 100"', () => {
+    expect(isUsableRecurrence(50)).toBe(true);
+    expect(isUsableRecurrence(2)).toBe(true);
+    expect(isUsableRecurrence('< 2')).toBe(true);
+    expect(isUsableRecurrence('> 100')).toBe(true);
   });
 });
 
@@ -22,6 +29,12 @@ describe('formatRecurrence', () => {
     expect(formatRecurrence('50 yr')).toBe('50-year');
     expect(formatRecurrence('> 100 yr')).toBe('> 100-year');
     expect(formatRecurrence('< 2 yr')).toBe('< 2-year');
+  });
+
+  it('formats numbers and bare bounds the same way', () => {
+    expect(formatRecurrence(50)).toBe('50-year');
+    expect(formatRecurrence('< 2')).toBe('< 2-year');
+    expect(formatRecurrence('> 100')).toBe('> 100-year');
   });
 });
 
@@ -59,6 +72,15 @@ describe('eventMagnitudeFromCatalog', () => {
     expect(eventMagnitudeFromCatalog({
       recurrence_usgs: 'No usable USGS Gauge', recurrence_nwm: '2 yr', usgs_gauge_id: null,
     })).toBe('2-year (NWM)');
+  });
+
+  it('handles numeric USGS and bare-bound NWM values from the current catalog', () => {
+    expect(eventMagnitudeFromCatalog({
+      recurrence_usgs: 5, recurrence_nwm: '< 2', usgs_gauge_id: '02089000',
+    })).toBe('5-year (USGS gauge 02089000)');
+    expect(eventMagnitudeFromCatalog({
+      recurrence_usgs: 'No usable USGS Gauge', recurrence_nwm: '> 100', usgs_gauge_id: null,
+    })).toBe('> 100-year (NWM)');
   });
 
   it('returns null for a record without the fields (FEMA BLE)', () => {
