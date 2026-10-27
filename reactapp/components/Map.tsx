@@ -111,7 +111,8 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const basinStr  = toDisplayStr(rec?.basin as string | string[] | undefined);
   const stateStr  = toDisplayStr(rec?.state);
   const huc8Str   = toDisplayStr(rec?.huc8);
-  const qualStr   = typeof rec?.quality === 'string' ? rec.quality : '';
+  const categoryRaw = rec?.product_category ?? rec?.quality;
+  const categoryStr = typeof categoryRaw === 'string' ? categoryRaw : '';
   const resStr    = rec?.resolution_m != null ? `${rec.resolution_m} m` : '';
   const { label, value } = dateOrReturnPeriod(rec);
   const hasDate = value !== '—';
@@ -154,7 +155,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${row('Tier',       tierLabel(rec))}
         ${row('Basin',      basinStr)}
         ${row('State',      stateStr)}
-        ${row('Quality',    qualStr)}
+        ${row('Product Category', categoryStr)}
         ${row('HUC8',       huc8Str)}
         ${row('Resolution', resStr)}
         ${hasDate ? row(label, value) : ''}
@@ -414,7 +415,7 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
           basin:        Array.isArray(r.basin) ? r.basin.join(', ') : (r.basin ?? '—'),
           resolution_m: r.resolution_m,
           huc8:         Array.isArray(r.huc8)  ? r.huc8.join(', ')  : (r.huc8  ?? '—'),
-          quality:      r.quality,
+          product_category: r.product_category ?? r.quality,
         },
       })),
     };

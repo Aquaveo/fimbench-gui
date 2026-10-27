@@ -28,6 +28,10 @@ export type CatalogRecord = {
   state?: string | string[];
   basin?: string | string[];
   huc8?: string | string[];
+  // Product category ("Tier 1", "FEMA Base Level Engineering", "High Water FIM").
+  // The catalog still ships it as `quality`; `product_category` is accepted
+  // ahead of it so a renamed catalog needs no app change (FIMBENCH-FE13).
+  product_category?: string;
   quality?: string;
   source?: string | null;
   access_rights?: string | null;
@@ -63,6 +67,6 @@ export type FeatureProperties = {
   basin?: string;
   resolution_m?: number;
   huc8?: string;
-  quality?: string;
+  product_category?: string;
   bbox?: Bbox;
 };

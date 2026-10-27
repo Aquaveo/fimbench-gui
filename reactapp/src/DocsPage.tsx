@@ -518,7 +518,7 @@ export default function DocsPage() {
             <p>
               The table beneath the map lists every catalog record that passes the active
               filters. Records are paginated (20 rows per page) and can be sorted by any column
-              — river/basin, state, year, date, resolution, HUC8, quality tier, or sensing
+              — river/basin, state, year, date, resolution, HUC8, product category, or sensing
               platform — by clicking the corresponding column header.
             </p>
             <p>Selection works in three ways:</p>
@@ -830,8 +830,8 @@ export default function DocsPage() {
             <h4 style={h4Style}>FIMbench Folder Structure</h4>
             <ul style={specListStyle}>
               <li>
-                The folder structure in the database S3 Bucket is organized by quality
-                levels labelled as Tier 1, Tier 2, Tier 3, Tier 4 and High Water FIM (Fig. 8).
+                The folder structure in the database S3 Bucket is organized by product
+                category, labelled as Tier 1, Tier 2, Tier 3, FEMA BLE and High Water FIM (Fig. 8).
               </li>
               <li>
                 Under each Level folder, there are subfolders consisting of flood maps
