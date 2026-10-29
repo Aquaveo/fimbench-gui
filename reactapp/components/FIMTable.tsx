@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { saveAs } from 'file-saver';
 import type { CatalogRecord, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
-import type { FIMRecord } from '../src/utils/parseRecord';
+import type { FIMRecord } from '../src/types/fimRecord';
 import { recordFromCatalog } from '../src/utils/recordFromCatalog';
 import { isUsableRecurrence, formatRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
