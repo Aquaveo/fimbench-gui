@@ -1,5 +1,5 @@
 import type { CatalogRecord } from '../types/catalog';
-import type { FIMRecord } from './parseRecord';
+import type { FIMRecord } from '../types/fimRecord';
 import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from './minio';
 import { formatYmd } from './dateFormat';
 
@@ -20,8 +20,8 @@ const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Numbe
 const recurrenceOrNull = (v: unknown): number | string | null => numOrNull(v) ?? strOrNull(v);
 
 // Build the table/Info-modal display record straight from a catalog record.
-// Produces the same shape and values as parseRecord(metadata JSON), so the
-// table no longer needs one metadata request per visible row.
+// The catalog is the only source: the per-record metadata JSON is not fetched
+// for display (one request per visible row would be needed otherwise).
 export function recordFromCatalog(rec: CatalogRecord): FIMRecord {
   const event = rec.date_ymd ?? '';
   const start = rec.start_date_ymd ?? '';
