@@ -6,6 +6,7 @@ import type { FIMRecord } from '../src/utils/parseRecord';
 import { recordFromCatalog } from '../src/utils/recordFromCatalog';
 import { isUsableRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
+import { fimevalHandoffUrl } from '../src/utils/fimevalHandoff';
 import { COLORS } from '../src/theme';
 import { toggleInSet } from '../src/utils/toggle';
 import { useEscapeKey } from '../src/hooks/useEscapeKey';
@@ -239,6 +240,11 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
       render: r => <a className="fim-dl-fim" href={r.tifUrl}  target="_blank" rel="noreferrer">Download</a> },
     { label: 'Download AOI',  width: '5.625rem',
       render: r => <a className="fim-dl-fim" href={r.gpkgUrl} target="_blank" rel="noreferrer" title="Area of interest polygon (.gpkg)">Download</a> },
+    // Hands the benchmark .tif to FIMeval on this portal (ticket 22868).
+    { label: 'Run in FIMeval', width: '5.9375rem',
+      render: r => r.tifUrl
+        ? <a className="fim-dl-fim" href={fimevalHandoffUrl(r.tifUrl, r.siteId)} target="_blank" rel="noreferrer" title="Open this benchmark in FIMeval (portal login required)">Run</a>
+        : null },
     { label: 'Info',           width: '3.75rem',
       render: r => (
         <button

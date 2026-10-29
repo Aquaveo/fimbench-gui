@@ -16,7 +16,8 @@ import { parseStates, computeDateBounds, recordMatchesFilters } from '../src/uti
 import { buildTifUrl, buildMetaUrl, buildGpkgUrl } from '../src/utils/minio';
 import { eventMagnitudeFromCatalog } from '../src/utils/eventMagnitude';
 import { pickContrastColor } from '../src/utils/contrast';
-import { DOWNLOAD_ICON_SVG } from './DownloadIcon';
+import { DOWNLOAD_ICON_SVG, OPEN_IN_ICON_SVG } from './DownloadIcon';
+import { fimevalHandoffUrl } from '../src/utils/fimevalHandoff';
 import { COLORS } from '../src/theme';
 import { formatYmd } from '../src/utils/dateFormat';
 
@@ -124,6 +125,9 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const tifUrl  = s3Prefix && fileName ? buildTifUrl(s3Prefix, fileName)  : '';
   const metaUrl = s3Prefix && fileName ? buildMetaUrl(s3Prefix, fileName) : '';
   const gpkgUrl = s3Prefix && fileName ? buildGpkgUrl(s3Prefix, fileName) : '';
+  // "Run in FIMeval" hands the benchmark .tif to FIMeval on this portal (ticket 22868).
+  const siteId     = typeof rec?.site_id === 'string' ? rec.site_id : fileName.replace('_BM.tif', '');
+  const handoffUrl = fimevalHandoffUrl(tifUrl, siteId);
   // "Download All" zips the whole folder; the JS handler is wired after the
   // popup mounts (see map.on('click')), keyed off the data-folder-download marker.
   const hasFolder = !!s3Prefix;
@@ -141,8 +145,8 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
   const fimStyle  = mkBtnStyle(FIM_DOWNLOAD_COLOR, fimColor);
   const metaStyle = mkBtnStyle('#f0f0f0', '#222222');
 
-  const btn = (href: string, label: string, style: string) =>
-    `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer" style="${style}">${DOWNLOAD_ICON_SVG}${escapeHtml(label)}</a>`;
+  const btn = (href: string, label: string, style: string, icon = DOWNLOAD_ICON_SVG, title = '') =>
+    `<a href="${escapeHtml(href)}" target="_blank" rel="noreferrer" style="${style}"${title ? ` title="${escapeHtml(title)}"` : ''}>${icon}${escapeHtml(label)}</a>`;
 
   // Folder-zip trigger: an anchor marked for the post-mount click handler to find.
   // Uses the brand style (the colour "Download FIM" previously had).
@@ -166,6 +170,7 @@ function buildClickPopupHtml(rec: Partial<CatalogRecord>): string {
         ${tifUrl   ? btn(tifUrl,  'Download FIM',      metaStyle) : ''}
         ${metaUrl  ? btn(metaUrl, 'Download Metadata', metaStyle) : ''}
         ${gpkgUrl  ? btn(gpkgUrl, 'Download AOI',      metaStyle) : ''}
+        ${handoffUrl ? btn(handoffUrl, 'Run in FIMeval', metaStyle, OPEN_IN_ICON_SVG, 'Open this benchmark in FIMeval (portal login required)') : ''}
       </div>` : ''}
       ${POPUP_FOOTER_HTML}
     </div>
