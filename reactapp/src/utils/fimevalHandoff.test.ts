@@ -28,13 +28,22 @@ describe('buildFimevalHandoffUrl', () => {
 });
 
 describe('fimevalHandoffUrl', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
-  it('uses the current page origin', () => {
+  it('uses the current page origin when no FIMeval origin is configured (multi-app portal, local dev)', () => {
+    vi.stubEnv('VITE_FIMEVAL_ORIGIN', '');
     vi.stubGlobal('window', { location: { origin: 'https://portal.example.org' } });
     const u = new URL(fimevalHandoffUrl(TIF, 'x'));
     expect(u.origin).toBe('https://portal.example.org');
     expect(u.searchParams.get('benchmark_url')).toBe(TIF);
+  });
+
+  it('uses VITE_FIMEVAL_ORIGIN when set (standalone CIROH deployment), ignoring a trailing slash', () => {
+    vi.stubEnv('VITE_FIMEVAL_ORIGIN', 'https://fimeval.tethys.ciroh.org/');
+    vi.stubGlobal('window', { location: { origin: 'https://fimbench.tethys.ciroh.org' } });
+    const u = new URL(fimevalHandoffUrl(TIF, 'x'));
+    expect(u.origin).toBe('https://fimeval.tethys.ciroh.org');
+    expect(u.pathname).toBe(FIMEVAL_HANDOFF_PATH);
   });
 
   it('returns an empty string when there is no benchmark to hand off', () => {

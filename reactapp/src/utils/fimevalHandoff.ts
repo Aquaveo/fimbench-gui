@@ -15,9 +15,20 @@ export function buildFimevalHandoffUrl(portalOrigin: string, benchmarkUrl: strin
   return url.toString();
 }
 
-// Same, against the portal this page is served from. Returns '' when there is
-// no benchmark URL to hand off, so callers can simply omit the control.
+// Where FIMeval lives. On a multi-app portal (and in local dev) it is the same
+// origin as this page. On the CIROH deployment each app is its own standalone
+// Tethys site (https://fimbench.tethys.ciroh.org, https://fimeval.tethys.ciroh.org),
+// so the deployer builds with VITE_FIMEVAL_ORIGIN=https://fimeval.tethys.ciroh.org.
+export function fimevalOrigin(): string {
+  const configured = import.meta.env.VITE_FIMEVAL_ORIGIN;
+  return typeof configured === 'string' && configured.trim()
+    ? configured.trim().replace(/\/+$/, '')
+    : window.location.origin;
+}
+
+// Same, against the FIMeval origin for this deployment. Returns '' when there
+// is no benchmark URL to hand off, so callers can simply omit the control.
 export function fimevalHandoffUrl(benchmarkUrl: string, benchmarkName: string): string {
   if (!benchmarkUrl) return '';
-  return buildFimevalHandoffUrl(window.location.origin, benchmarkUrl, benchmarkName);
+  return buildFimevalHandoffUrl(fimevalOrigin(), benchmarkUrl, benchmarkName);
 }
