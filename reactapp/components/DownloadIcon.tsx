@@ -15,3 +15,17 @@ export function DownloadIcon() {
 // HTML-string form — used inside MapLibre Popup innerHTML where we need raw
 // SVG markup with hyphenated SVG attribute names.
 export const DOWNLOAD_ICON_SVG = `<svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="${PATH_D}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// "Open in another app" arrow for handoff links (table "Run in FIMeval" column
+// and the matching popup button), in the same two forms as the download icon.
+const OPEN_PATH_D = "M14 4H20V10M20 4L10 14M18 13V18C18 19.1046 17.1046 20 16 20H6C4.89543 20 4 19.1046 4 18V8C4 6.89543 4.89543 6 6 6H11";
+
+export function OpenInIcon() {
+  return (
+    <svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, display: 'block' }}>
+      <path d={OPEN_PATH_D} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+export const OPEN_IN_ICON_SVG = `<svg width="0.8125rem" height="0.8125rem" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block"><path d="${OPEN_PATH_D}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
