@@ -834,7 +834,11 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
   useEffect(() => {
     filtersRef.current = filters;
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    // Guard on the layers existing, not on isStyleLoaded(): MapLibre reports
+    // the style as not loaded while any tile is still in flight, so a filter
+    // change made during a pan or on a slow connection was silently dropped
+    // and neither the map nor the table updated (FIMBENCH-FE12).
+    if (!map || !map.getLayer('fim-layer') || !map.getSource('centroids')) return;
 
     const { tiers, states, huc8Id, startDate, endDate, returnPeriod } = filters;
     const isHucMode = isValidHuc8(huc8Id);
