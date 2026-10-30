@@ -33,10 +33,12 @@ export type CatalogRecord = {
   access_rights?: string | null;
   description?: string | null;
   references?: string[];
-  // Event magnitude fields (absent for FEMA_BLE). Recurrence strings are either
-  // a short "50 yr" / "> 100 yr" form or an "unavailable" sentence.
-  recurrence_usgs?: string | null;
-  recurrence_nwm?: string | null;
+  // Sensor / data source name (added 2026-10-22), e.g. "Planet Scope Scene".
+  platform?: string | null;
+  // Event magnitude fields (absent for FEMA_BLE). Recurrence is a number of
+  // years (50), a bare bound ("< 2", "> 100"), or an "unavailable" sentence.
+  recurrence_usgs?: number | string | null;
+  recurrence_nwm?: number | string | null;
   discharge_usgs_cms?: number | null;
   discharge_nwm_cms?: number | null;
   usgs_gauge_id?: string | null;

@@ -4,7 +4,7 @@ import type { CatalogRecord, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
 import type { FIMRecord } from '../src/utils/parseRecord';
 import { recordFromCatalog } from '../src/utils/recordFromCatalog';
-import { isUsableRecurrence } from '../src/utils/eventMagnitude';
+import { isUsableRecurrence, formatRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
 import { COLORS } from '../src/theme';
 import { toggleInSet } from '../src/utils/toggle';
@@ -414,8 +414,8 @@ function buildModalGroups(record: FIMRecord): ModalGroup[] {
       ['Year',                   record.year],
       ['Acquisition time (UTC)', record.acquisitionTime],
       ['Return Period',          record.returnPeriod != null ? `${record.returnPeriod}-year` : null],
-      ['Recurrence (USGS)',      isUsableRecurrence(record.recurrenceUsgs) ? record.recurrenceUsgs : null],
-      ['Recurrence (NWM)',       isUsableRecurrence(record.recurrenceNwm)  ? record.recurrenceNwm  : null],
+      ['Recurrence (USGS)',      isUsableRecurrence(record.recurrenceUsgs) ? formatRecurrence(record.recurrenceUsgs) : null],
+      ['Recurrence (NWM)',       isUsableRecurrence(record.recurrenceNwm)  ? formatRecurrence(record.recurrenceNwm)  : null],
       ['Discharge (USGS)',       record.dischargeUsgs != null ? fmtCms(record.dischargeUsgs) : null],
       ['Discharge (NWM)',        record.dischargeNwm  != null ? fmtCms(record.dischargeNwm)  : null],
       ['USGS Gauge ID',          record.gaugeId],
