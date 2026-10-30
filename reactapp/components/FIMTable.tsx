@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import type { CatalogRecord, Bbox } from '../src/types/catalog';
 import { useDownloadManager } from '../src/context/download';
 import type { FIMRecord } from '../src/utils/parseRecord';
+import { pageCount, clampPage } from '../src/utils/pagination';
 import { recordFromCatalog } from '../src/utils/recordFromCatalog';
 import { isUsableRecurrence, formatRecurrence } from '../src/utils/eventMagnitude';
 import { DownloadIcon } from './DownloadIcon';
@@ -268,8 +269,11 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     </div>
   );
 
-  const totalPages = Math.max(1, Math.ceil(sortedRecords.length / PAGE_SIZE));
-  const pageRows   = sortedRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Clamp the remembered page so a shrinking row set (tier unchecked, HUC8
+  // entered) never leaves the user on a page past the end with an empty body.
+  const totalPages  = pageCount(sortedRecords.length, PAGE_SIZE);
+  const currentPage = clampPage(page, totalPages);
+  const pageRows    = sortedRecords.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <div style={containerStyle}>
@@ -316,9 +320,9 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
           </button>
           {totalPages > 1 && (
             <>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={tableHeaderBtnStyle}>‹</button>
-              <span>Page {page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={tableHeaderBtnStyle}>›</button>
+              <button onClick={() => setPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} style={tableHeaderBtnStyle}>‹</button>
+              <span>Page {currentPage} / {totalPages}</span>
+              <button onClick={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} style={tableHeaderBtnStyle}>›</button>
             </>
           )}
         </div>
