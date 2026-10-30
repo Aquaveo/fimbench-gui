@@ -49,6 +49,14 @@ describe('parseStates', () => {
     expect(parseStates('USA')).toEqual([]);
   });
 
+  it('drops the MX country token for a HUC8 that crosses into Mexico (FIMBENCH-FE11)', () => {
+    // San Diego HWM record: catalog state is "CA, MX" (was "CA, MX, USA" before catalog v3)
+    expect(parseStates('CA, MX')).toEqual(['CA']);
+    expect(parseStates('CA, MX, USA')).toEqual(['CA']);
+    expect(parseStates(['CA', 'MX'])).toEqual(['CA']);
+    expect(parseStates('MX')).toEqual([]);
+  });
+
   it('handles a string array', () => {
     expect(parseStates(['TX', 'OK'])).toEqual(['TX', 'OK']);
   });
@@ -95,6 +103,11 @@ describe('stateMatches', () => {
 
   it('returns false for null state with non-empty filter', () => {
     expect(stateMatches(null, ['TX'])).toBe(false);
+  });
+
+  it('still matches a "CA, MX" record under the CA filter but never under MX (FIMBENCH-FE11)', () => {
+    expect(stateMatches('CA, MX', ['CA'])).toBe(true);
+    expect(stateMatches('CA, MX', ['MX'])).toBe(false);
   });
 });
 
