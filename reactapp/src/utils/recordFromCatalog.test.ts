@@ -26,7 +26,7 @@ const tier1Meta = {
   'Resolution in meter': 0.5, State: 'MN, ND, USA', Description: 'The FIM was generated using NOAA Emergency Response Imagery.',
   'River Basin Name': ['Eastern Wild Rice', 'Elm-Marsh', 'Goose', 'Sandhill-Wilson'], Source: SOURCE_UA, 'Flooding Event': '20110412',
   'Event Recurrence Interval (USGS)': '50 yr', 'Event Discharge (USGS) [cms]': 1718.83, 'USGS Gauge ID': '05064500',
-  'Event Recurrence Interval (NWM)': '< 2 yr', 'Event Discharge (NWM) [cms]': 362.74, Access_Rights: 'Public', Quality: 'Tier 1', References: REFS,
+  'Event Recurrence Interval (NWM)': '< 2 yr', 'Event Discharge (NWM) [cms]': 362.74, Access_Rights: 'Public', 'Product Category': 'Tier 1', References: REFS,
 };
 
 const hwm: CatalogRecord = {
@@ -61,14 +61,14 @@ const bleMeta = {
 };
 
 const viaMetadata = (rec: CatalogRecord, meta: Record<string, unknown>) =>
-  parseRecord(meta, rec.s3_prefix, rec.file_name, rec.site_id, rec.bbox, rec.quality);
+  parseRecord(meta, rec.s3_prefix, rec.file_name, rec.site_id, rec.bbox, rec.product_category ?? rec.quality);
 
 describe('recordFromCatalog', () => {
   it('matches parseRecord for a Tier 1 record (single event date, USGS recurrence)', () => {
     expect(recordFromCatalog(tier1)).toEqual(viaMetadata(tier1, tier1Meta));
   });
 
-  it('matches parseRecord for an HWM record (start–end date range, no Quality key in metadata)', () => {
+  it('matches parseRecord for an HWM record (start–end date range, no category key in metadata)', () => {
     expect(recordFromCatalog(hwm)).toEqual(viaMetadata(hwm, hwmMeta));
   });
 
@@ -93,6 +93,17 @@ describe('recordFromCatalog', () => {
     const r = recordFromCatalog({ ...tier1, recurrence_usgs: 5, recurrence_nwm: '< 2' });
     expect(r.recurrenceUsgs).toBe(5);
     expect(r.recurrenceNwm).toBe('< 2');
+  });
+
+  it('reads the catalog "quality" key as the product category (FIMBENCH-FE13)', () => {
+    expect(recordFromCatalog(hwm).productCategory).toBe('High Water FIM');
+    expect(recordFromCatalog(ble).productCategory).toBe('FEMA Base Level Engineering');
+  });
+
+  it('prefers a renamed "product_category" catalog key over the legacy "quality" key', () => {
+    expect(recordFromCatalog({ ...tier1, product_category: 'Tier 1 (renamed)' }).productCategory).toBe('Tier 1 (renamed)');
+    const { quality: _q, ...noQuality } = tier1; void _q;
+    expect(recordFromCatalog({ ...noQuality, product_category: 'Tier 1' }).productCategory).toBe('Tier 1');
   });
 
   it('falls back to a dash for an unknown tier', () => {

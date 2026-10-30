@@ -13,7 +13,7 @@ import { useEscapeKey } from '../src/hooks/useEscapeKey';
 
 // ── Sorting ───────────────────────────────────────────────────
 
-type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'quality' | 'platform' | 'returnPeriod';
+type SortKey = 'riverBasin' | 'state' | 'year' | 'date' | 'resolution' | 'huc8' | 'productCategory' | 'platform' | 'returnPeriod';
 type SortDir = 'asc' | 'desc';
 
 const SORT_TYPE: Record<SortKey, 'text' | 'number' | 'date'> = {
@@ -23,7 +23,7 @@ const SORT_TYPE: Record<SortKey, 'text' | 'number' | 'date'> = {
   date:         'date',
   resolution:   'number',
   huc8:         'text',
-  quality:      'text',
+  productCategory: 'text',
   platform:     'text',
   returnPeriod: 'number',
 };
@@ -206,7 +206,7 @@ export default function FIMTable({ features, selectedSiteIds, onSelectionChange,
     { label: 'Resolution (m)',sortKey: 'resolution',   width: '5.625rem',  align: 'right',
       render: r => Number(r.resolution).toFixed(2) },
     { label: 'HUC8',          sortKey: 'huc8',         width: '8.125rem', render: r => r.huc8 },
-    { label: 'Quality',       sortKey: 'quality',      width: '5rem',  render: r => r.quality === 'HWM' ? 'High Water FIM' : r.quality },
+    { label: 'Product Category', sortKey: 'productCategory', width: '7.5rem', render: r => r.productCategory === 'HWM' ? 'High Water FIM' : r.productCategory },
     { label: 'Platform',      sortKey: 'platform',     width: '11.25rem', render: r => r.platform },
     { label: 'Zoom',          width: '4.375rem',
       render: r => (
@@ -406,7 +406,7 @@ const fmtCms = (n: number) => `${n.toLocaleString('en-US', { maximumFractionDigi
 // absent fields hide rather than print a placeholder. The .txt export is the
 // exception: it writes every raw value so nothing is lost.
 function buildModalGroups(record: FIMRecord): ModalGroup[] {
-  const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
+  const productCategory = record.productCategory === 'HWM' ? 'High Water FIM' : record.productCategory;
   const candidates: { title: string; rows: [string, string | null][] }[] = [
     { title: 'Location', rows: [
       ['River / Basin', record.riverBasin],
@@ -427,7 +427,7 @@ function buildModalGroups(record: FIMRecord): ModalGroup[] {
     { title: 'Data', rows: [
       ['Resolution', `${record.resolution} m`],
       ['Platform',   record.platform],
-      ['Quality',    quality],
+      ['Product Category', productCategory],
       ['Access',     record.accessRights],
     ]},
     { title: 'Provenance', rows: [
@@ -441,7 +441,7 @@ function buildModalGroups(record: FIMRecord): ModalGroup[] {
 
 // Plain-text export: every field, raw values, grouped like the modal.
 function buildMetadataText(record: FIMRecord): string {
-  const quality = record.quality === 'HWM' ? 'High Water FIM' : record.quality;
+  const productCategory = record.productCategory === 'HWM' ? 'High Water FIM' : record.productCategory;
   const line = (label: string, value: string | number | null) =>
     `${(label + ':').padEnd(26)}${value == null ? '—' : value}`;
   const parts: string[] = [
@@ -472,7 +472,7 @@ function buildMetadataText(record: FIMRecord): string {
     '[Data]',
     line('Resolution', `${record.resolution} m`),
     line('Platform', record.platform),
-    line('Quality', quality),
+    line('Product Category', productCategory),
     line('Access', record.accessRights),
     '',
     '[Provenance]',

@@ -53,7 +53,7 @@ export function recordFromCatalog(rec: CatalogRecord): FIMRecord {
     dateSortKey,
     resolution:   numOrNull(rec.resolution_m) ?? 0,
     huc8:         joinOrDash(rec.huc8),
-    quality:      rec.quality || (start ? 'HWM' : '—'),
+    productCategory: rec.product_category || rec.quality || (start ? 'HWM' : '—'),
     platform:     strOrNull(rec.platform) ?? PLATFORM_BY_TIER[rec.tier] ?? '—',
     returnPeriod,
     recurrenceUsgs:  recurrenceOrNull(rec.recurrence_usgs),

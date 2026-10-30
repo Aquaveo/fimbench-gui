@@ -6,7 +6,7 @@ const asString = (v: unknown): string => (typeof v === 'string' ? v : '');
 const asNumber = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
 // ── Normalize one metadata JSON into a display record ─────────
-export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: string, siteId: string, bbox: Bbox | undefined, catalogQuality?: string) {
+export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileName: string, siteId: string, bbox: Bbox | undefined, catalogProductCategory?: string) {
   const basinRaw = j['River Basin Name'];
   const basin = Array.isArray(basinRaw)
     ? basinRaw.join(', ')
@@ -46,12 +46,13 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
   if (!platform && j['BLE']) platform = 'Base Level Engineering (FEMA BLE)';
   if (!platform) platform = '—';
 
-  // Quality: catalog value first (FEMA BLE / HWM metadata files carry no "Quality" key),
-  // then the metadata key, then the legacy fallback.
-  const qualityRaw = j['Quality'];
-  const quality =
-    catalogQuality ||
-    (typeof qualityRaw === 'string' ? qualityRaw : (startDate ? 'HWM' : '—'));
+  // Product category: catalog value first, then the metadata key ("Product
+  // Category" since the Oct 2026 rewrite, "Quality" before it), then the
+  // legacy fallback. Was displayed as "Quality" until FIMBENCH-FE13.
+  const categoryRaw = j['Product Category'] ?? j['Quality'];
+  const productCategory =
+    catalogProductCategory ||
+    (typeof categoryRaw === 'string' ? categoryRaw : (startDate ? 'HWM' : '—'));
 
   // Return period comes only on Tier 4 (FEMA BLE) metadata; absent on everything else.
   const rpRaw = j['Synthetic Flooding Event (return period (years))'];
@@ -83,7 +84,7 @@ export function parseRecord(j: Record<string, unknown>, s3Prefix: string, fileNa
     dateSortKey,
     resolution:   asNumber(j['Resolution in meter']),
     huc8,
-    quality,
+    productCategory,
     platform,
     returnPeriod,
     recurrenceUsgs:  recurrenceOrNull(j['Event Recurrence Interval (USGS)']),

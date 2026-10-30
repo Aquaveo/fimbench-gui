@@ -3,35 +3,45 @@ import { parseRecord } from './parseRecord';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const parse = (meta: Record<string, unknown>, catalogQuality?: string) =>
-  parseRecord(meta, 'FIM_Viz/Site_1', 'site_1.tif', 'site_1', undefined, catalogQuality);
+const parse = (meta: Record<string, unknown>, catalogProductCategory?: string) =>
+  parseRecord(meta, 'FIM_Viz/Site_1', 'site_1.tif', 'site_1', undefined, catalogProductCategory);
 
-// ─── quality ──────────────────────────────────────────────────────────────────
+// ─── productCategory (was "quality" until FIMBENCH-FE13) ─────────────────────
 
-describe('parseRecord quality', () => {
-  it('uses the catalog quality when the metadata has no Quality key (FEMA BLE case)', () => {
-    const r = parse({ BLE: true, 'Synthetic Flooding Event (return period (years))': 100 }, 'Good');
-    expect(r.quality).toBe('Good');
+describe('parseRecord productCategory', () => {
+  it('uses the catalog value when the metadata has no category key (FEMA BLE case)', () => {
+    const r = parse({ BLE: true, 'Synthetic Flooding Event (return period (years))': 100 }, 'FEMA Base Level Engineering');
+    expect(r.productCategory).toBe('FEMA Base Level Engineering');
   });
 
-  it('prefers the catalog quality over the metadata Quality key', () => {
-    const r = parse({ Quality: 'Fair' }, 'Good');
-    expect(r.quality).toBe('Good');
+  it('prefers the catalog value over the metadata key', () => {
+    const r = parse({ 'Product Category': 'Tier 2' }, 'Tier 1');
+    expect(r.productCategory).toBe('Tier 1');
   });
 
-  it('falls back to the metadata Quality key when the catalog has none', () => {
+  it('reads the v3 metadata key "Product Category" when the catalog has none', () => {
+    const r = parse({ 'Product Category': 'Tier 2' });
+    expect(r.productCategory).toBe('Tier 2');
+  });
+
+  it('still reads the legacy metadata key "Quality"', () => {
     const r = parse({ Quality: 'Fair' });
-    expect(r.quality).toBe('Fair');
+    expect(r.productCategory).toBe('Fair');
   });
 
-  it('falls back to HWM when neither source has quality but a start date exists', () => {
+  it('prefers "Product Category" over a legacy "Quality" key when both are present', () => {
+    const r = parse({ 'Product Category': 'Tier 3', Quality: 'Fair' });
+    expect(r.productCategory).toBe('Tier 3');
+  });
+
+  it('falls back to HWM when neither source has a category but a start date exists', () => {
     const r = parse({ 'Start Date of the Flood': '2017-08-28' });
-    expect(r.quality).toBe('HWM');
+    expect(r.productCategory).toBe('HWM');
   });
 
-  it('falls back to a dash when no quality or start date is available', () => {
+  it('falls back to a dash when no category or start date is available', () => {
     const r = parse({});
-    expect(r.quality).toBe('—');
+    expect(r.productCategory).toBe('—');
   });
 });
 
