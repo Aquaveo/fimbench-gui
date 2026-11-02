@@ -2,14 +2,18 @@ import type { CatalogRecord } from '../types/catalog';
 import { isValidHuc8, toHuc8Array } from '../types/catalog';
 import type { Filters } from '../types/filters';
 
+// Country codes that can appear in a catalog record's state field alongside
+// US state abbreviations ("TX, USA", or "CA, MX" for a HUC8 that crosses the
+// Mexican border). They are dropped so they never show up as a state option
+// or match a state filter (FIMBENCH-FE11).
+export const COUNTRY_TOKENS: ReadonlySet<string> = new Set(['USA', 'MX']);
+
 // Parse a record's state field (string, comma-separated, or array) into an array of abbreviations.
-// The catalog's state field is "TX, USA"-style; the trailing country token is
-// dropped so "USA" never shows up as a state option or matches a state filter.
 export function parseStates(raw: unknown): string[] {
   let states: string[] = [];
   if (Array.isArray(raw)) states = raw.map(String);
   else if (typeof raw === 'string') states = raw.split(',').map(s => s.trim()).filter(Boolean);
-  return states.filter(s => s !== 'USA');
+  return states.filter(s => !COUNTRY_TOKENS.has(s));
 }
 
 // Returns true if the record's states overlap with any of the selected states.
