@@ -4,8 +4,9 @@ import path from 'path';
 import svgr from 'vite-plugin-svgr';
 
 export default defineConfig(({ mode }) => ({
-  // BASE URL: dev = '/', production = Tethys app URL
-  base: mode === 'production' ? '/apps/fimbench-gui/' : '/',
+  // Base path. Single-app standalone serves at '/'; multi-app portal at the app URL.
+  // Override with VITE_BASE_URL (e.g. build with VITE_BASE_URL=/ for standalone).
+  base: process.env.VITE_BASE_URL || (mode === 'production' ? '/apps/fimbench-gui/' : '/'),
 
   plugins: [
     react(),
